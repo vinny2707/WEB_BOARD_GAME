@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "predev": "node scripts/kill-port.js",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "migrate": "knex migrate:latest",
@@ -30,6 +31,7 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "selfsigned": "^5.4.0"
   }
 }
