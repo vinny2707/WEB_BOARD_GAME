@@ -6,7 +6,6 @@ import { loginSchema } from '../schemas/login.schema.js'
 import { registerSchema } from '../schemas/register.schema.js'
 import { useUser } from '../../../contexts/UserProvider.jsx'
 import { User, Lock, Eye, EyeOff, Mail, CalendarIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -14,13 +13,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Controller } from "react-hook-form";
-
+import { useNavigate } from 'react-router-dom'
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState('login')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { setUser } = useUser()
+  const navigate = useNavigate()
 
   const {register, handleSubmit, formState: { errors }} = useForm({
     resolver: zodResolver(loginSchema),
@@ -41,23 +41,37 @@ const Auth = () => {
   const handleLogin = (data) => {
     console.log("Login Data:", data)
     // Mock login logic
-    setUser({
+    const userData = {
       id: 1,
       username: data.username,
       email: 'example@example.com',
       role: 'user',
-    })
+    }
+    setUser(userData)
+
+    if (userData.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/');
+    }
   }
 
   const handleRegister = (data) => {
     console.log("Register Data:", data)
     // Mock register logic
-    setUser({
+    const userData ={
       id: 2,
       username: data.username,
       email: data.email,
       role: 'user',
-    })
+    }
+
+    setUser(userData)
+    navigate('/');
+  }
+  
+  const handleForgotPassword = () => {
+    
   }
 
   return (
@@ -211,6 +225,7 @@ const Auth = () => {
                   <button
                     type="button"
                     className="text-sm text-emerald-400 hover:text-emerald-300"
+                    onClick={handleForgotPassword}
                   >
                     Forgot Password?
                   </button>
@@ -315,6 +330,7 @@ const Auth = () => {
                               onSelect={field.onChange}
                               disabled={(date) => date > new Date()}
                               initialFocus
+                              captionLayout="dropdown"
                             />
                           </PopoverContent>
                         </Popover>

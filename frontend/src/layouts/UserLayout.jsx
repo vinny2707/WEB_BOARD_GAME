@@ -4,9 +4,9 @@ import {Outlet} from 'react-router-dom'
 
 const UserLayout = () => {
   return (
-    <div className="w-full flex">
-      <Sidebar className="w-1/4" />
-      <Outlet className="flex-1" />
+    <div className="w-full min-h-screen flex">
+      <Sidebar />
+      <Outlet />
     </div>
   )
 }

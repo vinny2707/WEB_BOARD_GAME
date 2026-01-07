@@ -26,6 +26,7 @@ const router = createBrowserRouter([
     ],
   },
   {
+    path: "/",
     element: <ProtectedLayout />,
     children: [
       {
@@ -37,19 +38,20 @@ const router = createBrowserRouter([
           },
           {
             element: <Ranking />,
-            path: "/ranking",
+            path: "ranking",
           },
           {
             element: <Social />,
-            path: "/social",
+            path: "social",
           },
           {
             element: <Profile />,
-            path: "/profile",
+            path: "profile",
           },
         ],
       },
       {
+        path: "/admin",
         element: <AdminProtectedLayout />,
         children: [
           {
@@ -57,7 +59,7 @@ const router = createBrowserRouter([
             children: [
               {
                 element: <UserManagement />,
-                path: "/admin/user-management",
+                index: true,
               },
             ],
           },

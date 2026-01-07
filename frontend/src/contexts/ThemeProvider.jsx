@@ -9,12 +9,17 @@ export const ThemeProvider = ({ children }) => {
     return savedTheme ? savedTheme : 'light';
   });
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
   useEffect(() => {
     localStorage.setItem('theme', theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )
