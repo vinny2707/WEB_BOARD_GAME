@@ -56,7 +56,7 @@ const Sidebar = () => {
 
   const getInitials = (name) => {
     const names = name.split(" ");
-    if (names.length === 1) return names[0][0].toUpperCase();
+    if (names.length === 1) return (names[0][0] + names[0][names[0].length - 1]).toUpperCase();
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
   };
 
@@ -98,7 +98,7 @@ const Sidebar = () => {
             {/* Theme Toggle */}
             <button
               onClick={onToggleTheme}
-              className="relative w-14 h-7 rounded-full transition-colors bg-gray-300 dark:bg-zinc-700"
+              className="relative w-14 h-7 rounded-full transition-colors bg-gray-300 dark:bg-zinc-700 cursor-pointer"
             >
               <div
                 className={`absolute top-0.5 flex items-center justify-center w-6 h-6 rounded-full bg-white shadow-md transition-transform translate-x-0.5 dark:translate-x-7`}
@@ -149,7 +149,7 @@ const Sidebar = () => {
               <button
                 key={item.label}
                 onClick={() => onClickItem(item.page)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${
                   item.active
                     ? isDarkMode
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
