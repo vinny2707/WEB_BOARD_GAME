@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { NumberTicker } from "@/components/ui/number-ticker";
+import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar";
+import { getInitials } from "@/utils/Username";
 
 const Ranking = () => {
   const [scopeTab, setScopeTab] = useState("global");
@@ -139,12 +141,6 @@ const Ranking = () => {
     }
   };
 
-  const getInitials = (name) => {
-    const names = name.split(" ");
-    if (names.length === 1)
-      return (names[0][0] + names[0][names[0].length - 1]).toUpperCase();
-    return (names[0][0] + names[names.length - 1][0]).toUpperCase();
-  };
 
   return (
     <div className="w-full flex-1 p-6 flex justify-center items-start dark:bg-zinc-900/50">
@@ -364,10 +360,16 @@ const Ranking = () => {
               <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
                 Win Rate
               </p>
-              <NumberTicker
-                value={myPersonalStats.win_rate}
-                className="text-3xl dark:text-white text-gray-900"
-              />
+              <div className="w-full flex justify-center items-center">
+                <AnimatedCircularProgressBar
+                  value={myPersonalStats.win_rate}
+                  max={100}
+                  min={0}
+                  gaugePrimaryColor="rgb(16 185 129)"
+                  gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"
+                  className="w-20 h-20"
+                />
+              </div>
             </div>
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
               <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
@@ -376,7 +378,7 @@ const Ranking = () => {
               <NumberTicker
                 value={myPersonalStats.total_score}
                 className="text-3xl dark:text-white text-gray-900"
-              />
+                />
             </div>
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
               <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">

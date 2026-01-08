@@ -60,7 +60,7 @@ const Auth = () => {
     console.log("Register Data:", data)
     // Mock register logic
     const userData ={
-      id: 2,
+      id: 1,
       username: data.username,
       email: data.email,
       role: 'user',
