@@ -36,30 +36,50 @@ backend/
 
 ## 2. LUỒNG XÁC THỰC (AUTHENTICATION FLOW)
 
-### 2.1 Đăng ký tài khoản (Register)
+### 2.1 Đăng ký tài khoản với OTP (Register)
+
+**Bước 1: Gửi OTP**
+
+```
+Client                          Server                         Memory
+  |                               |                               |
+  |-- POST /api/auth/register --> |                               |
+  |   {username, email, password} |                               |
+  |                               |-- Validate input              |
+  |                               |-- Check username unique ----> DB
+  |                               |-- Check email (active/banned) |
+  |                               |-- Hash password (bcrypt)      |
+  |                               |-- Tạo OTP session ----------> |
+  |                               |-- Gửi email OTP              |
+  |<-- 200 OK, {otpSessionId, maskedEmail, otpExpiresIn}          |
+```
+
+**Bước 2: Xác thực OTP**
 
 ```
 Client                          Server                         Database
   |                               |                               |
-  |-- POST /api/auth/register --> |                               |
-  |   {username, email, password} |                               |
-  |                               |-- Validate input -----------> |
-  |                               |-- Check username unique ----> |
-  |                               |<-- Kết quả ----------------- |
-  |                               |-- Check email unique -------> |
-  |                               |<-- Kết quả ----------------- |
-  |                               |-- Hash password (bcrypt) ---> |
-  |                               |-- INSERT user -------------> |
-  |                               |<-- User đã tạo ------------- |
-  |<-- 201 Created, user data --- |                               |
+  |-- POST /api/auth/verify-otp-> |                               |
+  |   {otpSessionId, otpCode}     |                               |
+  |                               |-- Tìm session trong memory    |
+  |                               |-- Kiểm tra OTP hết hạn?       |
+  |                               |-- Kiểm tra số lần thử         |
+  |                               |-- So sánh OTP code            |
+  |                               |                               |
+  |                               |-- [Nếu đúng] INSERT user ---> |
+  |                               |<-- User đã tạo -------------- |
+  |                               |-- Tạo JWT token               |
+  |                               |-- Xóa OTP session             |
+  |<-- 201 Created, {token, user} |                               |
 ```
 
 **Quy tắc:**
 
-- Username phải duy nhất (unique)
-- Email phải duy nhất (unique)
-- Password được hash trước khi lưu (bcrypt, 10 rounds)
-- User mới được tạo với status = "active" và role = "user"
+- OTP hết hạn sau 5 phút
+- Tối đa 5 lần thử sai
+- OTP là 6 chữ số ngẫu nhiên
+- User chỉ được tạo sau khi verify OTP thành công
+- OTP session lưu trong memory (mất khi restart server)
 
 ### 2.2 Đăng nhập (Login)
 
@@ -68,26 +88,49 @@ Client                          Server                         Database
   |                               |                               |
   |-- POST /api/auth/login -----> |                               |
   |   {username, password}        |                               |
-  |                               |-- Tìm user theo username ---> |
-  |                               |<-- User data hoặc null ------ |
+  |                               |-- Tìm user theo username ----> |
+  |                               |<-- User data hoặc null ------- |
   |                               |                               |
-  |                               |-- [1] Kiểm tra user tồn tại   |
-  |                               |-- [2] Kiểm tra status = active|
-  |                               |-- [3] Xác thực password       |
+  |                               |-- [1] Kiểm tra user tồn tại    |
+  |                               |-- [2] Kiểm tra status = banned |
+  |                               |-- [3] Xác thực password        |
+  |                               |-- [4] Check 14 ngày không login|
   |                               |                               |
-  |                               |-- Tạo JWT token               |
-  |                               |-- Cập nhật last_login ------> |
+  |                               |-- [Nếu inactive/14 ngày]:      |
+  |                               |   - Set status = inactive      |
+  |                               |   - Tạo OTP reactivation       |
+  |                               |   - Gửi email OTP              |
+  |<-- 200 OK, {requiresOtp, otpSessionId, maskedEmail}           |
+  |                               |                               |
+  |                               |-- [Nếu active < 14 ngày]:      |
+  |                               |   - Tạo JWT token              |
+  |                               |   - Cập nhật last_login        |
   |<-- 200 OK, {token, user} ---- |                               |
 ```
 
 **Quy tắc:**
 
 - User không tồn tại: trả về 401
-- User có status = "inactive" hoặc "banned": trả về 403
+- User bị banned: trả về 403
 - Password sai: trả về 401
+- 14 ngày không login hoặc status inactive → Gửi OTP reactivation
 - Thành công: trả về JWT token (hết hạn sau 7 ngày)
 
-### 2.3 Truy cập Protected Routes
+### 2.3 Kích hoạt lại tài khoản (Reactivation)
+
+```
+Client                          Server                         Database
+  |                               |                               |
+  |-- POST /api/auth/verify-otp-> |                               |
+  |   {otpSessionId, otpCode}     |                               |
+  |                               |-- Verify OTP (type=reactivate)|
+  |                               |-- Update status = active ----> |
+  |                               |-- Update last_login ---------> |
+  |                               |-- Tạo JWT token               |
+  |<-- 200 OK, {token, user} ---- |                               |
+```
+
+### 2.4 Truy cập Protected Routes
 
 ```
 Client                          Server                         Database
@@ -95,8 +138,8 @@ Client                          Server                         Database
   |-- GET /api/auth/profile ----> |                               |
   |   Header: Bearer <token>      |                               |
   |                               |-- Xác thực JWT token          |
-  |                               |-- Query user từ DB ---------> |
-  |                               |<-- User data ----------------- |
+  |                               |-- Query user từ DB ----------> |
+  |                               |<-- User data ------------------ |
   |                               |-- Kiểm tra status = active    |
   |                               |                               |
   |<-- 200 OK, user profile ----- |                               |
@@ -121,11 +164,11 @@ Client                          Server                         Database
 
 ### 3.2 Trạng thái tài khoản (Status)
 
-| Status   | Mô tả                 | Ảnh hưởng                                                   |
-| -------- | --------------------- | ----------------------------------------------------------- |
-| active   | Hoạt động bình thường | Truy cập đầy đủ                                             |
-| inactive | Tạm khóa              | Không thể đăng nhập hoặc gọi API, có thể đăng ký email khác |
-| banned   | Bị cấm vĩnh viễn      | Không thể đăng nhập, gọi API, hoặc đăng ký với cùng email   |
+| Status   | Mô tả                                | Ảnh hưởng                            |
+| -------- | ------------------------------------ | ------------------------------------ |
+| active   | Hoạt động bình thường                | Truy cập đầy đủ                      |
+| inactive | 14 ngày không login hoặc bị tạm khóa | Cần xác thực OTP để kích hoạt lại    |
+| banned   | Bị cấm vĩnh viễn                     | Không thể đăng nhập hoặc đăng ký lại |
 
 ### 3.3 Middleware phân quyền
 
