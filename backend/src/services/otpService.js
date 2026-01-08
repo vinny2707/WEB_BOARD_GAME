@@ -83,13 +83,51 @@ class OtpService {
             createdAt: new Date()
         });
 
-        // Send OTP email
-        await emailService.sendOtpEmail(email, otpCode, this.OTP_EXPIRES_MINUTES);
+        // Send OTP email (type: register)
+        await emailService.sendOtpEmail(email, otpCode, this.OTP_EXPIRES_MINUTES, 'register');
 
         return {
             otpSessionId: sessionId,
             maskedEmail: this.maskEmail(email),
-            otpExpiresIn: this.OTP_EXPIRES_MINUTES * 60 // seconds
+            otpExpiresIn: this.OTP_EXPIRES_MINUTES * 60
+        };
+    }
+
+    /**
+     * Create OTP session for account reactivation
+     * @param {Object} user - User object from database
+     * @returns {Promise<Object>} - {otpSessionId, maskedEmail, otpExpiresIn}
+     */
+    async createReactivationSession(user) {
+        // Delete any existing sessions for this email
+        this.deleteByEmail(user.email);
+
+        // Generate OTP and session ID
+        const sessionId = uuidv4();
+        const otpCode = this.generateOtpCode();
+        const expiresAt = new Date(Date.now() + this.OTP_EXPIRES_MINUTES * 60 * 1000);
+
+        // Store session in memory
+        otpSessions.set(sessionId, {
+            id: sessionId,
+            type: 'reactivate',
+            email: user.email,
+            userId: user.id,
+            otpCode,
+            expiresAt,
+            verified: false,
+            attempts: 0,
+            maxAttempts: this.MAX_ATTEMPTS,
+            createdAt: new Date()
+        });
+
+        // Send OTP email (type: reactivate)
+        await emailService.sendOtpEmail(user.email, otpCode, this.OTP_EXPIRES_MINUTES, 'reactivate');
+
+        return {
+            otpSessionId: sessionId,
+            maskedEmail: this.maskEmail(user.email),
+            otpExpiresIn: this.OTP_EXPIRES_MINUTES * 60
         };
     }
 
@@ -144,7 +182,15 @@ class OtpService {
         session.verified = true;
         session.verifiedAt = new Date();
 
-        // Return registration data
+        // Return session data (different fields based on type)
+        if (session.type === 'reactivate') {
+            return {
+                email: session.email,
+                type: session.type,
+                userId: session.userId
+            };
+        }
+
         return {
             email: session.email,
             type: session.type,

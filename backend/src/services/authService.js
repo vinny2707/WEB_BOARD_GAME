@@ -36,15 +36,17 @@ class AuthService {
                 throw error;
             }
             
-            // If email belongs to an inactive user, delete old account
+            // If email belongs to an inactive user, tell them to login to reactivate
             if (existingEmail.status === 'inactive') {
-                await User.hardDelete(existingEmail.id);
-            } else {
-                // For active users, just say email exists
-                const error = new Error('Email already exists');
+                const error = new Error('This email has an inactive account. Please login to reactivate.');
                 error.statusCode = 409;
                 throw error;
             }
+            
+            // For active users, just say email exists
+            const error = new Error('Email already exists');
+            error.statusCode = 409;
+            throw error;
         }
 
         // Create OTP session and send email
@@ -114,8 +116,8 @@ class AuthService {
      * Authenticate user and generate token
      * @param {string} username - User username
      * @param {string} password - User password
-     * @returns {Promise<Object>} Object containing token and user info
-     * @throws {Error} If credentials are invalid or account is inactive
+     * @returns {Promise<Object>} Object containing token and user info, or OTP session for reactivation
+     * @throws {Error} If credentials are invalid or account is banned
      */
     async login(username, password) {
         // Find user by username
@@ -126,14 +128,14 @@ class AuthService {
             throw error;
         }
 
-        // Check if user is active
-        if (user.status !== 'active') {
-            const error = new Error('Account is inactive or banned');
+        // Check if user is banned
+        if (user.status === 'banned') {
+            const error = new Error('Your account has been banned');
             error.statusCode = 403;
             throw error;
         }
 
-        // Verify password
+        // Verify password first
         const isPasswordValid = await this.verifyPassword(password, user.password_hash);
         if (!isPasswordValid) {
             const error = new Error('Invalid username or password');
@@ -141,7 +143,31 @@ class AuthService {
             throw error;
         }
 
-        // Generate JWT token
+        // Check if user is inactive or hasn't logged in for 14 days
+        const INACTIVE_DAYS = parseInt(process.env.INACTIVE_DAYS) || 14;
+        const daysSinceLastLogin = user.last_login 
+            ? Math.floor((Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24))
+            : INACTIVE_DAYS + 1; // If never logged in, treat as inactive
+
+        if (user.status === 'inactive' || daysSinceLastLogin >= INACTIVE_DAYS) {
+            // Set user to inactive if not already
+            if (user.status !== 'inactive') {
+                await User.update(user.id, { status: 'inactive' });
+            }
+
+            // Create reactivation OTP session
+            const otpResult = await otpService.createReactivationSession(user);
+
+            return {
+                requiresOtp: true,
+                otpSessionId: otpResult.otpSessionId,
+                maskedEmail: otpResult.maskedEmail,
+                otpExpiresIn: otpResult.otpExpiresIn,
+                message: 'Account inactive. OTP sent for reactivation.'
+            };
+        }
+
+        // Generate JWT token for active user
         const token = this.generateToken(user);
 
         // Update last_login
@@ -153,6 +179,38 @@ class AuthService {
         return {
             token,
             user: userWithoutPassword
+        };
+    }
+
+    /**
+     * Verify OTP and reactivate user account
+     * @param {string} otpSessionId 
+     * @param {string} otpCode 
+     * @returns {Promise<Object>} {token, user}
+     */
+    async verifyReactivationOtp(otpSessionId, otpCode) {
+        // Verify OTP
+        const verifiedData = otpService.verifyOtp(otpSessionId, otpCode);
+
+        if (verifiedData.type !== 'reactivate') {
+            const error = new Error('Invalid OTP session type');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Reactivate user
+        const user = await User.update(verifiedData.userId, { status: 'active' });
+        await User.updateLastLogin(verifiedData.userId);
+
+        // Clean up OTP session
+        otpService.delete(otpSessionId);
+
+        // Generate token
+        const token = this.generateToken(user);
+
+        return {
+            token,
+            user
         };
     }
 
