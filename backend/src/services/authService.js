@@ -251,6 +251,70 @@ class AuthService {
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
     }
+
+    /**
+     * Initiate forgot password - send OTP to email
+     * @param {string} email - User email
+     * @returns {Promise<Object>} {otpSessionId, maskedEmail, otpExpiresIn}
+     */
+    async forgotPassword(email) {
+        // Find user by email
+        const user = await User.findByEmail(email);
+        if (!user) {
+            const error = new Error('Email not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // Check if user is banned
+        if (user.status === 'banned') {
+            const error = new Error('This account has been banned');
+            error.statusCode = 403;
+            throw error;
+        }
+
+        // Create password reset OTP session
+        const otpResult = await otpService.createPasswordResetSession(user);
+
+        return otpResult;
+    }
+
+    /**
+     * Reset password with OTP verification
+     * @param {string} otpSessionId 
+     * @param {string} otpCode 
+     * @param {string} newPassword 
+     * @returns {Promise<Object>} {message}
+     */
+    async resetPassword(otpSessionId, otpCode, newPassword) {
+        // Verify OTP
+        const verifiedData = otpService.verifyOtp(otpSessionId, otpCode);
+
+        if (verifiedData.type !== 'resetPassword') {
+            const error = new Error('Invalid OTP session type');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // Hash new password
+        const password_hash = await this.hashPassword(newPassword);
+
+        // Update user password
+        await User.update(verifiedData.userId, { password_hash });
+
+        // If user was inactive, reactivate them
+        const user = await User.findById(verifiedData.userId);
+        if (user.status === 'inactive') {
+            await User.update(verifiedData.userId, { status: 'active' });
+        }
+
+        // Clean up OTP session
+        otpService.delete(otpSessionId);
+
+        return {
+            message: 'Password reset successfully'
+        };
+    }
 }
 
 module.exports = new AuthService();

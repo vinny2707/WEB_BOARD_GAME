@@ -10,8 +10,8 @@ exports.seed = async function(knex) {
   await knex.raw('TRUNCATE TABLE rankings, user_achievements, messages, friends, game_sessions, achievements, games, users RESTART IDENTITY CASCADE');
 
 
-  // Hash password for all users (password: "password123")
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // Hash password for all users (password: "123456")
+  const passwordHash = await bcrypt.hash('123456', 10);
 
   // Insert users
   await knex('users').insert([

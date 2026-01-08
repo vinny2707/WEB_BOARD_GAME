@@ -178,3 +178,58 @@
 | dob       | string | Không    |
 
 **Lưu ý:** User KHÔNG được phép thay đổi username, email, role, status.
+
+---
+
+## 8. Quên mật khẩu (Gửi OTP)
+
+**Endpoint:** `POST /api/auth/forgot-password`
+
+**Request Body:**
+
+| Field | Type   | Bắt buộc |
+| ----- | ------ | -------- |
+| email | string | Có       |
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "OTP sent to your email for password reset.",
+  "data": {
+    "otpSessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "maskedEmail": "u***r@example.com",
+    "otpExpiresIn": 300
+  }
+}
+```
+
+**Errors:** 404 (email not found), 403 (banned)
+
+---
+
+## 9. Đặt lại mật khẩu
+
+**Endpoint:** `POST /api/auth/reset-password`
+
+**Request Body:**
+
+| Field        | Type   | Bắt buộc | Ràng buộc               |
+| ------------ | ------ | -------- | ----------------------- |
+| otpSessionId | string | Có       | UUID từ forgot-password |
+| otpCode      | string | Có       | 6 chữ số                |
+| newPassword  | string | Có       | Tối thiểu 6 ký tự       |
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Password reset successfully."
+}
+```
+
+**Errors:** 400 (invalid/expired OTP), 429 (max attempts)
+
+**Lưu ý:** Nếu user đang inactive, reset password sẽ tự động kích hoạt lại account.

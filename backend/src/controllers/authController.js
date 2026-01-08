@@ -129,6 +129,50 @@ const updateProfile = async (req, res, next) => {
     }
 };
 
+// Forgot password - send OTP to email
+const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return error(res, 'Email is required', 400);
+        }
+
+        const result = await authService.forgotPassword(email);
+
+        return success(res, result, 'OTP sent to your email for password reset.', 200);
+    } catch (err) {
+        if (err.statusCode) {
+            return error(res, err.message, err.statusCode);
+        }
+        next(err);
+    }
+};
+
+// Reset password with OTP
+const resetPassword = async (req, res, next) => {
+    try {
+        const { otpSessionId, otpCode, newPassword } = req.body;
+
+        if (!otpSessionId || !otpCode || !newPassword) {
+            return error(res, 'otpSessionId, otpCode, and newPassword are required', 400);
+        }
+
+        if (newPassword.length < 6) {
+            return error(res, 'Password must be at least 6 characters', 400);
+        }
+
+        const result = await authService.resetPassword(otpSessionId, otpCode, newPassword);
+
+        return success(res, result, 'Password reset successfully.', 200);
+    } catch (err) {
+        if (err.statusCode) {
+            return error(res, err.message, err.statusCode);
+        }
+        next(err);
+    }
+};
+
 module.exports = {
     register,
     verifyOtp,
@@ -136,6 +180,8 @@ module.exports = {
     login,
     logout,
     getProfile,
-    updateProfile
+    updateProfile,
+    forgotPassword,
+    resetPassword
 };
 

@@ -260,6 +260,107 @@ router.post('/logout', authController.logout);
 
 /**
  * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset OTP
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: OTP sent to your email for password reset.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     otpSessionId:
+ *                       type: string
+ *                     maskedEmail:
+ *                       type: string
+ *                       example: "u***r@example.com"
+ *                     otpExpiresIn:
+ *                       type: integer
+ *                       example: 300
+ *       404:
+ *         description: Email not found
+ *       403:
+ *         description: Account is banned
+ */
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with OTP verification
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otpSessionId
+ *               - otpCode
+ *               - newPassword
+ *             properties:
+ *               otpSessionId:
+ *                 type: string
+ *                 format: uuid
+ *               otpCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
+ *                 example: "123456"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "newSecurePassword123"
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successfully.
+ *       400:
+ *         description: Invalid or expired OTP
+ *       429:
+ *         description: Maximum verification attempts exceeded
+ */
+router.post('/reset-password', authController.resetPassword);
+
+/**
+ * @swagger
  * /api/auth/profile:
  *   get:
  *     summary: Get current user profile

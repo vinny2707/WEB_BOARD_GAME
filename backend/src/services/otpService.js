@@ -132,6 +132,44 @@ class OtpService {
     }
 
     /**
+     * Create OTP session for password reset
+     * @param {Object} user - User object from database
+     * @returns {Promise<Object>} - {otpSessionId, maskedEmail, otpExpiresIn}
+     */
+    async createPasswordResetSession(user) {
+        // Delete any existing sessions for this email
+        this.deleteByEmail(user.email);
+
+        // Generate OTP and session ID
+        const sessionId = uuidv4();
+        const otpCode = this.generateOtpCode();
+        const expiresAt = new Date(Date.now() + this.OTP_EXPIRES_MINUTES * 60 * 1000);
+
+        // Store session in memory
+        otpSessions.set(sessionId, {
+            id: sessionId,
+            type: 'resetPassword',
+            email: user.email,
+            userId: user.id,
+            otpCode,
+            expiresAt,
+            verified: false,
+            attempts: 0,
+            maxAttempts: this.MAX_ATTEMPTS,
+            createdAt: new Date()
+        });
+
+        // Send OTP email (type: resetPassword)
+        await emailService.sendOtpEmail(user.email, otpCode, this.OTP_EXPIRES_MINUTES, 'resetPassword');
+
+        return {
+            otpSessionId: sessionId,
+            maskedEmail: this.maskEmail(user.email),
+            otpExpiresIn: this.OTP_EXPIRES_MINUTES * 60
+        };
+    }
+
+    /**
      * Verify OTP code
      * @param {string} otpSessionId 
      * @param {string} otpCode 
@@ -183,7 +221,7 @@ class OtpService {
         session.verifiedAt = new Date();
 
         // Return session data (different fields based on type)
-        if (session.type === 'reactivate') {
+        if (session.type === 'reactivate' || session.type === 'resetPassword') {
             return {
                 email: session.email,
                 type: session.type,
