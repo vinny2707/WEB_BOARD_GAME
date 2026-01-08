@@ -12,12 +12,12 @@ exports.seed = async function(knex) {
     // John's sessions (user_id: 2)
     {
       user_id: 2,
-      game_id: 1, // Chess
+      game_id: 1, // Caro Hàng 5
       game_state: JSON.stringify({
-        board: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR',
-        turn: 'white',
-        moves: ['e4', 'e5', 'Nf3', 'Nc6'],
-        captured: []
+        board: Array(15).fill(Array(15).fill(null)),
+        lastMove: { row: 7, col: 8 },
+        playerO: 'win',
+        moveHistory: []
       }),
       result: 'win',
       score: 1200,
@@ -30,15 +30,16 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 2,
-      game_id: 3, // Gomoku
+      game_id: 4, // Rắn Săn Mồi
       game_state: JSON.stringify({
-        board: Array(15).fill(Array(15).fill(null)),
-        lastMove: { row: 7, col: 7 },
-        moveHistory: []
+        snake: [[10,10], [10,9], [10,8]],
+        food: [15, 15],
+        direction: 'right',
+        score: 380
       }),
       result: 'loss',
-      score: 800,
-      moves_count: 35,
+      score: 380,
+      moves_count: 95,
       time_elapsed: 900,
       status: 'completed',
       started_at: knex.raw("NOW() - INTERVAL '1 day'"),
@@ -47,7 +48,7 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 2,
-      game_id: 4, // Tic Tac Toe
+      game_id: 3, // Tic Tac Toe
       game_state: JSON.stringify({
         board: [['X', 'O', 'X'], ['O', 'X', 'O'], ['O', 'X', 'X']],
         winner: 'X'
@@ -65,11 +66,11 @@ exports.seed = async function(knex) {
     // Jane's sessions (user_id: 3)
     {
       user_id: 3,
-      game_id: 1, // Chess
+      game_id: 2, // Caro Hàng 4
       game_state: JSON.stringify({
-        board: 'r1bqkb1r/pppp1ppp/2n2n2/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R',
-        turn: 'black',
-        moves: ['e4', 'e5', 'Nf3', 'Nc6', 'Bb5', 'Nf6']
+        board: Array(10).fill(Array(10).fill(null)),
+        lastMove: { row: 5, col: 5 },
+        winner: 'X'
       }),
       result: 'win',
       score: 1350,
@@ -82,10 +83,12 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 3,
-      game_id: 2, // Checkers
+      game_id: 5, // Ghép Hàng 3
       game_state: JSON.stringify({
-        board: Array(8).fill(Array(8).fill(null)),
-        pieces: { black: 8, red: 6 }
+        grid: Array(8).fill(Array(8).fill(0)),
+        score: 9500,
+        moves: 20,
+        candiesCleared: 45
       }),
       result: 'win',
       score: 950,
@@ -100,10 +103,11 @@ exports.seed = async function(knex) {
     // Mike's sessions (user_id: 4)
     {
       user_id: 4,
-      game_id: 5, // Connect Four
+      game_id: 6, // Cờ Trí Nhớ
       game_state: JSON.stringify({
-        board: Array(6).fill(Array(7).fill(null)),
-        currentPlayer: 'red'
+        grid: Array(4).fill(Array(4).fill({ revealed: false, matched: false })),
+        matchedPairs: 6,
+        moves: 42
       }),
       result: 'draw',
       score: 500,
@@ -116,7 +120,7 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 4,
-      game_id: 3, // Gomoku
+      game_id: 1, // Caro Hàng 5 - in progress
       game_state: JSON.stringify({
         board: Array(15).fill(Array(15).fill(null)),
         lastMove: null
@@ -134,11 +138,12 @@ exports.seed = async function(knex) {
     // Sarah's sessions (user_id: 5)
     {
       user_id: 5,
-      game_id: 6, // Reversi
+      game_id: 7, // Bảng Vẽ Tự Do
       game_state: JSON.stringify({
-        board: Array(8).fill(Array(8).fill(null)),
-        blackPieces: 35,
-        whitePieces: 29
+        canvas: 'base64_image_data',
+        strokes: 150,
+        timeSpent: 1800,
+        saved: true
       }),
       result: 'win',
       score: 1100,
@@ -151,10 +156,10 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 5,
-      game_id: 1, // Chess
+      game_id: 2, // Caro Hàng 4 - Abandoned
       game_state: JSON.stringify({
-        board: 'incomplete_game',
-        turn: 'white'
+        board: Array(10).fill(Array(10).fill(null)),
+        lastMove: { row: 2, col: 3 }
       }),
       result: null,
       score: 0,
@@ -169,7 +174,7 @@ exports.seed = async function(knex) {
     // David's sessions (user_id: 6)
     {
       user_id: 6,
-      game_id: 4, // Tic Tac Toe
+      game_id: 3, // Tic Tac Toe
       game_state: JSON.stringify({
         board: [['X', 'O', null], ['O', 'X', null], [null, null, 'X']],
         winner: 'X'
@@ -184,33 +189,37 @@ exports.seed = async function(knex) {
       saved_at: knex.raw("NOW() - INTERVAL '8 hours' + INTERVAL '90 seconds'")
     },
 
-    // Emily's sessions (user_id: 7)
+    // Emily's sessions (user_id: 7) - Fast win (Speed Demon achievement)
     {
       user_id: 7,
-      game_id: 1, // Chess - Fast win (Speed Demon achievement)
+      game_id: 6, // Cờ Trí Nhớ - Fast complete
       game_state: JSON.stringify({
-        board: 'checkmate_position',
-        turn: 'black'
+        grid: Array(4).fill(Array(4).fill({ matched: true })),
+        matchedPairs: 8,
+        moves: 12
       }),
       result: 'win',
       score: 1500,
-      moves_count: 15,
-      time_elapsed: 280, // Less than 5 minutes
+      moves_count: 12,
+      time_elapsed: 58, // Chưa đến 1 phút - Bộ Nhớ Siêu Phàm achievement
       status: 'completed',
       started_at: knex.raw("NOW() - INTERVAL '10 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '280 seconds'"),
-      saved_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '280 seconds'")
+      ended_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '58 seconds'"),
+      saved_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '58 seconds'")
     },
 
     // Robert's sessions (user_id: 8)
     {
       user_id: 8,
-      game_id: 2, // Checkers
+      game_id: 4, // Rắn Săn Mồi
       game_state: JSON.stringify({
-        board: Array(8).fill(Array(8).fill(null))
+        snake: [[5,5], [5,4], [5,3], [5,2]],
+        food: [10, 10],
+        finalLength: 8,
+        score: 250
       }),
       result: 'loss',
-      score: 600,
+      score: 250,
       moves_count: 38,
       time_elapsed: 1200,
       status: 'completed',
@@ -222,9 +231,10 @@ exports.seed = async function(knex) {
     // Lisa's sessions (user_id: 9)
     {
       user_id: 9,
-      game_id: 3, // Gomoku
+      game_id: 1, // Caro Hàng 5
       game_state: JSON.stringify({
         board: Array(15).fill(Array(15).fill(null)),
+        lastMove: { row: 7, col: 8 },
         winner: 'black'
       }),
       result: 'win',
@@ -240,10 +250,12 @@ exports.seed = async function(knex) {
     // Chris's sessions (user_id: 10)
     {
       user_id: 10,
-      game_id: 5, // Connect Four
+      game_id: 5, // Ghép Hàng 3
       game_state: JSON.stringify({
-        board: Array(6).fill(Array(7).fill(null)),
-        winner: 'yellow'
+        grid: Array(8).fill(Array(8).fill(0)),
+        score: 8500,
+        moves: 15,
+        combo: 5
       }),
       result: 'win',
       score: 850,

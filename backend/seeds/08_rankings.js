@@ -12,7 +12,7 @@ exports.seed = async function(knex) {
     // John's rankings (user_id: 2)
     {
       user_id: 2,
-      game_id: 1, // Chess
+      game_id: 1, // Caro Hàng 5
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -25,20 +25,20 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 2,
-      game_id: 3, // Gomoku
+      game_id: 4, // Rắn Săn Mồi
       total_games: 1,
       total_wins: 0,
       total_losses: 1,
       total_draws: 0,
       win_rate: 0.00,
-      total_score: 800,
-      best_score: 800,
+      total_score: 380,
+      best_score: 380,
       global_rank: 6,
       updated_at: knex.raw("NOW() - INTERVAL '1 day'")
     },
     {
       user_id: 2,
-      game_id: 4, // Tic Tac Toe
+      game_id: 3, // Tic Tac Toe
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -53,7 +53,7 @@ exports.seed = async function(knex) {
     // Jane's rankings (user_id: 3)
     {
       user_id: 3,
-      game_id: 1, // Chess
+      game_id: 2, // Caro Hàng 4
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -61,12 +61,12 @@ exports.seed = async function(knex) {
       win_rate: 100.00,
       total_score: 1350,
       best_score: 1350,
-      global_rank: 1, // Top chess player
+      global_rank: 1, // Top Caro Hàng 4 player
       updated_at: knex.raw("NOW() - INTERVAL '3 days'")
     },
     {
       user_id: 3,
-      game_id: 2, // Checkers
+      game_id: 5, // Ghép Hàng 3
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -81,7 +81,7 @@ exports.seed = async function(knex) {
     // Mike's rankings (user_id: 4)
     {
       user_id: 4,
-      game_id: 5, // Connect Four
+      game_id: 6, // Cờ Trí Nhớ
       total_games: 1,
       total_wins: 0,
       total_losses: 0,
@@ -94,7 +94,7 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 4,
-      game_id: 3, // Gomoku (in progress)
+      game_id: 1, // Caro Hàng 5 (in progress)
       total_games: 0,
       total_wins: 0,
       total_losses: 0,
@@ -109,7 +109,7 @@ exports.seed = async function(knex) {
     // Sarah's rankings (user_id: 5)
     {
       user_id: 5,
-      game_id: 6, // Reversi
+      game_id: 7, // Bảng Vẽ Tự Do
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -122,7 +122,7 @@ exports.seed = async function(knex) {
     },
     {
       user_id: 5,
-      game_id: 1, // Chess (abandoned)
+      game_id: 2, // Caro Hàng 4 (abandoned)
       total_games: 0,
       total_wins: 0,
       total_losses: 0,
@@ -137,7 +137,7 @@ exports.seed = async function(knex) {
     // David's rankings (user_id: 6)
     {
       user_id: 6,
-      game_id: 4, // Tic Tac Toe
+      game_id: 3, // Tic Tac Toe
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -152,7 +152,7 @@ exports.seed = async function(knex) {
     // Emily's rankings (user_id: 7)
     {
       user_id: 7,
-      game_id: 1, // Chess - High score due to fast win
+      game_id: 6, // Cờ Trí Nhớ - High score due to fast complete
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -160,21 +160,21 @@ exports.seed = async function(knex) {
       win_rate: 100.00,
       total_score: 1500,
       best_score: 1500,
-      global_rank: 2, // Second best chess player
+      global_rank: 1, // Top memory game player
       updated_at: knex.raw("NOW() - INTERVAL '10 hours'")
     },
 
     // Robert's rankings (user_id: 8)
     {
       user_id: 8,
-      game_id: 2, // Checkers
+      game_id: 4, // Rắn Săn Mồi
       total_games: 1,
       total_wins: 0,
       total_losses: 1,
       total_draws: 0,
       win_rate: 0.00,
-      total_score: 600,
-      best_score: 600,
+      total_score: 250,
+      best_score: 250,
       global_rank: 2,
       updated_at: knex.raw("NOW() - INTERVAL '4 days'")
     },
@@ -182,7 +182,7 @@ exports.seed = async function(knex) {
     // Lisa's rankings (user_id: 9)
     {
       user_id: 9,
-      game_id: 3, // Gomoku
+      game_id: 1, // Caro Hàng 5
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -190,14 +190,14 @@ exports.seed = async function(knex) {
       win_rate: 100.00,
       total_score: 1050,
       best_score: 1050,
-      global_rank: 1, // Top Gomoku player
+      global_rank: 2, // #2 Caro Hàng 5 player
       updated_at: knex.raw("NOW() - INTERVAL '1 day'")
     },
 
     // Chris's rankings (user_id: 10)
     {
       user_id: 10,
-      game_id: 5, // Connect Four
+      game_id: 5, // Ghép Hàng 3
       total_games: 1,
       total_wins: 1,
       total_losses: 0,
@@ -205,7 +205,7 @@ exports.seed = async function(knex) {
       win_rate: 100.00,
       total_score: 850,
       best_score: 850,
-      global_rank: 1, // Top Connect Four player
+      global_rank: 2, // #2 Match-3 player
       updated_at: knex.raw("NOW() - INTERVAL '3 hours'")
     },
 

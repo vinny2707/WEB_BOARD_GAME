@@ -4,10 +4,7 @@
  */
 
 exports.seed = async function(knex) {
-  // Deletes ALL existing entries
-  await knex('achievements').del();
-
-  // Insert achievements
+  // Insert achievements (01_users.js handles deletion)
   await knex('achievements').insert([
     // Beginner achievements
     {
@@ -94,29 +91,29 @@ exports.seed = async function(knex) {
     // Game-specific achievements
     {
       id: 7,
-      name: 'Chess Master',
-      description: 'Win 20 chess games',
-      icon: '♟️',
+      name: 'Cao Thủ Caro',
+      description: 'Thắng 20 ván Caro Hàng 5',
+      icon: '⭕',
       category: 'expert',
       points: 75,
       unlock_criteria: JSON.stringify({
         type: 'game_wins',
-        gameType: 'chess',
+        gameType: 'caro_5',
         count: 20
       }),
       created_at: knex.fn.now()
     },
     {
       id: 8,
-      name: 'Gomoku Grandmaster',
-      description: 'Win 15 Gomoku games',
-      icon: '⚪',
+      name: 'Rắn Săn Mồi Pro',
+      description: 'Đạt 500 điểm trong game Rắn Săn Mồi',
+      icon: '🐍',
       category: 'expert',
       points: 60,
       unlock_criteria: JSON.stringify({
-        type: 'game_wins',
-        gameType: 'gomoku',
-        count: 15
+        type: 'high_score',
+        gameType: 'snake',
+        score: 500
       }),
       created_at: knex.fn.now()
     },
@@ -165,14 +162,16 @@ exports.seed = async function(knex) {
     },
     {
       id: 12,
-      name: 'Perfect Game',
-      description: 'Win a game without losing a single piece (Chess)',
+      name: 'Bộ Nhớ Siêu Phàm',
+      description: 'Hoàn thành Cờ Trí Nhớ mức khó trong 60 giây',
       icon: '💎',
       category: 'special',
       points: 120,
       unlock_criteria: JSON.stringify({
-        type: 'perfect_game',
-        gameType: 'chess'
+        type: 'time_challenge',
+        gameType: 'memory_cards',
+        maxSeconds: 60,
+        difficulty: 'hard'
       }),
       created_at: knex.fn.now()
     },

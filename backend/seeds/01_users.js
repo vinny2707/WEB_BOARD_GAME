@@ -6,13 +6,9 @@ const bcrypt = require('bcryptjs');
  */
 
 exports.seed = async function(knex) {
-  // Deletes ALL existing entries (in reverse order of dependencies)
-  await knex('user_achievements').del();
-  await knex('rankings').del();
-  await knex('messages').del();
-  await knex('friends').del();
-  await knex('game_sessions').del();
-  await knex('users').del();
+  // Truncate ALL tables (CASCADE will handle foreign keys automatically)
+  await knex.raw('TRUNCATE TABLE rankings, user_achievements, messages, friends, game_sessions, achievements, games, users RESTART IDENTITY CASCADE');
+
 
   // Hash password for all users (password: "password123")
   const passwordHash = await bcrypt.hash('password123', 10);
