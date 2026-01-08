@@ -143,18 +143,24 @@ class AuthService {
             throw error;
         }
 
-        // Check if user is inactive or hasn't logged in for 14 days
+        // Check if user is inactive
+        // Only check 14-day inactivity if last_login exists (not first login)
         const INACTIVE_DAYS = parseInt(process.env.INACTIVE_DAYS) || 14;
-        const daysSinceLastLogin = user.last_login 
-            ? Math.floor((Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24))
-            : INACTIVE_DAYS + 1; // If never logged in, treat as inactive
+        let needsReactivation = user.status === 'inactive';
 
-        if (user.status === 'inactive' || daysSinceLastLogin >= INACTIVE_DAYS) {
-            // Set user to inactive if not already
-            if (user.status !== 'inactive') {
+        // If user has logged in before, check if inactive for 14+ days
+        if (!needsReactivation && user.last_login) {
+            const daysSinceLastLogin = Math.floor(
+                (Date.now() - new Date(user.last_login).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            if (daysSinceLastLogin >= INACTIVE_DAYS) {
+                needsReactivation = true;
+                // Update status to inactive
                 await User.update(user.id, { status: 'inactive' });
             }
+        }
 
+        if (needsReactivation) {
             // Create reactivation OTP session
             const otpResult = await otpService.createReactivationSession(user);
 
@@ -162,8 +168,7 @@ class AuthService {
                 requiresOtp: true,
                 otpSessionId: otpResult.otpSessionId,
                 maskedEmail: otpResult.maskedEmail,
-                otpExpiresIn: otpResult.otpExpiresIn,
-                message: 'Account inactive. OTP sent for reactivation.'
+                otpExpiresIn: otpResult.otpExpiresIn
             };
         }
 
@@ -311,9 +316,7 @@ class AuthService {
         // Clean up OTP session
         otpService.delete(otpSessionId);
 
-        return {
-            message: 'Password reset successfully'
-        };
+        return null;
     }
 }
 
