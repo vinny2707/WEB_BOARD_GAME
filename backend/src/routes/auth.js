@@ -82,6 +82,108 @@ router.post('/register', validateRegister, authController.register);
 
 /**
  * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     summary: Verify OTP and complete registration
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otpSessionId
+ *               - otpCode
+ *             properties:
+ *               otpSessionId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "550e8400-e29b-41d4-a716-446655440000"
+ *               otpCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
+ *                 example: "123456"
+ *     responses:
+ *       201:
+ *         description: Email verified and registration complete
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Email verified successfully. Registration complete!
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid or expired OTP
+ *       429:
+ *         description: Maximum verification attempts exceeded
+ */
+router.post('/verify-otp', authController.verifyOtp);
+
+/**
+ * @swagger
+ * /api/auth/resend-otp:
+ *   post:
+ *     summary: Resend OTP for registration
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otpSessionId
+ *             properties:
+ *               otpSessionId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "550e8400-e29b-41d4-a716-446655440000"
+ *     responses:
+ *       200:
+ *         description: New OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: New OTP sent to your email.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     otpSessionId:
+ *                       type: string
+ *                     maskedEmail:
+ *                       type: string
+ *                       example: "t***t@gmail.com"
+ *                     otpExpiresIn:
+ *                       type: integer
+ *                       example: 300
+ *       404:
+ *         description: OTP session not found
+ */
+router.post('/resend-otp', authController.resendOtp);
+
+/**
+ * @swagger
  * /api/auth/login:
  *   post:
  *     summary: Login user

@@ -36,30 +36,50 @@ backend/
 
 ## 2. LUỒNG XÁC THỰC (AUTHENTICATION FLOW)
 
-### 2.1 Đăng ký tài khoản (Register)
+### 2.1 Đăng ký tài khoản với OTP (Register)
+
+**Bước 1: Gửi OTP**
+
+```
+Client                          Server                         Memory
+  |                               |                               |
+  |-- POST /api/auth/register --> |                               |
+  |   {username, email, password} |                               |
+  |                               |-- Validate input              |
+  |                               |-- Check username unique ----> DB
+  |                               |-- Check email (active/banned) |
+  |                               |-- Hash password (bcrypt)      |
+  |                               |-- Tạo OTP session ----------> |
+  |                               |-- Gửi email OTP              |
+  |<-- 200 OK, {otpSessionId, maskedEmail, otpExpiresIn}          |
+```
+
+**Bước 2: Xác thực OTP**
 
 ```
 Client                          Server                         Database
   |                               |                               |
-  |-- POST /api/auth/register --> |                               |
-  |   {username, email, password} |                               |
-  |                               |-- Validate input -----------> |
-  |                               |-- Check username unique ----> |
-  |                               |<-- Kết quả ----------------- |
-  |                               |-- Check email unique -------> |
-  |                               |<-- Kết quả ----------------- |
-  |                               |-- Hash password (bcrypt) ---> |
-  |                               |-- INSERT user -------------> |
-  |                               |<-- User đã tạo ------------- |
-  |<-- 201 Created, user data --- |                               |
+  |-- POST /api/auth/verify-otp-> |                               |
+  |   {otpSessionId, otpCode}     |                               |
+  |                               |-- Tìm session trong memory    |
+  |                               |-- Kiểm tra OTP hết hạn?       |
+  |                               |-- Kiểm tra số lần thử         |
+  |                               |-- So sánh OTP code            |
+  |                               |                               |
+  |                               |-- [Nếu đúng] INSERT user ---> |
+  |                               |<-- User đã tạo -------------- |
+  |                               |-- Tạo JWT token               |
+  |                               |-- Xóa OTP session             |
+  |<-- 201 Created, {token, user} |                               |
 ```
 
 **Quy tắc:**
 
-- Username phải duy nhất (unique)
-- Email phải duy nhất (unique)
-- Password được hash trước khi lưu (bcrypt, 10 rounds)
-- User mới được tạo với status = "active" và role = "user"
+- OTP hết hạn sau 5 phút
+- Tối đa 5 lần thử sai
+- OTP là 6 chữ số ngẫu nhiên
+- User chỉ được tạo sau khi verify OTP thành công
+- OTP session lưu trong memory (mất khi restart server)
 
 ### 2.2 Đăng nhập (Login)
 

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const otpService = require('./otpService');
 
 /**
  * Authentication Service
@@ -9,12 +10,12 @@ const User = require('../models/User');
 
 class AuthService {
     /**
-     * Register a new user
+     * Step 1: Initiate registration - validate data and send OTP
      * @param {Object} userData - User registration data
-     * @returns {Promise<Object>} Created user object
+     * @returns {Promise<Object>} {otpSessionId, maskedEmail, otpExpiresIn}
      * @throws {Error} If username or email already exists, or email is banned
      */
-    async register(userData) {
+    async initiateRegistration(userData) {
         const { username, email, password, full_name, dob } = userData;
 
         // Check if username already exists
@@ -28,17 +29,16 @@ class AuthService {
         // Check if email already exists
         const existingEmail = await User.findByEmail(email);
         if (existingEmail) {
-            // SECURITY: If email belongs to a banned user, block registration completely
+            // SECURITY: If email belongs to a banned user, block registration
             if (existingEmail.status === 'banned') {
                 const error = new Error('This email has been banned and cannot be used for registration');
                 error.statusCode = 403;
                 throw error;
             }
             
-            // If email belongs to an inactive user, delete old account and allow new registration
+            // If email belongs to an inactive user, delete old account
             if (existingEmail.status === 'inactive') {
                 await User.hardDelete(existingEmail.id);
-                // Continue with registration below
             } else {
                 // For active users, just say email exists
                 const error = new Error('Email already exists');
@@ -47,21 +47,67 @@ class AuthService {
             }
         }
 
-        // Hash password
-        const password_hash = await this.hashPassword(password);
-
-        // Create user
-        const user = await User.create({
+        // Create OTP session and send email
+        const otpResult = await otpService.createRegistrationSession({
             username,
             email,
-            password_hash,
-            full_name: full_name || null,
-            dob: dob || null,
+            password,
+            full_name,
+            dob
+        });
+
+        return otpResult;
+    }
+
+    /**
+     * Step 2: Verify OTP and complete registration
+     * @param {string} otpSessionId 
+     * @param {string} otpCode 
+     * @returns {Promise<Object>} {token, user}
+     */
+    async verifyRegistrationOtp(otpSessionId, otpCode) {
+        // Verify OTP
+        const verifiedData = await otpService.verifyOtp(otpSessionId, otpCode);
+
+        // Double-check username availability (in case someone registered while OTP pending)
+        const existingUsername = await User.findByUsername(verifiedData.registrationData.username);
+        if (existingUsername) {
+            otpService.delete(otpSessionId);
+            const error = new Error('Username was taken while verifying. Please register again.');
+            error.statusCode = 409;
+            throw error;
+        }
+
+        // Create user with verified data
+        const user = await User.create({
+            username: verifiedData.registrationData.username,
+            email: verifiedData.email,
+            password_hash: verifiedData.registrationData.password_hash,
+            full_name: verifiedData.registrationData.full_name,
+            dob: verifiedData.registrationData.dob,
             role: 'user',
             status: 'active'
         });
 
-        return user;
+        // Clean up OTP session
+        otpService.delete(otpSessionId);
+
+        // Generate token and return
+        const token = this.generateToken(user);
+
+        return {
+            token,
+            user
+        };
+    }
+
+    /**
+     * Resend OTP for registration
+     * @param {string} otpSessionId 
+     * @returns {Promise<Object>} {otpSessionId, maskedEmail, otpExpiresIn}
+     */
+    async resendRegistrationOtp(otpSessionId) {
+        return await otpService.resendOtp(otpSessionId);
     }
 
     /**
@@ -150,3 +196,4 @@ class AuthService {
 }
 
 module.exports = new AuthService();
+

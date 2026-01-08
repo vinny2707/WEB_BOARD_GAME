@@ -36,9 +36,11 @@ Tất cả response đều có format chuẩn:
 
 ## 2. AUTHENTICATION APIs
 
-### 2.1 Đăng ký tài khoản
+### 2.1 Đăng ký tài khoản (Bước 1 - Gửi OTP)
 
 **Endpoint:** `POST /api/auth/register`
+
+**Mô tả:** Khởi tạo đăng ký và gửi OTP qua email. User chưa được tạo cho đến khi verify OTP thành công.
 
 **Request Body:**
 
@@ -56,21 +58,16 @@ Tất cả response đều có format chuẩn:
 - email: Không được trùng với user khác
 - email: Không được sử dụng email đã bị banned
 
-**Response 201 (Thành công):**
+**Response 200 (OTP đã gửi):**
 
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
+  "message": "OTP sent to your email. Please verify to complete registration.",
   "data": {
-    "id": 15,
-    "username": "newuser",
-    "email": "new@example.com",
-    "full_name": "New User",
-    "dob": "1990-01-01",
-    "role": "user",
-    "status": "active",
-    "created_at": "2026-01-08T07:00:00.000Z"
+    "otpSessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "maskedEmail": "n***r@example.com",
+    "otpExpiresIn": 300
   }
 }
 ```
@@ -113,7 +110,122 @@ Tất cả response đều có format chuẩn:
 
 ---
 
-### 2.2 Đăng nhập
+### 2.2 Xác thực OTP (Bước 2 - Hoàn tất đăng ký)
+
+**Endpoint:** `POST /api/auth/verify-otp`
+
+**Mô tả:** Xác thực mã OTP và tạo tài khoản user.
+
+**Request Body:**
+
+| Field        | Type   | Bắt buộc | Ràng buộc             |
+| ------------ | ------ | -------- | --------------------- |
+| otpSessionId | string | Có       | UUID từ bước register |
+| otpCode      | string | Có       | 6 chữ số              |
+
+**Response 201 (Đăng ký thành công):**
+
+```json
+{
+  "success": true,
+  "message": "Email verified successfully. Registration complete!",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 15,
+      "username": "newuser",
+      "email": "new@example.com",
+      "full_name": "New User",
+      "dob": "1990-01-01",
+      "role": "user",
+      "status": "active",
+      "created_at": "2026-01-08T07:00:00.000Z"
+    }
+  }
+}
+```
+
+**Response 400 (OTP sai):**
+
+```json
+{
+  "success": false,
+  "message": "Invalid OTP code. 4 attempts remaining",
+  "data": null
+}
+```
+
+**Response 400 (OTP hết hạn):**
+
+```json
+{
+  "success": false,
+  "message": "OTP has expired",
+  "data": null
+}
+```
+
+**Response 429 (Quá nhiều lần thử):**
+
+```json
+{
+  "success": false,
+  "message": "Maximum verification attempts exceeded",
+  "data": null
+}
+```
+
+**Response 404 (Session không tồn tại):**
+
+```json
+{
+  "success": false,
+  "message": "OTP session not found or expired",
+  "data": null
+}
+```
+
+---
+
+### 2.3 Gửi lại OTP
+
+**Endpoint:** `POST /api/auth/resend-otp`
+
+**Mô tả:** Gửi lại mã OTP mới. OTP cũ sẽ bị hủy.
+
+**Request Body:**
+
+| Field        | Type   | Bắt buộc | Ràng buộc             |
+| ------------ | ------ | -------- | --------------------- |
+| otpSessionId | string | Có       | UUID từ bước register |
+
+**Response 200 (Gửi lại thành công):**
+
+```json
+{
+  "success": true,
+  "message": "New OTP sent to your email.",
+  "data": {
+    "otpSessionId": "550e8400-e29b-41d4-a716-446655440000",
+    "maskedEmail": "n***r@example.com",
+    "otpExpiresIn": 300
+  }
+}
+```
+
+**Response 404 (Session không tồn tại):**
+
+```json
+{
+  "success": false,
+  "message": "OTP session not found",
+  "data": null
+}
+```
+
+---
+
+### 2.4 Đăng nhập
 
 **Endpoint:** `POST /api/auth/login`
 
@@ -167,7 +279,7 @@ Tất cả response đều có format chuẩn:
 
 ---
 
-### 2.3 Đăng xuất
+### 2.5 Đăng xuất
 
 **Endpoint:** `POST /api/auth/logout`
 
@@ -187,7 +299,7 @@ Tất cả response đều có format chuẩn:
 
 ---
 
-### 2.4 Lấy thông tin profile
+### 2.6 Lấy thông tin profile
 
 **Endpoint:** `GET /api/auth/profile`
 
@@ -235,7 +347,7 @@ Tất cả response đều có format chuẩn:
 
 ---
 
-### 2.5 Cập nhật profile
+### 2.7 Cập nhật profile
 
 **Endpoint:** `PUT /api/auth/profile`
 

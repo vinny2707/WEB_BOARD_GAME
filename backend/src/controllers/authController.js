@@ -8,17 +8,57 @@ const { success, error } = require('../utils/response');
  * Business logic is delegated to authService
  */
 
-// Register new user
+// Step 1: Initiate registration - send OTP
 const register = async (req, res, next) => {
     try {
         const userData = req.body;
 
-        // Delegate business logic to service
-        const user = await authService.register(userData);
+        // Initiate registration and send OTP
+        const result = await authService.initiateRegistration(userData);
 
-        return success(res, user, 'User registered successfully', 201);
+        return success(res, result, 'OTP sent to your email. Please verify to complete registration.', 200);
     } catch (err) {
-        // Handle specific error status codes from service
+        if (err.statusCode) {
+            return error(res, err.message, err.statusCode);
+        }
+        next(err);
+    }
+};
+
+// Step 2: Verify OTP and complete registration
+const verifyOtp = async (req, res, next) => {
+    try {
+        const { otpSessionId, otpCode } = req.body;
+
+        if (!otpSessionId || !otpCode) {
+            return error(res, 'otpSessionId and otpCode are required', 400);
+        }
+
+        // Verify OTP and create user
+        const result = await authService.verifyRegistrationOtp(otpSessionId, otpCode);
+
+        return success(res, result, 'Email verified successfully. Registration complete!', 201);
+    } catch (err) {
+        if (err.statusCode) {
+            return error(res, err.message, err.statusCode);
+        }
+        next(err);
+    }
+};
+
+// Resend OTP
+const resendOtp = async (req, res, next) => {
+    try {
+        const { otpSessionId } = req.body;
+
+        if (!otpSessionId) {
+            return error(res, 'otpSessionId is required', 400);
+        }
+
+        const result = await authService.resendRegistrationOtp(otpSessionId);
+
+        return success(res, result, 'New OTP sent to your email.', 200);
+    } catch (err) {
         if (err.statusCode) {
             return error(res, err.message, err.statusCode);
         }
@@ -36,7 +76,6 @@ const login = async (req, res, next) => {
 
         return success(res, result, 'Login successful');
     } catch (err) {
-        // Handle specific error status codes from service
         if (err.statusCode) {
             return error(res, err.message, err.statusCode);
         }
@@ -92,8 +131,11 @@ const updateProfile = async (req, res, next) => {
 
 module.exports = {
     register,
+    verifyOtp,
+    resendOtp,
     login,
     logout,
     getProfile,
     updateProfile
 };
+
