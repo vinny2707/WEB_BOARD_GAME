@@ -94,6 +94,17 @@ class User {
     }
 
     /**
+     * Permanently delete user by ID (hard delete)
+     * @param {number} id 
+     * @returns {Promise<void>}
+     */
+    static async hardDelete(id) {
+        await db('users')
+            .where({ id })
+            .del();
+    }
+
+    /**
      * Get all users (admin only)
      * @param {Object} filters 
      * @returns {Promise<Array>}
