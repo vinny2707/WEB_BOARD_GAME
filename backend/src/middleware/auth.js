@@ -69,4 +69,23 @@ const authenticateJWT = async (req, res, next) => {
     }
 };
 
-module.exports = authenticateJWT;
+/**
+ * Role Authorization Middleware
+ * Must be used after authenticateJWT
+ * @param  {...string} roles - Allowed roles
+ */
+const authorize = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return error(res, 'Unauthorized', 401);
+        }
+
+        if (!roles.includes(req.user.role)) {
+            return error(res, 'Access denied. Insufficient permissions.', 403);
+        }
+
+        next();
+    };
+};
+
+module.exports = { authenticateJWT, authorize };

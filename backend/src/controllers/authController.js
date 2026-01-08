@@ -74,6 +74,11 @@ const login = async (req, res, next) => {
         // Delegate authentication logic to service
         const result = await authService.login(username, password);
 
+        // Check if OTP required for reactivation
+        if (result.requiresOtp) {
+            return success(res, result, 'Account inactive. OTP sent for reactivation.');
+        }
+
         return success(res, result, 'Login successful');
     } catch (err) {
         if (err.statusCode) {

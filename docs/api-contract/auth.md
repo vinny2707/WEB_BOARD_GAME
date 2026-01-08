@@ -125,6 +125,12 @@
 }
 ```
 
+**Lưu ý về Inactive:**
+
+- Admin set status = inactive → yêu cầu OTP
+- User đã có last_login + 14 ngày không login → auto set inactive + yêu cầu OTP
+- User mới đăng ký (last_login = null) → cho login bình thường
+
 **Errors:** 401 (wrong credentials), 403 (banned)
 
 ---

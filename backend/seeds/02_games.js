@@ -1,6 +1,7 @@
 /**
  * Seed: Games
- * Creates various board games with configurations
+ * Creates various board games with DEFAULT settings only
+ * Full customization options are handled per game_session by frontend
  */
 
 exports.seed = async function(knex) {
@@ -18,10 +19,8 @@ exports.seed = async function(knex) {
       rules: 'Hai người chơi lần lượt đánh dấu X và O. Người đầu tiên tạo được 5 quân liên tiếp sẽ thắng.',
       settings: JSON.stringify({
         winCondition: 5,
-        boardSize: ['15x15', '19x19'],
         allowOverline: false,
-        firstMoveAdvantage: true,
-        timeControl: ['unlimited', '5min', '10min', '15min']
+        turnTimeLimit: null // seconds, null = unlimited
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -38,9 +37,8 @@ exports.seed = async function(knex) {
       rules: 'Tương tự cờ caro nhưng chỉ cần 4 quân liên tiếp để thắng. Ván chơi nhanh hơn.',
       settings: JSON.stringify({
         winCondition: 4,
-        boardSize: ['8x8', '10x10', '12x12'],
         allowOverline: true,
-        quickPlay: true
+        turnTimeLimit: null
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -56,9 +54,7 @@ exports.seed = async function(knex) {
       icon: '❌',
       rules: 'Lần lượt đánh dấu X và O trên bàn cờ 3x3. Người đầu tiên có 3 ô liên tiếp chiến thắng.',
       settings: JSON.stringify({
-        allowDraw: true,
-        aiDifficulty: ['easy', 'medium', 'hard', 'impossible'],
-        quickGame: true
+        allowDraw: true
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -74,11 +70,8 @@ exports.seed = async function(knex) {
       icon: '🐍',
       rules: 'Dùng phím mũi tên để điều khiển. Ăn táo để tăng điểm và độ dài. Game over khi đâm vào tường hoặc thân mình.',
       settings: JSON.stringify({
-        speed: ['slow', 'normal', 'fast', 'extreme'],
-        boardSize: ['15x15', '20x20', '25x25'],
-        obstacles: false,
-        scoring: 'length_and_speed',
-        powerUps: ['slow_down', 'speed_up', 'invincible']
+        speed: 'normal',
+        obstacles: false
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -94,12 +87,8 @@ exports.seed = async function(knex) {
       icon: '🍬',
       rules: 'Hoán đổi các viên kẹo liền kề để tạo thành hàng 3 hoặc nhiều hơn giống nhau. Càng nhiều combo càng nhiều điểm!',
       settings: JSON.stringify({
-        gridSize: ['8x8', '10x10'],
-        timeLimit: [60, 120, 180, 300],
-        moveLimit: [20, 30, 50],
-        gameMode: ['classic', 'timed', 'moves_limited'],
-        candyTypes: 6,
-        specialCandies: ['striped', 'wrapped', 'color_bomb']
+        gameMode: 'classic',
+        candyTypes: 6
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -115,11 +104,8 @@ exports.seed = async function(knex) {
       icon: '🃏',
       rules: 'Lật từng lượt 2 lá bài. Nếu giống nhau thì giữ nguyên, không thì lật úp lại. Mục tiêu tìm hết tất cả các cặp.',
       settings: JSON.stringify({
-        gridSize: ['4x4', '4x6', '6x6'],
-        cardThemes: ['animals', 'fruits', 'numbers', 'emojis', 'flags'],
-        difficulty: ['easy', 'medium', 'hard'],
-        timerEnabled: true,
-        movesCounter: true
+        cardTheme: 'emojis',
+        timerEnabled: true
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
@@ -135,13 +121,8 @@ exports.seed = async function(knex) {
       icon: '🎨',
       rules: 'Sử dụng chuột hoặc ngón tay để vẽ. Có thể chơi mini game đoán tranh hoặc vẽ tự do.',
       settings: JSON.stringify({
-        canvasSize: ['600x400', '800x600', '1000x700'],
-        brushSizes: [1, 2, 5, 10, 20],
-        colors: 'palette',
-        tools: ['pencil', 'brush', 'eraser', 'fill', 'line', 'rectangle', 'circle'],
-        gameMode: ['freeplay', 'guessing_game', 'collaborative'],
-        saveDrawing: true,
-        timeLimit: [30, 60, 90, 120]
+        gameMode: 'freeplay',
+        saveDrawing: true
       }),
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
