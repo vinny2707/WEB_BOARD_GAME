@@ -1,6 +1,7 @@
 /**
  * Seed: Game Sessions
  * Creates sample game session records
+ * Now includes settings field for custom game configuration per session
  */
 
 exports.seed = async function(knex) {
@@ -18,6 +19,9 @@ exports.seed = async function(knex) {
         lastMove: { row: 7, col: 8 },
         playerO: 'win',
         moveHistory: []
+      }),
+      settings: JSON.stringify({
+        turnTimeLimit: 60 // 60 seconds per turn
       }),
       result: 'win',
       score: 1200,
@@ -37,6 +41,10 @@ exports.seed = async function(knex) {
         direction: 'right',
         score: 380
       }),
+      settings: JSON.stringify({
+        speed: 'fast',
+        obstacles: true
+      }),
       result: 'loss',
       score: 380,
       moves_count: 95,
@@ -53,6 +61,7 @@ exports.seed = async function(knex) {
         board: [['X', 'O', 'X'], ['O', 'X', 'O'], ['O', 'X', 'X']],
         winner: 'X'
       }),
+      settings: null, // Using default settings
       result: 'win',
       score: 100,
       moves_count: 9,

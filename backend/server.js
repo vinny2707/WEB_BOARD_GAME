@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const http = require('http');
-const authRoutes = require('./src/routes/auth');
 const errorHandler = require('./src/middleware/errorHandler');
 const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
 const logger = require('./src/utils/logger');
@@ -78,7 +77,11 @@ app.use(morgan(':colored-method :url :colored-status :response-time ms', {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
+const authRoutes = require('./src/routes/auth');
+const userRoutes = require('./src/routes/users');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
