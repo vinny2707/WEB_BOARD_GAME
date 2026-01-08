@@ -9,6 +9,19 @@ const authRoutes = require('./src/routes/auth');
 const errorHandler = require('./src/middleware/errorHandler');
 const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
 
+// ============================================
+// SECURITY: Critical Environment Validation
+// ============================================
+if (!process.env.JWT_SECRET) {
+    console.error('❌ FATAL ERROR: JWT_SECRET is not defined in environment variables');
+    console.error('Please set JWT_SECRET in your .env file');
+    process.exit(1);
+}
+
+if (process.env.JWT_SECRET.length < 32) {
+    console.warn('⚠️  WARNING: JWT_SECRET should be at least 32 characters for security');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
