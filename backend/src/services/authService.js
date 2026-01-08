@@ -12,7 +12,7 @@ class AuthService {
      * Register a new user
      * @param {Object} userData - User registration data
      * @returns {Promise<Object>} Created user object
-     * @throws {Error} If username or email already exists
+     * @throws {Error} If username or email already exists, or email is banned
      */
     async register(userData) {
         const { username, email, password, full_name, dob } = userData;
@@ -28,9 +28,23 @@ class AuthService {
         // Check if email already exists
         const existingEmail = await User.findByEmail(email);
         if (existingEmail) {
-            const error = new Error('Email already exists');
-            error.statusCode = 409;
-            throw error;
+            // SECURITY: If email belongs to a banned user, block registration completely
+            if (existingEmail.status === 'banned') {
+                const error = new Error('This email has been banned and cannot be used for registration');
+                error.statusCode = 403;
+                throw error;
+            }
+            
+            // If email belongs to an inactive user, delete old account and allow new registration
+            if (existingEmail.status === 'inactive') {
+                await User.hardDelete(existingEmail.id);
+                // Continue with registration below
+            } else {
+                // For active users, just say email exists
+                const error = new Error('Email already exists');
+                error.statusCode = 409;
+                throw error;
+            }
         }
 
         // Hash password
