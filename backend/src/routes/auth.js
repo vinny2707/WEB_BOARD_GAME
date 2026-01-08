@@ -237,6 +237,59 @@ router.post('/login', validateLogin, authController.login);
 
 /**
  * @swagger
+ * /api/auth/verify-reactivation-otp:
+ *   post:
+ *     summary: Verify OTP and reactivate inactive account
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otpSessionId
+ *               - otpCode
+ *             properties:
+ *               otpSessionId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: "550e8400-e29b-41d4-a716-446655440000"
+ *               otpCode:
+ *                 type: string
+ *                 minLength: 6
+ *                 maxLength: 6
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Account reactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Account reactivated successfully!
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid or expired OTP
+ *       429:
+ *         description: Maximum verification attempts exceeded
+ */
+router.post('/verify-reactivation-otp', authController.verifyReactivationOtp);
+
+/**
+ * @swagger
  * /api/auth/logout:
  *   post:
  *     summary: Logout user
@@ -257,6 +310,7 @@ router.post('/login', validateLogin, authController.login);
  *                   example: Logout successful
  */
 router.post('/logout', authController.logout);
+
 
 /**
  * @swagger
