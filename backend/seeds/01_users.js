@@ -58,7 +58,7 @@ exports.seed = async function(knex) {
       password_hash: passwordHash,
       full_name: 'Mike Wilson',
       dob: '1988-03-25',
-      role: 'moderator',
+      role: 'user',
       status: 'active',
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
