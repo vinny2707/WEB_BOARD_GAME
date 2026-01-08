@@ -236,18 +236,18 @@ exports.seed = async function(knex) {
       global_rank: null,
       updated_at: knex.fn.now()
     },
-    {
-      user_id: 4,
-      game_id: 1, // Chess
-      total_games: 0,
-      total_wins: 0,
-      total_losses: 0,
-      total_draws: 0,
-      win_rate: 0.00,
-      total_score: 0,
-      best_score: 0,
-      global_rank: null,
-      updated_at: knex.fn.now()
-    }
+    // {
+    //   user_id: 4,
+    //   game_id: 1, // Chess
+    //   total_games: 0,
+    //   total_wins: 0,
+    //   total_losses: 0,
+    //   total_draws: 0,
+    //   win_rate: 0.00,
+    //   total_score: 0,
+    //   best_score: 0,
+    //   global_rank: null,
+    //   updated_at: knex.fn.now()
+    // }
   ]);
 };
