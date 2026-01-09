@@ -88,6 +88,27 @@ const login = async (req, res, next) => {
     }
 };
 
+// Verify OTP and reactivate inactive account
+const verifyReactivationOtp = async (req, res, next) => {
+    try {
+        const { otpSessionId, otpCode } = req.body;
+
+        if (!otpSessionId || !otpCode) {
+            return error(res, 'otpSessionId and otpCode are required', 400);
+        }
+
+        // Verify OTP and reactivate user
+        const result = await authService.verifyReactivationOtp(otpSessionId, otpCode);
+
+        return success(res, result, 'Account reactivated successfully!', 200);
+    } catch (err) {
+        if (err.statusCode) {
+            return error(res, err.message, err.statusCode);
+        }
+        next(err);
+    }
+};
+
 // Logout user (client-side token removal)
 const logout = async (req, res) => {
     return success(res, null, 'Logout successful');
@@ -183,6 +204,7 @@ module.exports = {
     verifyOtp,
     resendOtp,
     login,
+    verifyReactivationOtp,
     logout,
     getProfile,
     updateProfile,

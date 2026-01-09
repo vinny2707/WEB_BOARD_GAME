@@ -195,7 +195,7 @@ class AuthService {
      */
     async verifyReactivationOtp(otpSessionId, otpCode) {
         // Verify OTP
-        const verifiedData = otpService.verifyOtp(otpSessionId, otpCode);
+        const verifiedData = await otpService.verifyOtp(otpSessionId, otpCode);
 
         if (verifiedData.type !== 'reactivate') {
             const error = new Error('Invalid OTP session type');
