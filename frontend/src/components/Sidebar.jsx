@@ -9,7 +9,8 @@ import {
   Settings,
   Gamepad2,
   Users,
-  User
+  User,
+  LogOut,
 } from "lucide-react";
 import { useUser } from '../contexts/UserProvider.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,7 @@ const Sidebar = () => {
   const { theme, toggleTheme } = useTheme();
   const [isDarkMode, setIsDarkMode] = useState(theme === 'dark');
   const [currentPage, setCurrentPage] = useState("/");
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const navigate = useNavigate();
   
   const onToggleTheme = () => {
@@ -177,13 +178,20 @@ const Sidebar = () => {
               </button>
             );
           })}
+
+          {/* Logout Button */}
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-200 text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="flex-1 text-left">Logout</span>
+          </button>
         </nav>
 
         {/* Footer */}
         <div className="mt-auto pt-6 border-t border-gray-200 dark:border-zinc-800">
-          <div
-            className="text-xs text-gray-400 dark:text-zinc-500 text-center space-y-2"
-          >
+          <div className="text-xs text-gray-400 dark:text-zinc-500 text-center space-y-2">
             <p>Gaming Platform v1.0</p>
             <p className="mt-1">© 2026 RetroGames</p>
           </div>
