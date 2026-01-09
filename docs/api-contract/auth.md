@@ -135,7 +135,42 @@
 
 ---
 
-## 5. Đăng xuất
+## 5. Xác thực OTP kích hoạt lại tài khoản
+
+**Endpoint:** `POST /api/auth/verify-reactivation-otp`
+
+**Mô tả:** Sau khi login với tài khoản inactive, user nhận được OTP. Endpoint này dùng để xác thực OTP và kích hoạt lại tài khoản.
+
+**Request Body:**
+
+| Field        | Type   | Bắt buộc | Ràng buộc          |
+| ------------ | ------ | -------- | ------------------ |
+| otpSessionId | string | Có       | UUID từ bước login |
+| otpCode      | string | Có       | 6 chữ số           |
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "message": "Account reactivated successfully!",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": 1,
+      "username": "reactivateduser",
+      "role": "user",
+      "status": "active"
+    }
+  }
+}
+```
+
+**Errors:** 400 (invalid/expired OTP), 404 (session not found), 429 (max attempts)
+
+---
+
+## 6. Đăng xuất
 
 **Endpoint:** `POST /api/auth/logout`
 
@@ -145,7 +180,7 @@
 
 ---
 
-## 6. Lấy thông tin profile
+## 7. Lấy thông tin profile
 
 **Endpoint:** `GET /api/auth/profile`
 
@@ -170,7 +205,7 @@
 
 ---
 
-## 7. Cập nhật profile
+## 8. Cập nhật profile
 
 **Endpoint:** `PUT /api/auth/profile`
 
@@ -187,7 +222,7 @@
 
 ---
 
-## 8. Quên mật khẩu (Gửi OTP)
+## 9. Quên mật khẩu (Gửi OTP)
 
 **Endpoint:** `POST /api/auth/forgot-password`
 
@@ -215,7 +250,7 @@
 
 ---
 
-## 9. Đặt lại mật khẩu
+## 10. Đặt lại mật khẩu
 
 **Endpoint:** `POST /api/auth/reset-password`
 
