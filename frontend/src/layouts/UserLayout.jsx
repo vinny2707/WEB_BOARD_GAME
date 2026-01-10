@@ -1,14 +1,16 @@
-import React from 'react'
-import Sidebar from '../components/Sidebar.jsx'
-import {Outlet} from 'react-router-dom'
+import React from "react";
+import Sidebar from "../components/Sidebar.jsx";
+import { Outlet } from "react-router-dom";
 
 const UserLayout = () => {
   return (
-    <div className="w-full h-screen flex">
+    <div className="w-full h-screen flex overflow-hidden">
       <Sidebar />
-      <Outlet />
+      <div className="flex-1 overflow-auto">
+        <Outlet />
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default UserLayout
+export default UserLayout;

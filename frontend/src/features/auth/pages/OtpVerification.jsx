@@ -90,8 +90,6 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
         otpCode: data.otpCode,
       });
 
-      console.log("OTP Verification Response:", response.data);
-
       const { token, user } = response.data.data;
       localStorage.setItem("token", token);
       login(token, user);
@@ -124,7 +122,6 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
       setCanResend(false);
       reset();
       toast.success("OTP resent successfully");
-      console.log("OTP resent successfully");
     } catch (error) {
       console.error("Resend OTP error:", error);
       const message = error.response?.data?.message || "Failed to resend OTP";
@@ -145,7 +142,6 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
         newPassword: data.newPassword,
       });
 
-      console.log("Reset Password Response:", response.data);
       toast.success("Password reset successfully! Please log in.");
 
       // Redirect to auth/login

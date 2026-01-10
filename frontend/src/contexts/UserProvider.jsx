@@ -12,7 +12,12 @@ export const UserProvider = ({ children }) => {
   const login = (token, userData) => {
     localStorage.setItem("token", token);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    setUser(userData);
+    setUser({
+      ...userData,
+      dob: userData.dob
+        ? new Date(userData.dob).toISOString().split("T")[0]
+        : null,
+    });
   };
 
   // Logout function to clear user and remove token
@@ -29,17 +34,53 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("token");
+      console.log(
+        "[UserProvider] Token from localStorage:",
+        token ? "exists" : "missing"
+      );
+
       if (!token) {
+        console.log("[UserProvider] No token found, setting user to null");
         setUser(null);
         setLoading(false);
         return;
       }
+
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
       try {
-        const response = await api.get("api/auth/profile");
-        setUser(response.data.data);
+        const response = await api.get("/api/auth/profile");
+        const userData = response.data?.data;
+
+        if (!userData) {
+          throw new Error("No user data in response");
+        }
+
+        // console.log("[UserProvider] Extracted user data:", userData);
+
+        const processedUser = {
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          full_name: userData.full_name,
+          dob: userData.dob
+            ? new Date(userData.dob).toISOString().split("T")[0]
+            : null,
+          role: userData.role,
+          status: userData.status,
+          created_at: userData.created_at,
+          last_login: userData.last_login,
+        };
+
+        // console.log("[UserProvider] Processed user:", processedUser);
+        setUser(processedUser);
+        // console.log("[UserProvider] User state updated successfully");
       } catch (error) {
-        console.error("Error fetching user profile:", error);
+        console.error("[UserProvider] Error fetching user profile:", {
+          status: error.response?.status,
+          message: error.message,
+          data: error.response?.data,
+        });
         // If profile fetch fails, clear the invalid token
         localStorage.removeItem("token");
         delete api.defaults.headers.common["Authorization"];

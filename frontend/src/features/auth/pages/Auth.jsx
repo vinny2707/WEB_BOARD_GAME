@@ -54,10 +54,10 @@ const Auth = () => {
         password: data.password,
       });
 
-      console.log("Login Response:", response.data);
 
       // Check if OTP verification is required for reactivation
       if (response.data.data.requiresOtp) {
+        toast.info("Account inactive. OTP sent for reactivation.");
         setOtpSessionData({
           otpSessionId: response.data.data.otpSessionId,
           maskedEmail: response.data.data.maskedEmail,
@@ -68,10 +68,8 @@ const Auth = () => {
       }
 
       const { token, user } = response.data.data;
-      console.log("Received Token:", token);
       login(token, user);
 
-      console.log("Logged in user:", user);
       if (user.role === "admin") {
         navigate("/admin");
       } else {
@@ -87,7 +85,6 @@ const Auth = () => {
   };
 
   const handleRegister = async (data) => {
-    console.log("Register Data:", data);
     try {
       const response = await api.post("api/auth/register", {
         username: data.username,
@@ -96,8 +93,6 @@ const Auth = () => {
         full_name: data.fullName,
         dob: data.dob,
       });
-
-      console.log("Register Response:", response.data);
 
       // Set OTP session data
       setOtpSessionData({
@@ -120,8 +115,6 @@ const Auth = () => {
       const response = await api.post("api/auth/forgot-password", {
         email,
       });
-
-      console.log("Forgot Password Response:", response.data);
       
       setOtpSessionData({
         otpSessionId: response.data.data.otpSessionId,
@@ -248,7 +241,7 @@ const Auth = () => {
                       <input
                         type="text"
                         {...register("username")}
-                        className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your username"
                       />
                     </div>
@@ -269,7 +262,7 @@ const Auth = () => {
                       <input
                         type={showPassword ? "text" : "password"}
                         {...register("password")}
-                        className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your password"
                       />
                       <button
@@ -330,7 +323,7 @@ const Auth = () => {
                         <input
                           type="text"
                           {...registerRegister("username")}
-                          className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Choose a username"
                         />
                       </div>
@@ -351,7 +344,7 @@ const Auth = () => {
                         <input
                           type="email"
                           {...registerRegister("email")}
-                          className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your email"
                         />
                       </div>
@@ -372,7 +365,7 @@ const Auth = () => {
                         <input
                           type="text"
                           {...registerRegister("fullName")}
-                          className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your full name"
                         />
                       </div>
@@ -401,7 +394,7 @@ const Auth = () => {
                           return (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <button className="flex justify-between items-center p-3 bg-transparent hover:bg-transparent w-full border-2 border-zinc-700 rounded-xl text-white text-left bg-zinc-800/50 focus:border-emerald-500 outline-none transition-colors">
+                                <button className="flex justify-between items-center p-3 bg-transparent hover:bg-transparent w-full border-2 dark:border-zinc-700 rounded-xl dark:text-white text-left dark:bg-zinc-800/50 focus:border-emerald-500 outline-none transition-colors">
                                   {field.value
                                     ? new Date(
                                         field.value + "T00:00:00"
@@ -459,7 +452,7 @@ const Auth = () => {
                         <input
                           type={showPassword ? "text" : "password"}
                           {...registerRegister("password")}
-                          className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Create a password"
                         />
                         <button
@@ -491,7 +484,7 @@ const Auth = () => {
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           {...registerRegister("confirmPassword")}
-                          className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Confirm your password"
                         />
                         <button
@@ -598,7 +591,7 @@ const Auth = () => {
                         type="email"
                         name="email"
                         required
-                        className="w-full pl-12 pr-4 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your email"
                       />
                     </div>
