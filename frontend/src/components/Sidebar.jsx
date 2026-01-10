@@ -252,7 +252,7 @@ const Sidebar = () => {
           {/* Logout Button */}
           <button
             onClick={() => logout()}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-200 text-gray-600 hover:bg-gray-200/50 hover:text-gray-900`}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all mt-8 cursor-pointer"
             title={isCollapsed ? "Logout" : ""}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />

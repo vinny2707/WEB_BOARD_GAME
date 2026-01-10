@@ -13,6 +13,8 @@ import Social from '../features/social/pages/social.jsx'
 import Profile from '../features/profile/pages/Profile.jsx'
 import UserManagement from '../features/userManagement/pages/UserManagement.jsx'
 import NotFound from '@/features/errors/pages/NotFound.jsx'
+import Statistics from '@/features/statistics/pages/Statistics.jsx'
+import GameConfig from '@/features/gameConfig/pages/gameConfig.jsx'
 
 const router = createBrowserRouter([
   {
@@ -61,6 +63,18 @@ const router = createBrowserRouter([
                 element: <UserManagement />,
                 index: true,
               },
+              {
+                element: <Statistics />,
+                path: "statistics",
+              },
+              {
+                element: <GameConfig />,
+                path: "game-config",
+              },
+              {
+                element: <Profile />,
+                path: "profile",
+              }
             ],
           },
         ],

@@ -4,11 +4,11 @@ import {Outlet} from 'react-router-dom'
 
 const AdminLayout = () => {
   return (
-    <div className="w-full flex">
+    <div className="w-full h-screen flex overflow-hidden">
       <Admin_Sidebar className="w-1/4" />
-      <Outlet className="flex-1" />
+      <Outlet className="flex-1 overflow-auto" />
     </div>
-  )
+  );
 }
 
 export default AdminLayout
