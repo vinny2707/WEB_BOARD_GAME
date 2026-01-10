@@ -18,7 +18,7 @@ exports.up = function (knex) {
         table.date('dob');
 
         // Role & Status
-        table.enu('role', ['admin', 'moderator', 'user']).defaultTo('user');
+        table.enu('role', ['admin', 'user']).defaultTo('user');
         table.enu('status', ['active', 'inactive', 'banned']).defaultTo('active');
 
         // Timestamps

@@ -1,12 +1,16 @@
 const jwt = require('jsonwebtoken');
 const { error } = require('../utils/response');
+const User = require('../models/User');
 
 /**
  * JWT Authentication Middleware
- * Verifies JWT token and attaches user info to request
+ * Verifies JWT token, checks user status from DB, and attaches user info to request
+ * 
+ * SECURITY: This middleware performs realtime status check to prevent
+ * banned/inactive users from using old valid tokens
  */
 
-const authenticateJWT = (req, res, next) => {
+const authenticateJWT = async (req, res, next) => {
     try {
         // Get token from Authorization header
         const authHeader = req.headers.authorization;
@@ -25,12 +29,32 @@ const authenticateJWT = (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Attach user info to request
+        // SECURITY: Check user status from database (realtime check)
+        // This prevents banned/inactive users from using old valid tokens
+        const user = await User.findById(decoded.userId);
+        
+        if (!user) {
+            return error(res, 'User not found', 401);
+        }
+
+        if (user.status !== 'active') {
+            // Provide specific error messages for different statuses
+            if (user.status === 'banned') {
+                return error(res, 'Your account has been banned', 403);
+            }
+            if (user.status === 'inactive') {
+                return error(res, 'Your account is inactive', 403);
+            }
+            return error(res, 'Account access denied', 403);
+        }
+
+        // Attach user info to request (from DB for most up-to-date info)
         req.user = {
-            id: decoded.userId,
-            username: decoded.username,
-            email: decoded.email,
-            role: decoded.role
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            status: user.status
         };
 
         next();
@@ -45,4 +69,23 @@ const authenticateJWT = (req, res, next) => {
     }
 };
 
-module.exports = authenticateJWT;
+/**
+ * Role Authorization Middleware
+ * Must be used after authenticateJWT
+ * @param  {...string} roles - Allowed roles
+ */
+const authorize = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return error(res, 'Unauthorized', 401);
+        }
+
+        if (!roles.includes(req.user.role)) {
+            return error(res, 'Access denied. Insufficient permissions.', 403);
+        }
+
+        next();
+    };
+};
+
+module.exports = { authenticateJWT, authorize };
