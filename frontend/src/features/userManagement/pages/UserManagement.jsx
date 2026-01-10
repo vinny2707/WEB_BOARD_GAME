@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../contexts/ThemeProvider";
 import {
-  Edit2,
   Trash2,
   Search,
   ChevronLeft,
@@ -121,7 +120,7 @@ const UserManagement = () => {
       fetchUsers(currentPage, searchTerm, statusFilter);
     } catch (err) {
       console.error("Error deleting user:", err);
-      toast.error("Failed to delete user");
+      toast.error(err.response?.data?.message || "Failed to delete user");
     }
   };
 
@@ -134,11 +133,7 @@ const UserManagement = () => {
     } catch (err) {
       console.error("Error updating status:", err);
 
-      if (err.response?.status === 403) {
-        toast.error("You cannot change your own status");
-      } else {
-        toast.error("Failed to update status");
-      }
+      toast.error(err.response?.data?.message || "Failed to update status");
     }
   };
 
@@ -151,11 +146,7 @@ const UserManagement = () => {
     } catch (err) {
       console.error("Error updating role:", err);
 
-      if (err.response?.status === 403) {
-        toast.error("You cannot change your own role");
-      } else {
-        toast.error("Failed to update role");
-      }
+      toast.error(err.response?.data?.message || "Failed to update role");
     }
   };
 
@@ -167,7 +158,7 @@ const UserManagement = () => {
       setShowDetailDialog(true);
     } catch (err) {
       console.error("Error fetching user details:", err);
-      toast.error("Failed to load user details");
+      toast.error(err.response?.data?.message || "Failed to load user details");
     }
   };
 
@@ -198,21 +189,21 @@ const UserManagement = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-transparent">
       {/* Header */}
-      <div className="flex-none px-8 py-6 border-b border-gray-200 dark:border-zinc-800">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      <div className="flex-none px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b border-gray-200 dark:border-zinc-800">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
           User Management
         </h1>
 
         {/* Search and Filters */}
-        <div className="flex gap-4 flex-wrap items-center">
-          <div className="flex-1 min-w-64 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+          <div className="flex-1 min-w-full sm:min-w-64 relative">
+            <Search className="absolute left-3 top-2.5 sm:top-3 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by username, email, or name..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={handleSearch}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg border transition-colors ${
+              className={`w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base rounded-lg border transition-colors ${
                 isDarkMode
                   ? "bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-emerald-500"
                   : "bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500"
@@ -221,12 +212,12 @@ const UserManagement = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
             {["", "active", "inactive", "banned"].map((status) => (
               <button
                 key={status || "all"}
                 onClick={() => handleStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${
+                className={`px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer text-sm whitespace-nowrap ${
                   statusFilter === status
                     ? isDarkMode
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -246,7 +237,7 @@ const UserManagement = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-8 py-6">
+      <div className="flex-1 overflow-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <Spinner size="lg" />
@@ -256,14 +247,16 @@ const UserManagement = () => {
             <div className="text-red-500">{error}</div>
           </div>
         ) : (
-          <div
-            className={`rounded-xl border overflow-hidden ${
-              isDarkMode
-                ? "border-zinc-800 bg-zinc-900/50"
-                : "border-gray-200 bg-gray-50/50"
-            }`}
-          >
-            <table className="w-full">
+          <>
+            {/* Desktop Table View */}
+            <div
+              className={`hidden md:block rounded-xl border overflow-hidden ${
+                isDarkMode
+                  ? "border-zinc-800 bg-zinc-900/50"
+                  : "border-gray-200 bg-gray-50/50"
+              }`}
+            >
+              <table className="w-full">
               <thead>
                 <tr
                   className={`border-b ${
@@ -430,18 +423,132 @@ const UserManagement = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {users.length === 0 ? (
+              <div className={`text-center py-8 ${
+                isDarkMode ? "text-zinc-400" : "text-gray-500"
+              }`}>
+                No users found
+              </div>
+            ) : (
+              users.map((user, index) => (
+                <div
+                  key={user.id}
+                  className={`rounded-xl border p-4 ${
+                    isDarkMode
+                      ? "border-zinc-800 bg-zinc-900/50"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  {/* Card Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
+                        isDarkMode
+                          ? "bg-gradient-to-br from-emerald-600 to-cyan-600 text-white"
+                          : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                      }`}>
+                        {user.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className={`font-semibold text-base cursor-pointer hover:underline truncate ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                          onClick={() => handleViewDetails(user)}
+                        >
+                          {user.username}
+                        </div>
+                        <div className={`text-xs truncate ${
+                          isDarkMode ? "text-zinc-400" : "text-gray-500"
+                        }`}>
+                          #{(currentPage - 1) * limit + index + 1}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(user)}
+                      className={`p-2 rounded-lg transition-all cursor-pointer flex-shrink-0 ${
+                        isDarkMode
+                          ? "hover:bg-red-500/20 text-red-400"
+                          : "hover:bg-red-100 text-red-600"
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="space-y-2 mb-3">
+                    <div className={`text-sm truncate ${
+                      isDarkMode ? "text-zinc-300" : "text-gray-700"
+                    }`}>
+                      <Mail className="w-3.5 h-3.5 inline mr-2" />
+                      {user.email}
+                    </div>
+                  </div>
+
+                  {/* Card Footer */}
+                  <div className={`flex items-center gap-2 pt-3 border-t ${
+                    isDarkMode ? "border-zinc-800" : "border-gray-200"
+                  }`}>
+                    <Select
+                      value={user.role}
+                      onValueChange={(value) => handleRoleChange(user.id, value)}
+                    >
+                      <SelectTrigger className={`flex-1 border-0 h-8 text-xs ${
+                        getRoleColor(user.role)
+                      }`}>
+                        <SelectValue>
+                          <span className="font-semibold">
+                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">User</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={user.status}
+                      onValueChange={(value) => handleStatusChange(user.id, value)}
+                    >
+                      <SelectTrigger className={`flex-1 border-0 h-8 text-xs ${
+                        getStatusColor(user.status)
+                      }`}>
+                        <SelectValue>
+                          <span className="font-semibold">
+                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="banned">Banned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
         )}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex-none px-8 py-4 border-t border-gray-200 dark:border-zinc-800 flex items-center justify-center gap-2">
+        <div className="flex-none px-4 sm:px-6 md:px-8 py-3 sm:py-4 border-t border-gray-200 dark:border-zinc-800 flex items-center justify-center gap-1 sm:gap-2 overflow-x-auto">
           <button
             onClick={() =>
               fetchUsers(currentPage - 1, searchTerm, statusFilter)
             }
             disabled={currentPage === 1}
-            className={`p-2 rounded-lg transition-all cursor-pointer ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-all cursor-pointer ${
               currentPage === 1
                 ? isDarkMode
                   ? "text-zinc-600 cursor-not-allowed"
@@ -451,14 +558,14 @@ const UserManagement = () => {
                 : "hover:bg-gray-200 text-gray-700"
             }`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
             <button
               key={page}
               onClick={() => fetchUsers(page, searchTerm, statusFilter)}
-              className={`px-3 py-1 rounded-lg transition-all text-sm cursor-pointer ${
+              className={`px-2 sm:px-3 py-1 rounded-lg transition-all text-xs sm:text-sm cursor-pointer ${
                 currentPage === page
                   ? isDarkMode
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -477,7 +584,7 @@ const UserManagement = () => {
               fetchUsers(currentPage + 1, searchTerm, statusFilter)
             }
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-lg transition-all cursor-pointer ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-all cursor-pointer ${
               currentPage === totalPages
                 ? isDarkMode
                   ? "text-zinc-600 cursor-not-allowed"
@@ -487,7 +594,7 @@ const UserManagement = () => {
                 : "hover:bg-gray-200 text-gray-700"
             }`}
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       )}

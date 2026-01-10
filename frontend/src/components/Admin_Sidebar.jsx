@@ -74,10 +74,10 @@ const Admin_Sidebar = () => {
   return (
     <aside
       className={`border-r transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "max-w-1/5 min-w-[250px]"
+        isCollapsed ? "w-20" : "w-64 md:min-w-[250px] md:max-w-1/5"
       } ${
         isDarkMode ? "border-zinc-800" : "border-gray-200"
-      } relative overflow-hidden flex flex-col`}
+      } relative overflow-hidden flex flex-col hidden md:flex`}
       style={{
         background: isDarkMode
           ? "rgba(24, 24, 27, 0.6)"

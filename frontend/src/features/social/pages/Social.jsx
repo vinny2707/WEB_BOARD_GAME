@@ -1,9 +1,9 @@
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeProvider";
-import FriendCard from '../components/FriendCard';
+import FriendCard from "../components/FriendCard";
 import { UserPlus, Search } from "lucide-react";
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -17,96 +17,93 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { getInitials } from '@/utils/Username';
-import Message from './Message';
+import { getInitials } from "@/utils/Username";
+import Message from "./Message";
 
 const social = () => {
-  const [scopeTab, setScopeTab] = useState('friends')
-  const { theme } = useTheme()
-  const [searchQuery, setSearchQuery] = useState('')
+  const [scopeTab, setScopeTab] = useState("friends");
+  const { theme } = useTheme();
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock data 
+  // Mock data
   const friendsList = [
     {
       id: 1,
       username: "John Doe",
-      full_name: "Johnathan Doe"
+      full_name: "Johnathan Doe",
     },
     {
       id: 2,
       username: "Jane Smith",
-      full_name: "Janette Smith"
+      full_name: "Janette Smith",
     },
     {
       id: 3,
       username: "Alice Johnson",
-      full_name: "Alice Marie Johnson"
-    }
-  ]
+      full_name: "Alice Marie Johnson",
+    },
+  ];
 
   const friendRequestsList = [
     {
       id: 4,
       username: "Bob Brown",
-      full_name: "Robert Brown"
+      full_name: "Robert Brown",
     },
     {
       id: 5,
       username: "Charlie Davis",
-      full_name: "Charles Davis"
+      full_name: "Charles Davis",
     },
     {
       id: 6,
       username: "Eve Wilson",
-      full_name: "Evelyn Wilson"
-    }
-  ]
+      full_name: "Evelyn Wilson",
+    },
+  ];
   const searchResults = [
     {
       id: 7,
       username: "Frank Miller",
-      full_name: "Franklin Miller"
+      full_name: "Franklin Miller",
     },
     {
       id: 8,
       username: "Grace Lee",
-      full_name: "Gracia Lee"
+      full_name: "Gracia Lee",
     },
     {
       id: 9,
       username: "Hank Taylor",
-      full_name: "Henry Taylor"
+      full_name: "Henry Taylor",
     },
     {
       id: 10,
       username: "Ivy Anderson",
-      full_name: "Ivanna Anderson"
+      full_name: "Ivanna Anderson",
     },
     {
       id: 11,
       username: "Jack Thomas",
-      full_name: "Jackson Thomas"
+      full_name: "Jackson Thomas",
     },
     {
       id: 12,
       username: "Kathy Moore",
-      full_name: "Katherine Moore"
-    }
-  ]
-  
+      full_name: "Katherine Moore",
+    },
+  ];
 
-  const handleAddFriend = (friendId) => {
-
-  }
+  const handleAddFriend = (friendId) => {};
 
   return (
-    <div className="w-full flex-1 p-6 flex justify-center items-start dark:bg-zinc-900/50 h-screen">
+    <div className="w-full flex-1 p-4 sm:p-6 flex justify-center items-start dark:bg-zinc-900/50 h-screen">
       <div className="w-full h-full flex flex-col gap-2">
         {/* Scope Tabs */}
-        <div className="flex gap-2 p-1 rounded-xl bg-gray-100 dark:bg-zinc-800/50">
+        <div className="flex gap-1 sm:gap-2 p-1 rounded-xl bg-gray-100 dark:bg-zinc-800/50 overflow-x-auto">
           <button
             onClick={() => setScopeTab("friends")}
-            className={`flex-1 py-3 px-4 rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 min-w-[100px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
               scopeTab === "friends"
                 ? "bg-emerald-500 text-white shadow-lg"
                 : theme === "dark"
@@ -118,7 +115,7 @@ const social = () => {
           </button>
           <button
             onClick={() => setScopeTab("friendRequests")}
-            className={`flex-1 py-3 px-4 rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 min-w-[120px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
               scopeTab === "friendRequests"
                 ? "bg-emerald-500 text-white shadow-lg"
                 : theme === "dark"
@@ -130,7 +127,7 @@ const social = () => {
           </button>
           <button
             onClick={() => setScopeTab("messages")}
-            className={`flex-1 py-3 px-4 rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 min-w-[100px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
               scopeTab === "message"
                 ? "bg-emerald-500 text-white shadow-lg"
                 : theme === "dark"
@@ -147,8 +144,8 @@ const social = () => {
         {/* Content Area */}
         {scopeTab === "friends" && (
           <>
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold mb-4">All Friends</h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <h3 className="text-lg sm:text-xl font-semibold">All Friends</h3>
 
               <Dialog>
                 <DialogTrigger>
@@ -234,7 +231,7 @@ const social = () => {
             </div>
 
             {/* Friends List */}
-            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {friendsList.map((friend) => (
                 <FriendCard
                   key={friend.id}
@@ -249,10 +246,12 @@ const social = () => {
 
         {scopeTab === "friendRequests" && (
           <>
-            <h3 className="text-xl font-semibold mb-4">Friend Requests</h3>
+            <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
+              Friend Requests
+            </h3>
 
             {/* Friend Requests List */}
-            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {friendRequestsList.map((request) => (
                 <FriendCard
                   key={request.id}
@@ -270,6 +269,6 @@ const social = () => {
       </div>
     </div>
   );
-}
+};
 
-export default social
+export default social;

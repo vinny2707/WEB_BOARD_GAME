@@ -16,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -25,6 +26,7 @@ const Auth = () => {
   const [otpSessionData, setOtpSessionData] = useState(null);
   const [otpType, setOtpType] = useState(null);
   const { login } = useUser();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -48,12 +50,12 @@ const Auth = () => {
   });
 
   const handleLogin = async (data) => {
+    setLoading(true);
     try {
       const response = await api.post("api/auth/login", {
         username: data.username,
         password: data.password,
       });
-
 
       // Check if OTP verification is required for reactivation
       if (response.data.data.requiresOtp) {
@@ -78,16 +80,16 @@ const Auth = () => {
     } catch (error) {
       console.error("Login error:", error);
 
-      if (error.status === 401) {
-        toast.error("Invalid username or password.");
-      }
-      else if (error.status === 403) {
-        toast.error("Your account has been banned.");
-      }
+      toast.error(
+        error.response?.data?.message || "Login failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRegister = async (data) => {
+    setLoading(true);
     try {
       const response = await api.post("api/auth/register", {
         username: data.username,
@@ -107,18 +109,22 @@ const Auth = () => {
     } catch (error) {
       console.error("Register error:", error);
 
-      if (error.status === 409) {
-        toast.error("Username or email already exists.");
-      }
+      toast.error(
+        error.response?.data?.message ||
+          "Registration failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleForgotPassword = async (email) => {
+    setLoading(true);
     try {
       const response = await api.post("api/auth/forgot-password", {
         email,
       });
-      
+
       setOtpSessionData({
         otpSessionId: response.data.data.otpSessionId,
         maskedEmail: response.data.data.maskedEmail,
@@ -129,6 +135,8 @@ const Auth = () => {
     } catch (error) {
       console.error("Forgot password error:", error);
       toast.error(error.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -151,7 +159,7 @@ const Auth = () => {
       {/* Show Auth Form if no OTP session */}
       {!otpSessionData && !showForgotPassword && (
         <div
-          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-6"
+          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-4 sm:p-6"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           {/* Background Pattern */}
@@ -166,7 +174,7 @@ const Auth = () => {
 
           {/* Auth Card */}
           <div
-            className="relative dark:bg-zinc-900/50 backdrop-blur-xl rounded-3xl p-6 border-2 dark:border-zinc-800 shadow-2xl"
+            className="relative sm:w-fit dark:bg-zinc-900/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 dark:border-zinc-800 shadow-2xl w-full"
             style={{ boxShadow: "0 0 40px rgba(16, 185, 129, 0.1)" }}
           >
             {/* Glassmorphism effect */}
@@ -180,23 +188,23 @@ const Auth = () => {
 
             <div className="relative flex flex-col items-center">
               {/* Logo/Brand */}
-              <div className="text-center mb-8">
+              <div className="text-center mb-6 sm:mb-8">
                 <h1
-                  className="text-4xl mb-2 text-emerald-400 tracking-[0.3em]"
+                  className="text-3xl sm:text-4xl mb-2 text-emerald-400 tracking-[0.2em] sm:tracking-[0.3em]"
                   style={{ textShadow: "0 0 20px rgba(16, 185, 129, 0.8)" }}
                 >
                   RETROBIT
                 </h1>
-                <p className="text-zinc-400">
+                <p className="text-zinc-400 text-sm sm:text-base">
                   Join the retro gaming revolution
                 </p>
               </div>
 
               {/* Tabs */}
-              <div className="w-full flex gap-2 p-1 rounded-xl dark:bg-zinc-800/50 mb-6 bg-gray-100">
+              <div className="w-full flex gap-2 p-1 rounded-xl dark:bg-zinc-800/50 mb-4 sm:mb-6 bg-gray-100">
                 <button
                   onClick={() => setActiveTab("login")}
-                  className={`flex-1 py-3 px-4 rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "login"
                       ? "bg-emerald-500 text-white shadow-lg"
                       : "text-zinc-400 dark:hover:text-white"
@@ -212,7 +220,7 @@ const Auth = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab("register")}
-                  className={`flex-1 py-3 px-4 rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "register"
                       ? "bg-emerald-500 text-white shadow-lg"
                       : "text-zinc-400 dark:hover:text-white"
@@ -232,7 +240,7 @@ const Auth = () => {
               {activeTab === "login" && (
                 <form
                   onSubmit={handleSubmit(handleLogin)}
-                  className="space-y-4 w-md"
+                  className="space-y-4 w-full sm:w-md"
                 >
                   {/* Username Field */}
                   <div>
@@ -244,7 +252,7 @@ const Auth = () => {
                       <input
                         type="text"
                         {...register("username")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none dark:focus:border-emerald-500 transition-colors"
                         placeholder="Enter your username"
                       />
                     </div>
@@ -265,7 +273,7 @@ const Auth = () => {
                       <input
                         type={showPassword ? "text" : "password"}
                         {...register("password")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your password"
                       />
                       <button
@@ -290,10 +298,16 @@ const Auth = () => {
                   {/* Login Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer"
+                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                   >
-                    Login
+                    {loading ? (
+                      <>
+                        <Spinner /> Logging...
+                      </>
+                    ) : (
+                      "Login"
+                    )}
                   </button>
 
                   {/* Forgot Password */}
@@ -313,9 +327,9 @@ const Auth = () => {
               {activeTab === "register" && (
                 <form
                   onSubmit={handleRegisterSubmit(handleRegister)}
-                  className="space-y-4 w-xl"
+                  className="space-y-4 w-xl max-md:w-full"
                 >
-                  <div className="w-full space-y-4 grid grid-cols-2 gap-4">
+                  <div className="w-full space-y-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Username Field */}
                     <div>
                       <label className="block text-sm text-zinc-400 mb-2">
@@ -326,7 +340,7 @@ const Auth = () => {
                         <input
                           type="text"
                           {...registerRegister("username")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Choose a username"
                         />
                       </div>
@@ -347,7 +361,7 @@ const Auth = () => {
                         <input
                           type="email"
                           {...registerRegister("email")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your email"
                         />
                       </div>
@@ -368,7 +382,7 @@ const Auth = () => {
                         <input
                           type="text"
                           {...registerRegister("fullName")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your full name"
                         />
                       </div>
@@ -455,7 +469,7 @@ const Auth = () => {
                         <input
                           type={showPassword ? "text" : "password"}
                           {...registerRegister("password")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Create a password"
                         />
                         <button
@@ -487,7 +501,7 @@ const Auth = () => {
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           {...registerRegister("confirmPassword")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Confirm your password"
                         />
                         <button
@@ -515,10 +529,16 @@ const Auth = () => {
                   {/* Register Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer"
+                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                   >
-                    Register
+                    {loading ? (
+                      <>
+                        <Spinner /> Registering...
+                      </>
+                    ) : (
+                      "Register"
+                    )}
                   </button>
                 </form>
               )}
@@ -530,7 +550,7 @@ const Auth = () => {
       {/* Forgot Password Modal */}
       {showForgotPassword && (
         <div
-          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-6"
+          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-6"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           {/* Background Pattern */}
@@ -568,7 +588,8 @@ const Auth = () => {
                     FORGOT PASSWORD?
                   </h1>
                   <p className="text-zinc-400 text-sm">
-                    Enter your email and we'll send you a code to reset your password
+                    Enter your email and we'll send you a code to reset your
+                    password
                   </p>
                 </div>
 
@@ -594,7 +615,7 @@ const Auth = () => {
                         type="email"
                         name="email"
                         required
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your email"
                       />
                     </div>
@@ -603,10 +624,16 @@ const Auth = () => {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer"
+                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                   >
-                    Send Reset Code
+                    {loading ? (
+                      <>
+                        <Spinner /> Sending...
+                      </>
+                    ) : (
+                      "Send OTP"
+                    )}
                   </button>
 
                   {/* Back to Login */}

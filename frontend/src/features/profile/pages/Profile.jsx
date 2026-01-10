@@ -1,8 +1,8 @@
-import React, { use } from 'react'
-import { Edit2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useUser } from '@/contexts/UserProvider';
-import { getInitials } from '@/utils/Username';
+import React, { use } from "react";
+import { Edit2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useUser } from "@/contexts/UserProvider";
+import { getInitials } from "@/utils/Username";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,22 +14,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller } from "react-hook-form";
 import { User } from "lucide-react";
 import { CalendarIcon } from "lucide-react";
-import { editSchema } from '../schemas/editSchema';
+import { editSchema } from "../schemas/editSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import api from '@/api/axios';
-import { toast } from 'sonner';
+import api from "@/api/axios";
+import { toast } from "sonner";
 
 const Profile = () => {
   const { user } = useUser();
   const [open, setOpen] = useState(false);
   const [backup, setBackup] = useState({
-    full_name: '',
-    dob: '',
+    full_name: "",
+    dob: "",
   });
 
   const {
@@ -49,13 +53,13 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       reset({
-        full_name: user.full_name || '',
-        dob: user.dob || '',
+        full_name: user.full_name || "",
+        dob: user.dob || "",
       });
 
       setBackup({
-        full_name: user.full_name || '',
-        dob: user.dob || '',
+        full_name: user.full_name || "",
+        dob: user.dob || "",
       });
     }
   }, [user]);
@@ -65,31 +69,33 @@ const Profile = () => {
   };
 
   const onSubmit = async (data) => {
-    console.log('Submitting data:', data);
+    console.log("Submitting data:", data);
     try {
-      const response = await api.put('/api/auth/profile', data);
-      toast.success('Profile updated successfully');
+      const response = await api.put("/api/auth/profile", data);
+      toast.success("Profile updated successfully");
       setOpen(false);
       // Optionally update user context or show success message
-      console.log('Profile updated successfully:', response.data);
+      console.log("Profile updated successfully:", response.data);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error("Error updating profile:", error);
     }
   };
-  
+
   return (
-    <div className="w-full flex-1 p-6 flex justify-center items-start dark:bg-zinc-900/50">
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-6 border shadow-lg">
-        <div className="flex items-center gap-6">
+    <div className="w-full flex-1 p-4 sm:p-6 flex justify-center items-start dark:bg-zinc-900/50">
+      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
           {/* Large Avatar */}
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-xl text-3xl text-white">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-xl text-2xl sm:text-3xl text-white flex-shrink-0">
             {getInitials(user.username)}
           </div>
 
           {/* User Info */}
-          <div className="flex-1">
-            <h1 className="text-3xl dark:text-white">{user.username}</h1>
-            <span className="text-sm dark:text-zinc-400 text-gray-600">
+          <div className="flex-1 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl dark:text-white">
+              {user.username}
+            </h1>
+            <span className="text-sm dark:text-zinc-400 text-gray-600 break-all">
               {user.email}
             </span>
           </div>
@@ -97,9 +103,10 @@ const Profile = () => {
           {/* Edit Button */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <button className="cursor-pointer px-6 py-3 rounded-xl border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2">
+              <button className="cursor-pointer px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-sm sm:text-base whitespace-nowrap">
                 <Edit2 className="w-4 h-4" />
-                Edit Profile
+                <span className="hidden sm:inline">Edit Profile</span>
+                <span className="sm:hidden">Edit</span>
               </button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
@@ -122,7 +129,7 @@ const Profile = () => {
                       <input
                         type="text"
                         {...register("full_name")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -221,6 +228,6 @@ const Profile = () => {
       </div>
     </div>
   );
-}
+};
 
-export default Profile
+export default Profile;
