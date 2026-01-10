@@ -117,6 +117,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -124,4 +125,428 @@
 
 #root {
   @apply flex w-screen min-h-screen justify-center items-center;
+}
+
+/* ================================
+   GAME STYLES - By: UI_game team
+   ================================ */
+
+/* Game Container - Theme aware */
+.game-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  min-height: 100%;
+  background: var(--background);
+}
+
+/* Game Header */
+.game-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.game-title {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #00d4aa;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  text-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+}
+
+.game-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 120px;
+}
+
+.stat-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.stat-value {
+  font-family: 'Courier New', monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #00d4aa;
+  text-shadow: 0 0 5px rgba(0, 212, 170, 0.3);
+}
+
+/* Game Board Wrapper */
+.game-board-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Tic-Tac-Toe Board */
+.tictactoe-board {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  background: var(--card);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow:
+    0 4px 20px rgba(16, 185, 129, 0.15),
+    inset 0 0 30px rgba(0, 0, 0, 0.05);
+}
+
+/* Dot matrix background */
+.board-dots-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  padding: 0.5rem;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.bg-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 50%;
+  margin: auto;
+}
+
+/* Game Grid */
+.board-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Tic-Tac-Toe Cell */
+.tictactoe-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tictactoe-cell:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.tictactoe-cell:disabled {
+  cursor: default;
+}
+
+.cell-content {
+  width: 60%;
+  height: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--border);
+  border-radius: 50%;
+}
+
+.cell-icon {
+  width: 100%;
+  height: 100%;
+  animation: popIn 0.2s ease-out;
+}
+
+.cell-x {
+  stroke: #10b981;
+  fill: none;
+  filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.cell-o {
+  stroke: #f97316;
+  fill: none;
+  filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.5));
+}
+
+.cell-winning {
+  animation: pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 212, 170, 0.5);
+  }
+}
+
+/* Game Status */
+.game-status {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  padding: 0.5rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+/* Game Controls */
+.game-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.controls-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.control-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  min-width: 60px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  font-family: 'Courier New', monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.control-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control-btn-primary {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.control-btn-primary:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.control-btn-secondary {
+  padding: 0.5rem 1rem;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+/* Difficulty Selector */
+.difficulty-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.difficulty-btn {
+  padding: 0.5rem 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.difficulty-btn:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.difficulty-btn.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+/* Score Display */
+.score-display {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.score-item {
+  font-weight: bold;
+}
+
+.score-item.player {
+  color: #10b981;
+}
+
+.score-item.ai {
+  color: #f97316;
+}
+
+.score-separator {
+  color: var(--muted-foreground);
+}
+
+/* Cell Hint Effect */
+.cell-hint {
+  animation: hintPulse 0.5s ease-in-out infinite alternate;
+  border-color: #10b981 !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5) !important;
+}
+
+.cell-hint .cell-dot {
+  background: #10b981;
+  transform: scale(1.5);
+}
+
+@keyframes hintPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+/* Board Disabled State */
+.board-disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.cell-disabled {
+  cursor: not-allowed !important;
+}
+
+/* AI Thinking Animation */
+.game-status.thinking {
+  animation: thinkingDots 1s ease-in-out infinite;
+}
+
+@keyframes thinkingDots {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .game-container {
+    padding: 1rem;
+  }
+
+  .tictactoe-board {
+    width: 260px;
+    height: 260px;
+  }
+
+  .stat-box {
+    padding: 0.5rem 1rem;
+    min-width: 100px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .difficulty-selector {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .difficulty-btn {
+    font-size: 0.6rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
