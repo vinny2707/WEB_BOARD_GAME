@@ -1,7 +1,46 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../contexts/ThemeProvider";
-import { Edit2, Trash2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Mail,
+  Calendar,
+  Shield,
+  Clock,
+  UserCheck,
+  Award,
+} from "lucide-react";
 import api from "../../../api/axios";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { getInitials } from "@/utils/Username";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
 
 const UserManagement = () => {
   const { theme } = useTheme();
@@ -13,9 +52,10 @@ const UserManagement = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [editingUser, setEditingUser] = useState(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [formData, setFormData] = useState({ full_name: "", dob: "" });
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   const limit = 10;
 
   // Fetch users
@@ -64,38 +104,24 @@ const UserManagement = () => {
     fetchUsers(1, searchTerm, status);
   };
 
-  // Handle edit
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData({
-      full_name: user.full_name || "",
-      dob: user.dob || "",
-    });
-    setShowEditDialog(true);
-  };
-
-  // Save edit
-  const handleSaveEdit = async () => {
-    try {
-      await api.put(`/api/users/${editingUser.id}`, formData);
-      setShowEditDialog(false);
-      fetchUsers(currentPage, searchTerm, statusFilter);
-    } catch (err) {
-      console.error("Error updating user:", err);
-      alert("Failed to update user");
-    }
-  };
-
   // Handle delete
-  const handleDelete = async (userId) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+  const handleDelete = (user) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
 
     try {
-      await api.delete(`/api/users/${userId}`);
+      await api.delete(`/api/users/${userToDelete.id}`);
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+      toast.success("User deleted successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
     } catch (err) {
       console.error("Error deleting user:", err);
-      alert("Failed to delete user");
+      toast.error("Failed to delete user");
     }
   };
 
@@ -103,10 +129,45 @@ const UserManagement = () => {
   const handleStatusChange = async (userId, newStatus) => {
     try {
       await api.patch(`/api/users/${userId}/status`, { status: newStatus });
+      toast.success("User status updated successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
     } catch (err) {
       console.error("Error updating status:", err);
-      alert("Failed to update status");
+
+      if (err.response?.status === 403) {
+        toast.error("You cannot change your own status");
+      } else {
+        toast.error("Failed to update status");
+      }
+    }
+  };
+
+  // Handle role change
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await api.patch(`/api/users/${userId}/role`, { role: newRole });
+      toast.success("User role updated successfully");
+      fetchUsers(currentPage, searchTerm, statusFilter);
+    } catch (err) {
+      console.error("Error updating role:", err);
+
+      if (err.response?.status === 403) {
+        toast.error("You cannot change your own role");
+      } else {
+        toast.error("Failed to update role");
+      }
+    }
+  };
+
+  // Handle view user details
+  const handleViewDetails = async (user) => {
+    try {
+      const response = await api.get(`/api/users/${user.id}`);
+      setSelectedUser(response.data?.data);
+      setShowDetailDialog(true);
+    } catch (err) {
+      console.error("Error fetching user details:", err);
+      toast.error("Failed to load user details");
     }
   };
 
@@ -118,6 +179,17 @@ const UserManagement = () => {
         return "text-yellow-400 bg-yellow-500/20 border border-yellow-500/30";
       case "banned":
         return "text-red-400 bg-red-500/20 border border-red-500/30";
+      default:
+        return "text-gray-400 bg-gray-500/20 border border-gray-500/30";
+    }
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case "admin":
+        return "text-purple-400 bg-purple-500/20 border border-purple-500/30";
+      case "user":
+        return "text-blue-400 bg-blue-500/20 border border-blue-500/30";
       default:
         return "text-gray-400 bg-gray-500/20 border border-gray-500/30";
     }
@@ -154,7 +226,7 @@ const UserManagement = () => {
               <button
                 key={status || "all"}
                 onClick={() => handleStatusFilter(status)}
-                className={`px-4 py-2 rounded-lg transition-all ${
+                className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${
                   statusFilter === status
                     ? isDarkMode
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -177,9 +249,7 @@ const UserManagement = () => {
       <div className="flex-1 overflow-auto px-8 py-6">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500 dark:text-zinc-400">
-              Loading users...
-            </div>
+            <Spinner size="lg" />
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
@@ -207,7 +277,7 @@ const UserManagement = () => {
                       isDarkMode ? "text-zinc-300" : "text-gray-700"
                     }`}
                   >
-                    User ID
+                    No.
                   </th>
                   <th
                     className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -222,6 +292,13 @@ const UserManagement = () => {
                     }`}
                   >
                     Email
+                  </th>
+                  <th
+                    className={`px-6 py-4 text-left text-sm font-semibold ${
+                      isDarkMode ? "text-zinc-300" : "text-gray-700"
+                    }`}
+                  >
+                    Role
                   </th>
                   <th
                     className={`px-6 py-4 text-left text-sm font-semibold ${
@@ -243,7 +320,7 @@ const UserManagement = () => {
                 {users.length === 0 ? (
                   <tr>
                     <td
-                      colSpan="5"
+                      colSpan="6"
                       className={`px-6 py-8 text-center ${
                         isDarkMode ? "text-zinc-400" : "text-gray-500"
                       }`}
@@ -252,7 +329,7 @@ const UserManagement = () => {
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  users.map((user, index) => (
                     <tr
                       key={user.id}
                       className={`border-b transition-colors ${
@@ -266,12 +343,13 @@ const UserManagement = () => {
                           isDarkMode ? "text-zinc-300" : "text-gray-700"
                         }`}
                       >
-                        #{user.id}
+                        {(currentPage - 1) * limit + index + 1}
                       </td>
                       <td
-                        className={`px-6 py-4 text-sm font-medium ${
+                        className={`px-6 py-4 text-sm font-medium cursor-pointer hover:underline ${
                           isDarkMode ? "text-white" : "text-gray-900"
                         }`}
+                        onClick={() => handleViewDetails(user)}
                       >
                         {user.username}
                       </td>
@@ -283,40 +361,68 @@ const UserManagement = () => {
                         {user.email}
                       </td>
                       <td className="px-6 py-4">
-                        <div
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                            user.status
-                          )}`}
+                        <Select
+                          value={user.role}
+                          onValueChange={(value) =>
+                            handleRoleChange(user.id, value)
+                          }
                         >
-                          {user.status.charAt(0).toUpperCase() +
-                            user.status.slice(1)}
-                        </div>
+                          <SelectTrigger
+                            className={`w-fit border-0 cursor-pointer ${getRoleColor(
+                              user.role
+                            )}`}
+                          >
+                            <SelectValue>
+                              <span className="font-semibold text-xs">
+                                {user.role.charAt(0).toUpperCase() +
+                                  user.role.slice(1)}
+                              </span>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">User</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(user)}
-                            className={`p-2 rounded-lg transition-all ${
-                              isDarkMode
-                                ? "hover:bg-zinc-700 text-emerald-400 hover:text-emerald-300"
-                                : "hover:bg-gray-200 text-blue-600 hover:text-blue-500"
-                            }`}
-                            title="Edit user"
+                        <Select
+                          value={user.status}
+                          onValueChange={(value) =>
+                            handleStatusChange(user.id, value)
+                          }
+                        >
+                          <SelectTrigger
+                            className={`w-fit border-0 cursor-pointer ${getStatusColor(
+                              user.status
+                            )}`}
                           >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            className={`p-2 rounded-lg transition-all ${
-                              isDarkMode
-                                ? "hover:bg-red-500/20 text-red-400 hover:text-red-300"
-                                : "hover:bg-red-100 text-red-600 hover:text-red-500"
-                            }`}
-                            title="Delete user"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                            <SelectValue>
+                              <span className="font-semibold text-xs">
+                                {user.status.charAt(0).toUpperCase() +
+                                  user.status.slice(1)}
+                              </span>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="banned">Banned</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleDelete(user)}
+                          className={`p-2 rounded-lg transition-all cursor-pointer ${
+                            isDarkMode
+                              ? "hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                              : "hover:bg-red-100 text-red-600 hover:text-red-500"
+                          }`}
+                          title="Delete user"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -335,7 +441,7 @@ const UserManagement = () => {
               fetchUsers(currentPage - 1, searchTerm, statusFilter)
             }
             disabled={currentPage === 1}
-            className={`p-2 rounded-lg transition-all ${
+            className={`p-2 rounded-lg transition-all cursor-pointer ${
               currentPage === 1
                 ? isDarkMode
                   ? "text-zinc-600 cursor-not-allowed"
@@ -352,7 +458,7 @@ const UserManagement = () => {
             <button
               key={page}
               onClick={() => fetchUsers(page, searchTerm, statusFilter)}
-              className={`px-3 py-1 rounded-lg transition-all text-sm ${
+              className={`px-3 py-1 rounded-lg transition-all text-sm cursor-pointer ${
                 currentPage === page
                   ? isDarkMode
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -371,7 +477,7 @@ const UserManagement = () => {
               fetchUsers(currentPage + 1, searchTerm, statusFilter)
             }
             disabled={currentPage === totalPages}
-            className={`p-2 rounded-lg transition-all ${
+            className={`p-2 rounded-lg transition-all cursor-pointer ${
               currentPage === totalPages
                 ? isDarkMode
                   ? "text-zinc-600 cursor-not-allowed"
@@ -386,95 +492,514 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Edit Dialog */}
-      {showEditDialog && editingUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div
-            className={`rounded-xl p-6 max-w-md w-full mx-4 ${
-              isDarkMode
-                ? "bg-zinc-900 border border-zinc-800"
-                : "bg-white border border-gray-200"
-            }`}
-          >
-            <h2
-              className={`text-xl font-bold mb-4 ${
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent
+          className={`max-w-md ${
+            isDarkMode ? "bg-zinc-900 border-zinc-800" : ""
+          }`}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              className={`flex items-center gap-3 text-xl ${
                 isDarkMode ? "text-white" : "text-gray-900"
               }`}
             >
-              Edit User: {editingUser.username}
-            </h2>
+              <div
+                className={`p-2 rounded-lg ${
+                  isDarkMode
+                    ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                    : "bg-red-500/20 text-red-600 border border-red-500/30"
+                }`}
+              >
+                <Trash2 className="w-5 h-5" />
+              </div>
+              Delete User
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              className={`${
+                isDarkMode ? "text-zinc-400" : "text-gray-600"
+              } mt-4`}
+            >
+              {userToDelete && (
+                <div className="space-y-4">
+                  <p className="text-base">
+                    Are you sure you want to permanently delete this user
+                    account?
+                  </p>
+                  <div
+                    className={`p-4 rounded-lg ${
+                      isDarkMode
+                        ? "bg-zinc-800/50 border border-zinc-700"
+                        : "bg-gray-50 border border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold ${
+                          isDarkMode
+                            ? "bg-gradient-to-br from-emerald-600 to-cyan-600 text-white"
+                            : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                        }`}
+                      >
+                        {userToDelete.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p
+                          className={`font-semibold ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {userToDelete.username}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            isDarkMode ? "text-zinc-400" : "text-gray-500"
+                          }`}
+                        >
+                          {userToDelete.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`flex items-start gap-2 p-3 rounded-lg ${
+                      isDarkMode
+                        ? "bg-red-500/10 border border-red-500/20"
+                        : "bg-red-50 border border-red-200"
+                    }`}
+                  >
+                    <Shield
+                      className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                        isDarkMode ? "text-red-400" : "text-red-600"
+                      }`}
+                    />
+                    <p
+                      className={`text-sm ${
+                        isDarkMode ? "text-red-300" : "text-red-700"
+                      }`}
+                    >
+                      This action cannot be undone. All user data, including
+                      game history and achievements, will be permanently
+                      removed.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6">
+            <AlertDialogCancel
+              className={`${
+                isDarkMode
+                  ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              }`}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className={`${
+                isDarkMode
+                  ? "bg-red-600 hover:bg-red-500 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }`}
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
+      {/* User Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent
+          className={`max-w-3xl ${
+            isDarkMode ? "bg-zinc-900 border-zinc-800" : ""
+          }`}
+        >
+          <DialogHeader>
+            <DialogTitle
+              className={`flex items-center gap-3 text-2xl ${
+                isDarkMode ? "text-white" : "text-gray-900"
+              }`}
+            >
+              <div
+                className={`p-2 rounded-lg ${
+                  isDarkMode
+                    ? "bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30"
+                    : "bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30"
+                }`}
+              >
+                <User className="w-6 h-6" />
+              </div>
+              Player Profile
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedUser && (
             <div className="space-y-4">
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    isDarkMode ? "text-zinc-300" : "text-gray-700"
-                  }`}
-                >
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, full_name: e.target.value })
-                  }
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    isDarkMode
-                      ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500"
-                      : "bg-gray-100 border-gray-300 text-gray-900 focus:border-blue-500"
-                  } focus:outline-none`}
-                />
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-2 ${
-                    isDarkMode ? "text-zinc-300" : "text-gray-700"
-                  }`}
-                >
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={formData.dob}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dob: e.target.value })
-                  }
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    isDarkMode
-                      ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500"
-                      : "bg-gray-100 border-gray-300 text-gray-900 focus:border-blue-500"
-                  } focus:outline-none`}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowEditDialog(false)}
-                className={`flex-1 px-4 py-2 rounded-lg transition-all ${
+              {/* Header Card with Avatar */}
+              <div
+                className={`relative overflow-hidden rounded-xl ${
                   isDarkMode
-                    ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                    ? "bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700"
+                    : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
                 }`}
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                className={`flex-1 px-4 py-2 rounded-lg transition-all text-white ${
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-3xl" />
+                <div className="relative p-6">
+                  <div className="flex items-start gap-6">
+                    {/* Avatar */}
+                    <div
+                      className={`relative flex-shrink-0 w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold ${
+                        isDarkMode
+                          ? "bg-gradient-to-br from-emerald-600 to-cyan-600 text-white"
+                          : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                      } shadow-lg`}
+                    >
+                      {getInitials(selectedUser.username)}
+                      <div className="absolute -bottom-2 -right-2">
+                        <div
+                          className={`px-2 py-1 rounded-lg text-xs font-bold ${getRoleColor(
+                            selectedUser.role
+                          )} shadow-lg`}
+                        >
+                          {selectedUser.role.toUpperCase()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Main Info */}
+                    <div className="flex-1">
+                      <h3
+                        className={`text-2xl font-bold ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {selectedUser.username}
+                      </h3>
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-zinc-400" : "text-gray-500"
+                        } mb-3`}
+                      >
+                        {selectedUser.full_name || "No full name set"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <div
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${getStatusColor(
+                            selectedUser.status
+                          )}`}
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          {selectedUser.status.charAt(0).toUpperCase() +
+                            selectedUser.status.slice(1)}
+                        </div>
+                        <div
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                            isDarkMode
+                              ? "bg-zinc-800 text-zinc-300 border border-zinc-700"
+                              : "bg-white text-gray-700 border border-gray-200"
+                          }`}
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          Player ID: #{selectedUser.id}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Contact Information */}
+                <div
+                  className={`p-5 rounded-xl ${
+                    isDarkMode
+                      ? "bg-zinc-800/50 border border-zinc-700/50"
+                      : "bg-gray-50 border border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        isDarkMode
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-blue-500/10 text-blue-600"
+                      }`}
+                    >
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <h4
+                      className={`font-semibold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      Contact Info
+                    </h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <p
+                        className={`text-xs font-medium ${
+                          isDarkMode ? "text-zinc-500" : "text-gray-500"
+                        } uppercase tracking-wider mb-1`}
+                      >
+                        Email Address
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        } break-all`}
+                      >
+                        {selectedUser.email}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={`text-xs font-medium ${
+                          isDarkMode ? "text-zinc-500" : "text-gray-500"
+                        } uppercase tracking-wider mb-1`}
+                      >
+                        Date of Birth
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Calendar
+                          className={`w-4 h-4 ${
+                            isDarkMode ? "text-zinc-400" : "text-gray-400"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {selectedUser.dob
+                            ? new Date(selectedUser.dob).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )
+                            : "Not provided"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Stats */}
+                <div
+                  className={`p-5 rounded-xl ${
+                    isDarkMode
+                      ? "bg-zinc-800/50 border border-zinc-700/50"
+                      : "bg-gray-50 border border-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <div
+                      className={`p-2 rounded-lg ${
+                        isDarkMode
+                          ? "bg-purple-500/10 text-purple-400"
+                          : "bg-purple-500/10 text-purple-600"
+                      }`}
+                    >
+                      <Clock className="w-4 h-4" />
+                    </div>
+                    <h4
+                      className={`font-semibold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      Account Activity
+                    </h4>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <p
+                        className={`text-xs font-medium ${
+                          isDarkMode ? "text-zinc-500" : "text-gray-500"
+                        } uppercase tracking-wider mb-1`}
+                      >
+                        Member Since
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
+                        {new Date(selectedUser.created_at).toLocaleDateString(
+                          "en-US",
+                          { year: "numeric", month: "long", day: "numeric" }
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={`text-xs font-medium ${
+                          isDarkMode ? "text-zinc-500" : "text-gray-500"
+                        } uppercase tracking-wider mb-1`}
+                      >
+                        Last Active
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            selectedUser.last_login
+                              ? isDarkMode
+                                ? "bg-emerald-500"
+                                : "bg-green-500"
+                              : isDarkMode
+                              ? "bg-zinc-600"
+                              : "bg-gray-400"
+                          }`}
+                        />
+                        <p
+                          className={`text-sm font-medium ${
+                            isDarkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {selectedUser.last_login
+                            ? new Date(selectedUser.last_login).toLocaleString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )
+                            : "Never logged in"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security & Permissions */}
+              <div
+                className={`p-5 rounded-xl ${
                   isDarkMode
-                    ? "bg-emerald-600 hover:bg-emerald-500"
-                    : "bg-blue-600 hover:bg-blue-500"
+                    ? "bg-gradient-to-br from-zinc-800/80 to-zinc-900/80 border border-zinc-700/50"
+                    : "bg-gradient-to-br from-gray-50 to-white border border-gray-200"
                 }`}
               >
-                Save Changes
-              </button>
+                <div className="flex items-center gap-2 mb-4">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      isDarkMode
+                        ? "bg-cyan-500/10 text-cyan-400"
+                        : "bg-indigo-500/10 text-indigo-600"
+                    }`}
+                  >
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <h4
+                    className={`font-semibold ${
+                      isDarkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Security & Permissions
+                  </h4>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div
+                    className={`p-4 rounded-lg text-center ${
+                      isDarkMode ? "bg-zinc-800/50" : "bg-white"
+                    }`}
+                  >
+                    <div
+                      className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-2 ${getRoleColor(
+                        selectedUser.role
+                      )}`}
+                    >
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <p
+                      className={`text-xs ${
+                        isDarkMode ? "text-zinc-400" : "text-gray-500"
+                      } mb-1`}
+                    >
+                      Role
+                    </p>
+                    <p
+                      className={`font-bold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {selectedUser.role.charAt(0).toUpperCase() +
+                        selectedUser.role.slice(1)}
+                    </p>
+                  </div>
+                  <div
+                    className={`p-4 rounded-lg text-center ${
+                      isDarkMode ? "bg-zinc-800/50" : "bg-white"
+                    }`}
+                  >
+                    <div
+                      className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-2 ${getStatusColor(
+                        selectedUser.status
+                      )}`}
+                    >
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <p
+                      className={`text-xs ${
+                        isDarkMode ? "text-zinc-400" : "text-gray-500"
+                      } mb-1`}
+                    >
+                      Status
+                    </p>
+                    <p
+                      className={`font-bold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {selectedUser.status.charAt(0).toUpperCase() +
+                        selectedUser.status.slice(1)}
+                    </p>
+                  </div>
+                  <div
+                    className={`p-4 rounded-lg text-center ${
+                      isDarkMode ? "bg-zinc-800/50" : "bg-white"
+                    }`}
+                  >
+                    <div
+                      className={`inline-flex items-center justify-center w-12 h-12 rounded-full mb-2 ${
+                        isDarkMode
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-amber-500/20 text-amber-600 border border-amber-500/30"
+                      }`}
+                    >
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <p
+                      className={`text-xs ${
+                        isDarkMode ? "text-zinc-400" : "text-gray-500"
+                      } mb-1`}
+                    >
+                      User ID
+                    </p>
+                    <p
+                      className={`font-bold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      #{selectedUser.id}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

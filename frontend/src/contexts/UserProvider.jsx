@@ -1,6 +1,7 @@
 import React from "react";
 import { createContext, useContext, useState, useMemo, useEffect } from "react";
 import api from "../api/axios";
+import { Spinner } from "@/components/ui/spinner";
 
 const UserContext = createContext();
 
@@ -15,7 +16,7 @@ export const UserProvider = ({ children }) => {
     setUser({
       ...userData,
       dob: userData.dob
-        ? new Date(userData.dob).toISOString().split("T")[0]
+        ? userData.dob.split("T")[0]
         : null,
     });
   };
@@ -49,14 +50,15 @@ export const UserProvider = ({ children }) => {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       try {
-        const response = await api.get("/api/auth/profile");
+        // Set 10 second timeout for auth check
+        const response = await api.get("/api/auth/profile", {
+          timeout: 10000,
+        });
         const userData = response.data?.data;
 
         if (!userData) {
           throw new Error("No user data in response");
         }
-
-        // console.log("[UserProvider] Extracted user data:", userData);
 
         const processedUser = {
           id: userData.id,
@@ -64,7 +66,7 @@ export const UserProvider = ({ children }) => {
           email: userData.email,
           full_name: userData.full_name,
           dob: userData.dob
-            ? new Date(userData.dob).toISOString().split("T")[0]
+            ? userData.dob.split("T")[0]
             : null,
           role: userData.role,
           status: userData.status,
@@ -72,9 +74,7 @@ export const UserProvider = ({ children }) => {
           last_login: userData.last_login,
         };
 
-        // console.log("[UserProvider] Processed user:", processedUser);
         setUser(processedUser);
-        // console.log("[UserProvider] User state updated successfully");
       } catch (error) {
         console.error("[UserProvider] Error fetching user profile:", {
           status: error.response?.status,
@@ -110,7 +110,7 @@ export const UserProvider = ({ children }) => {
     return (
       <UserContext.Provider value={value}>
         <div className="flex items-center justify-center min-h-screen">
-          Loading...
+          <Spinner size="lg" />
         </div>
       </UserContext.Provider>
     );

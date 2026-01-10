@@ -81,6 +81,9 @@ const Auth = () => {
       if (error.status === 401) {
         toast.error("Invalid username or password.");
       }
+      else if (error.status === 403) {
+        toast.error("Your account has been banned.");
+      }
     }
   };
 
