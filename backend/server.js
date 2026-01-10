@@ -80,10 +80,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/users');
 const gameRoutes = require('./src/routes/games');
+const sessionRoutes = require('./src/routes/sessions');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
