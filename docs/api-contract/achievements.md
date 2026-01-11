@@ -33,18 +33,14 @@
         "description": "Complete your first game",
         "icon": "🎮",
         "category": "beginner",
-        "points": 10,
-        "unlock_criteria": {
-          "type": "total_games",
-          "game_type": null,
-          "required_count": 1,
-          "description": "Play 1 game of any type"
-        }
+        "points": 10
       }
     ]
   }
 }
 ```
+
+> **Lưu ý:** Response **KHÔNG** bao gồm `unlock_criteria`. Dùng `GET /:id` để lấy chi tiết.
 
 ---
 
@@ -52,7 +48,28 @@
 
 **Endpoint:** `GET /api/achievements/:id`
 
-**Response 200:** Achievement object đầy đủ
+**Response 200:** Achievement object đầy đủ bao gồm `unlock_criteria`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "First Steps",
+    "description": "Complete your first game",
+    "icon": "🎮",
+    "category": "beginner",
+    "points": 10,
+    "unlock_criteria": {
+      "type": "total_games",
+      "game_type": null,
+      "required_count": 1,
+      "description": "Play 1 game of any type"
+    },
+    "created_at": "2026-01-01T00:00:00.000+07:00"
+  }
+}
+```
 
 **Errors:** 404 (not found)
 

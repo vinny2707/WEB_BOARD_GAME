@@ -7,13 +7,13 @@ const db = require('../config/database');
 
 class Achievement {
     /**
-     * Get all achievements
+     * Get all achievements (summary only - no unlock_criteria)
      * @param {Object} options - { category }
      * @returns {Promise<Array>}
      */
     static async findAll(options = {}) {
         let query = db('achievements')
-            .select('*')
+            .select('id', 'name', 'description', 'icon', 'category', 'points', 'created_at')
             .orderBy('category', 'asc')
             .orderBy('points', 'asc');
 
@@ -21,15 +21,7 @@ class Achievement {
             query = query.where('category', options.category);
         }
 
-        const achievements = await query;
-
-        // Parse JSON fields
-        return achievements.map(a => ({
-            ...a,
-            unlock_criteria: typeof a.unlock_criteria === 'string' 
-                ? JSON.parse(a.unlock_criteria) 
-                : a.unlock_criteria
-        }));
+        return query;
     }
 
     /**

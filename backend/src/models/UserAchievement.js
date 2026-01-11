@@ -13,6 +13,7 @@ class UserAchievement {
      */
     static async findByUser(userId) {
         // Get all achievements with user's progress (left join)
+        // Note: unlock_criteria NOT included - use findById for details
         const results = await db('achievements as a')
             .leftJoin('user_achievements as ua', function() {
                 this.on('a.id', '=', 'ua.achievement_id')
@@ -25,7 +26,6 @@ class UserAchievement {
                 'a.icon',
                 'a.category',
                 'a.points',
-                'a.unlock_criteria',
                 'ua.progress',
                 'ua.unlocked_at'
             )
@@ -40,9 +40,6 @@ class UserAchievement {
             icon: r.icon,
             category: r.category,
             points: r.points,
-            unlock_criteria: typeof r.unlock_criteria === 'string' 
-                ? JSON.parse(r.unlock_criteria) 
-                : r.unlock_criteria,
             progress: r.progress 
                 ? (typeof r.progress === 'string' ? JSON.parse(r.progress) : r.progress)
                 : { current: 0, required: 0, percentage: 0 },
@@ -154,14 +151,11 @@ class UserAchievement {
                 });
         }
 
-        // Return the achievement details for notification
+        // Return achievement summary for notification (no unlock_criteria)
         const achievement = await db('achievements')
             .where({ id: achievementId })
+            .select('id', 'name', 'description', 'icon', 'category', 'points')
             .first();
-
-        if (achievement && typeof achievement.unlock_criteria === 'string') {
-            achievement.unlock_criteria = JSON.parse(achievement.unlock_criteria);
-        }
 
         return achievement;
     }
