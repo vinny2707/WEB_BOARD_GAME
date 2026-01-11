@@ -1,35 +1,50 @@
 import React from 'react';
 
-const TicTacToeCell = ({ value, onClick, isWinning, isHint, disabled }) => {
-    const getCellClass = () => {
-        let classes = 'tictactoe-cell';
-        if (value) classes += ` cell-${value.toLowerCase()}`;
-        if (isWinning) classes += ' cell-winning';
-        if (isHint) classes += ' cell-hint';
-        if (!value) classes += ' cell-empty';
-        if (disabled) classes += ' cell-disabled';
+const TicTacToeCell = ({ value, onClick, isWinning, isHint, disabled, cellIndex }) => {
+    // Determine border classes based on cell position
+    const getBorderClasses = () => {
+        const row = Math.floor(cellIndex / 3);
+        const col = cellIndex % 3;
+        let borders = 'border-2 border-slate-400';
+
+        // Remove borders at edges
+        if (row === 0) borders += ' border-t-0';
+        if (row === 2) borders += ' border-b-0';
+        if (col === 0) borders += ' border-l-0';
+        if (col === 2) borders += ' border-r-0';
+
+        return borders;
+    };
+
+    const getCellClasses = () => {
+        let classes = `flex items-center justify-center bg-transparent transition-all cursor-pointer ${getBorderClasses()}`;
+
+        if (isWinning) classes += ' animate-pulse bg-yellow-500/20';
+        if (isHint) classes += ' animate-pulse bg-emerald-500/30';
+        if (disabled || value) classes += ' cursor-default';
+        if (!value && !disabled) classes += ' hover:bg-emerald-500/10 hover:border-emerald-500';
+
         return classes;
     };
 
     return (
         <button
-            className={getCellClass()}
+            className={getCellClasses()}
             onClick={onClick}
             disabled={!!value || disabled}
             aria-label={value ? `Cell ${value}` : 'Empty cell'}
         >
-            <div className="cell-content">
+            <div className="flex items-center justify-center w-full h-full">
                 {value === 'X' && (
-                    <svg viewBox="0 0 24 24" className="cell-icon cell-x">
-                        <path d="M18 6L6 18M6 6l12 12" strokeWidth="3" strokeLinecap="round" />
+                    <svg viewBox="0 0 24 24" className="w-3/4 h-3/4 stroke-emerald-500 stroke-[3] fill-none">
+                        <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
                     </svg>
                 )}
                 {value === 'O' && (
-                    <svg viewBox="0 0 24 24" className="cell-icon cell-o">
-                        <circle cx="12" cy="12" r="8" strokeWidth="3" fill="none" />
+                    <svg viewBox="0 0 24 24" className="w-3/4 h-3/4 stroke-slate-600 stroke-[3] fill-none">
+                        <circle cx="12" cy="12" r="8" />
                     </svg>
                 )}
-                {!value && <div className="cell-dot" />}
             </div>
         </button>
     );

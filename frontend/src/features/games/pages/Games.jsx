@@ -105,8 +105,8 @@ const Connect4Preview = () => (
           <div
             key={i}
             className={`rounded-full border ${piece === 'teal' ? 'bg-emerald-400 border-emerald-500' :
-                piece === 'dark' ? 'bg-gray-700 border-gray-800' :
-                  'bg-gray-100 border-gray-200'
+              piece === 'dark' ? 'bg-gray-700 border-gray-800' :
+                'bg-gray-100 border-gray-200'
               }`}
           />
         )
@@ -140,10 +140,10 @@ const games = [
   },
   {
     id: 'gomoku',
-    name: 'GOMOKU',
+    name: 'CARO (GOMOKU)',
     preview: GomokuPreview,
-    path: null,
-    available: false
+    path: '/games/gomoku',
+    available: true
   },
   {
     id: 'connect4',
@@ -159,19 +159,17 @@ const GameCard = ({ game, onClick }) => {
 
   return (
     <div
-      className={`
-        game-card group
-        ${game.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}
-      `}
+      className={`flex flex-col bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
+        ${game.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
       onClick={() => game.available && onClick(game.path)}
     >
       {/* Preview Area */}
-      <div className="game-card-preview">
+      <div className="flex-1 p-4 flex items-center justify-center aspect-square">
         <PreviewComponent />
       </div>
 
       {/* Title Bar */}
-      <div className="game-card-title">
+      <div className="text-center py-3 px-4 bg-secondary text-sm font-semibold text-foreground border-t border-border">
         <span>{game.name}</span>
         {!game.available && (
           <span className="text-[10px] opacity-70 ml-1">(Soon)</span>
@@ -191,9 +189,9 @@ const Games = () => {
   }
 
   return (
-    <div className="games-page">
+    <div className="flex-1 w-full h-full p-8 bg-background">
       {/* Games Grid */}
-      <div className="games-grid">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6 max-w-5xl mx-auto">
         {games.map((game) => (
           <GameCard
             key={game.id}

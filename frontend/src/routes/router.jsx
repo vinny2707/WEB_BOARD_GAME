@@ -13,7 +13,7 @@ import Social from '../features/social/pages/social.jsx'
 import Profile from '../features/profile/pages/Profile.jsx'
 import UserManagement from '../features/userManagement/pages/UserManagement.jsx'
 import NotFound from '@/features/errors/pages/NotFound.jsx'
-import { TicTacToeGame, TicTacToeLobby } from '../features/games/components'
+import { TicTacToeGame, TicTacToeLobby, GomokuGame, GomokuLobby } from '../features/games/components'
 
 const router = createBrowserRouter([
   {
@@ -56,14 +56,24 @@ const router = createBrowserRouter([
             path: "profile",
           },
           {
-            // Lobby page - shows before game
+            // TicTacToe Lobby
             element: <TicTacToeLobby />,
             path: "games/tic-tac-toe",
           },
           {
-            // Actual game page
+            // TicTacToe Game
             element: <TicTacToeGame />,
             path: "games/tic-tac-toe/play",
+          },
+          {
+            // Gomoku Lobby
+            element: <GomokuLobby />,
+            path: "games/gomoku",
+          },
+          {
+            // Gomoku Game
+            element: <GomokuGame />,
+            path: "games/gomoku/play",
           },
         ],
       },

@@ -12,15 +12,20 @@ const DIFFICULTY_LABELS = {
 
 // Player Card Component
 const PlayerCard = ({ name, symbol, avatar, isActive, timer, score, isLeft }) => (
-  <div className={`player-card ${isActive ? 'active' : ''} ${isLeft ? 'left' : 'right'}`}>
-    <div className="player-avatar">
+  <div className={`flex items-center gap-3 px-4 py-3 bg-secondary rounded-xl border-2 transition-all min-w-[140px]
+    ${isActive ? 'border-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]' : 'border-transparent'}
+    ${isLeft ? '' : 'flex-row-reverse text-right'}`}
+  >
+    <div className="w-10 h-10 flex items-center justify-center bg-card rounded-full text-xl shadow-sm">
       {avatar}
     </div>
-    <div className="player-info">
-      <div className="player-name">{name}</div>
-      <div className="player-timer">{timer}</div>
+    <div className="flex-1">
+      <div className="text-sm font-semibold text-foreground">{name}</div>
+      <div className="font-mono text-xs text-muted-foreground">{timer}</div>
     </div>
-    <div className={`player-symbol ${symbol.toLowerCase()}`}>
+    <div className={`w-7 h-7 flex items-center justify-center rounded-md text-base font-bold
+      ${symbol === 'X' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/15 text-slate-600'}`}
+    >
       {symbol}
     </div>
   </div>
@@ -28,10 +33,10 @@ const PlayerCard = ({ name, symbol, avatar, isActive, timer, score, isLeft }) =>
 
 // Score Display
 const ScoreDisplay = ({ playerScore, aiScore }) => (
-  <div className="score-center">
-    <span className="score-value player">{playerScore}</span>
-    <span className="score-divider">-</span>
-    <span className="score-value ai">{aiScore}</span>
+  <div className="flex items-center gap-2 px-4 py-2 bg-foreground rounded-full">
+    <span className="font-mono text-xl font-bold text-emerald-500">{playerScore}</span>
+    <span className="font-bold text-background">-</span>
+    <span className="font-mono text-xl font-bold text-orange-500">{aiScore}</span>
   </div>
 );
 
@@ -177,27 +182,36 @@ const TicTacToeGame = () => {
   };
 
   return (
-    <div className="papergames-layout">
+    <div className="flex flex-col flex-1 w-full h-full bg-background">
       {/* Top Navigation */}
-      <div className="game-topbar">
-        <button className="topbar-btn" onClick={() => navigate('/games')}>
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+        <button
+          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+          onClick={() => navigate('/games')}
+        >
           <Home size={20} />
         </button>
-        <div className="topbar-title">TIC TAC TOE</div>
-        <button className="topbar-btn" onClick={() => setShowSettings(!showSettings)}>
+        <div className="text-lg font-bold tracking-wider text-foreground">TIC TAC TOE</div>
+        <button
+          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+          onClick={() => setShowSettings(!showSettings)}
+        >
           <Settings size={20} />
         </button>
       </div>
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="settings-panel">
-          <div className="settings-title">Độ khó</div>
-          <div className="difficulty-options">
+        <div className="px-4 py-3 bg-card border-b border-border">
+          <div className="text-sm font-semibold text-foreground mb-2">Độ khó</div>
+          <div className="flex gap-2">
             {Object.entries(DIFFICULTY_LABELS).map(([key, label]) => (
               <button
                 key={key}
-                className={`diff-option ${difficulty === key ? 'active' : ''}`}
+                className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
+                  ${difficulty === key
+                    ? 'bg-emerald-500 text-white border-emerald-500'
+                    : 'text-muted-foreground border-transparent hover:border-emerald-500'}`}
                 onClick={() => { setDifficulty(key); handleReset(); setShowSettings(false); }}
               >
                 {label}
@@ -208,7 +222,7 @@ const TicTacToeGame = () => {
       )}
 
       {/* Player Bar */}
-      <div className="players-bar">
+      <div className="flex items-center justify-center gap-4 p-4 bg-card">
         <PlayerCard
           name="Bạn"
           symbol="X"
@@ -233,7 +247,7 @@ const TicTacToeGame = () => {
       </div>
 
       {/* Game Board */}
-      <div className="game-area">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 gap-6">
         <TicTacToeBoard
           board={board}
           onCellClick={handleCellClick}
@@ -243,15 +257,19 @@ const TicTacToeGame = () => {
         />
 
         {/* Status Message */}
-        <div className={`game-message ${gameStatus !== 'playing' ? 'ended' : ''}`}>
+        <div className={`text-base font-medium px-4 py-2 rounded-full shadow-sm
+          ${gameStatus !== 'playing'
+            ? 'text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
+            : 'bg-card text-foreground'}`}
+        >
           {getStatusMessage()}
         </div>
       </div>
 
       {/* Bottom Controls */}
-      <div className="game-actions">
+      <div className="flex items-center justify-center gap-4 p-4 bg-card border-t border-border">
         <button
-          className="action-btn"
+          className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
           onClick={handleUndo}
           disabled={moveHistory.length < 2 || gameStatus !== 'playing' || isAIThinking}
         >
@@ -260,7 +278,7 @@ const TicTacToeGame = () => {
         </button>
 
         <button
-          className="action-btn hint"
+          className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-amber-500 transition-all hover:bg-amber-500/15 hover:text-amber-600 disabled:opacity-40 disabled:cursor-not-allowed"
           onClick={handleHint}
           disabled={gameStatus !== 'playing' || isAIThinking}
         >
@@ -269,7 +287,10 @@ const TicTacToeGame = () => {
         </button>
 
         {gameStatus !== 'playing' && (
-          <button className="action-btn primary" onClick={handleReset}>
+          <button
+            className="flex items-center gap-2 px-5 py-3 bg-emerald-500 rounded-xl text-sm font-medium text-white transition-all hover:bg-emerald-600"
+            onClick={handleReset}
+          >
             <RotateCcw size={18} />
             <span>Chơi lại</span>
           </button>

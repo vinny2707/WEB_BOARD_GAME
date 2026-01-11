@@ -24,32 +24,44 @@ const GameControls = ({
     const isGameOver = gameStatus === 'win' || gameStatus === 'draw';
 
     return (
-        <div className="game-controls">
+        <div className="flex flex-col gap-3">
             {/* Direction controls - only show if callbacks provided */}
-            <div className="controls-row controls-main">
+            <div className="flex items-center justify-center gap-2">
                 {onLeft && (
-                    <button className="control-btn" onClick={onLeft} aria-label="Left">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground"
+                        onClick={onLeft}
+                        aria-label="Left"
+                    >
                         <ArrowLeft size={20} />
                         <span>LEFT</span>
                     </button>
                 )}
 
                 {onRight && (
-                    <button className="control-btn" onClick={onRight} aria-label="Right">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground"
+                        onClick={onRight}
+                        aria-label="Right"
+                    >
                         <ArrowRight size={20} />
                         <span>RIGHT</span>
                     </button>
                 )}
 
                 {onEnter && (
-                    <button className="control-btn control-btn-primary" onClick={onEnter} aria-label="Enter">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 border-none rounded-lg text-sm font-medium text-white cursor-pointer transition-all hover:bg-emerald-600"
+                        onClick={onEnter}
+                        aria-label="Enter"
+                    >
                         <Circle size={20} />
                         <span>ENTER</span>
                     </button>
                 )}
 
                 <button
-                    className="control-btn"
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                     onClick={onUndo}
                     disabled={!canUndo}
                     aria-label="Undo"
@@ -59,7 +71,11 @@ const GameControls = ({
                 </button>
 
                 {onHint && (
-                    <button className="control-btn" onClick={onHint} aria-label="Hint">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground"
+                        onClick={onHint}
+                        aria-label="Hint"
+                    >
                         <HelpCircle size={20} />
                         <span>HINT</span>
                     </button>
@@ -67,16 +83,24 @@ const GameControls = ({
             </div>
 
             {/* Action buttons */}
-            <div className="controls-row controls-actions">
+            <div className="flex items-center justify-center gap-2">
                 {onSave && (
-                    <button className="control-btn control-btn-secondary" onClick={onSave} aria-label="Save">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground"
+                        onClick={onSave}
+                        aria-label="Save"
+                    >
                         <Save size={18} />
                         <span>SAVE</span>
                     </button>
                 )}
 
                 {onLoad && (
-                    <button className="control-btn control-btn-secondary" onClick={onLoad} aria-label="Load">
+                    <button
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-secondary border-none rounded-lg text-sm font-medium text-muted-foreground cursor-pointer transition-all hover:bg-accent hover:text-foreground"
+                        onClick={onLoad}
+                        aria-label="Load"
+                    >
                         <Upload size={18} />
                         <span>LOAD</span>
                     </button>
@@ -84,7 +108,7 @@ const GameControls = ({
 
                 {isGameOver && (
                     <button
-                        className="control-btn control-btn-primary"
+                        className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-500 border-none rounded-lg text-sm font-medium text-white cursor-pointer transition-all hover:bg-emerald-600"
                         onClick={onReset}
                         aria-label="Play Again"
                     >
