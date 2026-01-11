@@ -1,5 +1,5 @@
 import React from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import AuthLayout from '../layouts/AuthLayout.jsx'
 import ProtectedLayout from '@/layouts/ProtectedLayout.jsx'
 import AdminProtectedLayout from '@/layouts/AdminProtectedLayout.jsx'
@@ -13,7 +13,7 @@ import Social from '../features/social/pages/social.jsx'
 import Profile from '../features/profile/pages/Profile.jsx'
 import UserManagement from '../features/userManagement/pages/UserManagement.jsx'
 import NotFound from '@/features/errors/pages/NotFound.jsx'
-import { TicTacToeGame } from '../features/games/components'
+import { TicTacToeGame, TicTacToeLobby } from '../features/games/components'
 
 const router = createBrowserRouter([
   {
@@ -34,8 +34,14 @@ const router = createBrowserRouter([
         element: <UserLayout />,
         children: [
           {
-            element: <Games />,
+            // Redirect from / to /games
             index: true,
+            element: <Navigate to="/games" replace />,
+          },
+          {
+            // Games selection page
+            element: <Games />,
+            path: "games",
           },
           {
             element: <Ranking />,
@@ -50,8 +56,14 @@ const router = createBrowserRouter([
             path: "profile",
           },
           {
-            element: <TicTacToeGame />,
+            // Lobby page - shows before game
+            element: <TicTacToeLobby />,
             path: "games/tic-tac-toe",
+          },
+          {
+            // Actual game page
+            element: <TicTacToeGame />,
+            path: "games/tic-tac-toe/play",
           },
         ],
       },

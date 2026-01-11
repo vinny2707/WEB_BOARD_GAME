@@ -1,112 +1,181 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Gamepad2 } from 'lucide-react'
+
+// Game board preview components
+const TicTacToePreview = () => (
+  <svg viewBox="0 0 100 100" className="w-full h-full">
+    {/* Grid lines */}
+    <line x1="33" y1="10" x2="33" y2="90" stroke="#2dd4bf" strokeWidth="2" />
+    <line x1="66" y1="10" x2="66" y2="90" stroke="#2dd4bf" strokeWidth="2" />
+    <line x1="10" y1="33" x2="90" y2="33" stroke="#2dd4bf" strokeWidth="2" />
+    <line x1="10" y1="66" x2="90" y2="66" stroke="#2dd4bf" strokeWidth="2" />
+    {/* X marks */}
+    <g stroke="#2dd4bf" strokeWidth="3" strokeLinecap="round">
+      <line x1="15" y1="15" x2="28" y2="28" />
+      <line x1="28" y1="15" x2="15" y2="28" />
+      <line x1="38" y1="48" x2="61" y2="61" />
+      <line x1="61" y1="48" x2="38" y2="61" />
+    </g>
+    {/* O marks */}
+    <circle cx="77" cy="21" r="10" fill="none" stroke="#1e3a5f" strokeWidth="3" />
+    <circle cx="21" cy="77" r="10" fill="none" stroke="#1e3a5f" strokeWidth="3" />
+  </svg>
+)
+
+const ChessPreview = () => (
+  <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-0 rounded overflow-hidden">
+    {[...Array(16)].map((_, i) => {
+      const row = Math.floor(i / 4)
+      const col = i % 4
+      const isLight = (row + col) % 2 === 0
+      const piece = (i === 0 || i === 3) ? '♞' :
+        (i === 12 || i === 15) ? '♝' :
+          (i === 5) ? '♟' :
+            (i === 10) ? '♙' : null
+      return (
+        <div
+          key={i}
+          className={`flex items-center justify-center text-lg font-bold
+            ${isLight ? 'bg-emerald-200' : 'bg-emerald-600'}`}
+        >
+          {piece && <span className={isLight ? 'text-gray-800' : 'text-white'}>{piece}</span>}
+        </div>
+      )
+    })}
+  </div>
+)
+
+const CheckersPreview = () => (
+  <div className="w-full h-full grid grid-cols-4 grid-rows-4 gap-0 rounded overflow-hidden">
+    {[...Array(16)].map((_, i) => {
+      const row = Math.floor(i / 4)
+      const col = i % 4
+      const isLight = (row + col) % 2 === 0
+      const hasPiece = !isLight && (row < 2 || row > 1)
+      const pieceColor = row < 2 ? 'bg-gray-800' : row > 1 ? 'bg-white border-2 border-gray-300' : null
+      return (
+        <div
+          key={i}
+          className={`flex items-center justify-center
+            ${isLight ? 'bg-emerald-200' : 'bg-emerald-500'}`}
+        >
+          {hasPiece && pieceColor && (
+            <div className={`w-4 h-4 rounded-full ${pieceColor}`} />
+          )}
+        </div>
+      )
+    })}
+  </div>
+)
+
+const GomokuPreview = () => (
+  <div className="w-full h-full relative bg-white rounded border border-gray-200">
+    {/* Grid */}
+    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+      {[20, 40, 60, 80].map(pos => (
+        <g key={pos}>
+          <line x1={pos} y1="10" x2={pos} y2="90" stroke="#e5e7eb" strokeWidth="0.5" />
+          <line x1="10" y1={pos} x2="90" y2={pos} stroke="#e5e7eb" strokeWidth="0.5" />
+        </g>
+      ))}
+      {/* Stones */}
+      <circle cx="40" cy="40" r="6" fill="#1a1a2e" />
+      <circle cx="60" cy="40" r="6" fill="#1a1a2e" />
+      <circle cx="40" cy="60" r="6" fill="#2dd4bf" />
+      <circle cx="60" cy="60" r="6" fill="#1a1a2e" />
+      <circle cx="50" cy="50" r="6" fill="#2dd4bf" />
+      <circle cx="30" cy="50" r="6" fill="#2dd4bf" />
+    </svg>
+  </div>
+)
+
+const Connect4Preview = () => (
+  <div className="w-full h-full bg-white rounded border border-gray-200 p-2">
+    <div className="grid grid-cols-4 grid-rows-4 gap-1 h-full">
+      {[...Array(16)].map((_, i) => {
+        const row = Math.floor(i / 4)
+        const pieces = [
+          [null, null, null, null],
+          [null, 'teal', null, null],
+          [null, 'teal', 'dark', null],
+          ['dark', 'teal', 'dark', 'teal']
+        ]
+        const piece = pieces[row][i % 4]
+        return (
+          <div
+            key={i}
+            className={`rounded-full border ${piece === 'teal' ? 'bg-emerald-400 border-emerald-500' :
+                piece === 'dark' ? 'bg-gray-700 border-gray-800' :
+                  'bg-gray-100 border-gray-200'
+              }`}
+          />
+        )
+      })}
+    </div>
+  </div>
+)
 
 // Game data
 const games = [
   {
     id: 'tic-tac-toe',
-    name: 'Tic-Tac-Toe',
-    description: 'Cờ caro 3x3 kinh điển',
-    color: 'from-emerald-400 to-teal-500',
-    bgColor: 'bg-gradient-to-br from-emerald-50 to-teal-100',
-    textColor: 'text-emerald-700',
-    icon: '⭕',
-    tag: 'HOT',
-    tagColor: 'bg-orange-500',
+    name: 'TIC TAC TOE',
+    preview: TicTacToePreview,
     path: '/games/tic-tac-toe',
-    gridSize: '3x3'
+    available: true
   },
   {
     id: 'chess',
-    name: 'Cờ Vua',
-    description: 'Chess - Trò chơi chiến thuật',
-    color: 'from-amber-400 to-orange-500',
-    bgColor: 'bg-gradient-to-br from-amber-50 to-orange-100',
-    textColor: 'text-amber-700',
-    icon: '♟️',
-    tag: 'COMING SOON',
-    tagColor: 'bg-gray-400',
+    name: 'CHESS',
+    preview: ChessPreview,
     path: null,
-    gridSize: '8x8'
+    available: false
   },
   {
     id: 'checkers',
-    name: 'Cờ Đam',
-    description: 'Checkers - Cờ nhảy đơn giản',
-    color: 'from-red-400 to-rose-500',
-    bgColor: 'bg-gradient-to-br from-red-50 to-rose-100',
-    textColor: 'text-red-700',
-    icon: '⚫',
-    tag: 'COMING SOON',
-    tagColor: 'bg-gray-400',
+    name: 'CHECKERS',
+    preview: CheckersPreview,
     path: null,
-    gridSize: '8x8'
+    available: false
   },
   {
     id: 'gomoku',
-    name: 'Cờ Caro',
-    description: 'Gomoku - Caro 15x15',
-    color: 'from-purple-400 to-violet-500',
-    bgColor: 'bg-gradient-to-br from-purple-50 to-violet-100',
-    textColor: 'text-purple-700',
-    icon: '🎯',
-    tag: 'COMING SOON',
-    tagColor: 'bg-gray-400',
+    name: 'GOMOKU',
+    preview: GomokuPreview,
     path: null,
-    gridSize: '15x15'
+    available: false
+  },
+  {
+    id: 'connect4',
+    name: 'CONNECT 4',
+    preview: Connect4Preview,
+    path: null,
+    available: false
   }
 ]
 
 const GameCard = ({ game, onClick }) => {
-  const isAvailable = game.path !== null
+  const PreviewComponent = game.preview
 
   return (
     <div
       className={`
-        relative overflow-hidden rounded-2xl p-4 cursor-pointer
-        transition-all duration-300 ease-out
-        ${game.bgColor}
-        ${isAvailable
-          ? 'hover:scale-105 hover:shadow-xl active:scale-100'
-          : 'opacity-70 cursor-not-allowed'
-        }
+        game-card group
+        ${game.available ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}
       `}
-      onClick={() => isAvailable && onClick(game.path)}
+      onClick={() => game.available && onClick(game.path)}
     >
-      {/* Tag */}
-      <span className={`
-        absolute top-3 right-3 px-2 py-1
-        text-[10px] font-bold text-white rounded-full
-        ${game.tagColor}
-      `}>
-        {game.tag}
-      </span>
+      {/* Preview Area */}
+      <div className="game-card-preview">
+        <PreviewComponent />
+      </div>
 
-      {/* Content */}
-      <div className="flex flex-col h-full">
-        <h3 className={`text-lg font-bold ${game.textColor} mb-1`}>
-          {game.name}
-        </h3>
-
-        <p className={`text-xs ${game.textColor} opacity-70 mb-4`}>
-          {game.description}
-        </p>
-
-        {/* Game Preview */}
-        <div className="flex-1 flex items-center justify-center py-4">
-          <div className={`
-            text-6xl transform transition-transform
-            ${isAvailable ? 'group-hover:scale-110' : ''}
-          `}>
-            {game.icon}
-          </div>
-        </div>
-
-        {/* Grid Size */}
-        <div className={`text-xs ${game.textColor} opacity-50 text-center`}>
-          Bàn {game.gridSize}
-        </div>
+      {/* Title Bar */}
+      <div className="game-card-title">
+        <span>{game.name}</span>
+        {!game.available && (
+          <span className="text-[10px] opacity-70 ml-1">(Soon)</span>
+        )}
       </div>
     </div>
   )
@@ -122,20 +191,9 @@ const Games = () => {
   }
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Gamepad2 className="w-6 h-6 text-emerald-500" />
-          <h1 className="text-2xl font-bold text-foreground">Chọn Game</h1>
-        </div>
-        <p className="text-muted-foreground text-sm">
-          Chọn một trò chơi để bắt đầu
-        </p>
-      </div>
-
+    <div className="games-page">
       {/* Games Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="games-grid">
         {games.map((game) => (
           <GameCard
             key={game.id}
