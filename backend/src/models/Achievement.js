@@ -42,6 +42,25 @@ class Achievement {
     }
 
     /**
+     * Get all achievements WITH unlock_criteria (for internal service use)
+     * @returns {Promise<Array>}
+     */
+    static async findAllWithCriteria() {
+        const achievements = await db('achievements')
+            .select('*')
+            .orderBy('category', 'asc')
+            .orderBy('points', 'asc');
+
+        // Parse JSON fields
+        return achievements.map(a => ({
+            ...a,
+            unlock_criteria: typeof a.unlock_criteria === 'string' 
+                ? JSON.parse(a.unlock_criteria) 
+                : a.unlock_criteria
+        }));
+    }
+
+    /**
      * Get achievements by category
      * @param {string} category 
      * @returns {Promise<Array>}

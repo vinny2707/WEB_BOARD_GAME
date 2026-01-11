@@ -18,8 +18,8 @@ class AchievementService {
         const newlyUnlocked = [];
 
         try {
-            // Get all achievements
-            const achievements = await Achievement.findAll();
+            // Get all achievements with criteria (internal use)
+            const achievements = await Achievement.findAllWithCriteria();
 
             // Check each achievement
             for (const achievement of achievements) {
