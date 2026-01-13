@@ -167,6 +167,21 @@ const Match3Preview = () => (
   </div>
 )
 
+const MemoryPreview = () => (
+  <div className="w-full h-full relative bg-gradient-to-br from-indigo-100 to-purple-100 rounded border border-indigo-200">
+    <div className="absolute inset-1 grid grid-cols-4 grid-rows-4 gap-0.5">
+      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((i) => (
+        <div
+          key={i}
+          className={`flex items-center justify-center text-sm rounded ${i === 5 || i === 10 ? 'bg-white' : 'bg-indigo-400'}`}
+        >
+          {i === 5 || i === 10 ? '🍎' : <span className="text-white/50 text-xs">?</span>}
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
 // Game data
 const games = [
   {
@@ -216,6 +231,13 @@ const games = [
     name: 'GHÉP HÀNG 3',
     preview: Match3Preview,
     path: '/games/match3',
+    available: true
+  },
+  {
+    id: 'memory',
+    name: 'CỜ TRÍ NHỚ',
+    preview: MemoryPreview,
+    path: '/games/memory',
     available: true
   },
   {
