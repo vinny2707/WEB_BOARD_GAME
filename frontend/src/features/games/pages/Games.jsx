@@ -89,6 +89,28 @@ const GomokuPreview = () => (
   </div>
 )
 
+const Caro4Preview = () => (
+  <div className="w-full h-full relative bg-amber-50 rounded border border-amber-200">
+    {/* Grid */}
+    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+      {[25, 50, 75].map(pos => (
+        <g key={pos}>
+          <line x1={pos} y1="10" x2={pos} y2="90" stroke="#fcd34d" strokeWidth="0.8" />
+          <line x1="10" y1={pos} x2="90" y2={pos} stroke="#fcd34d" strokeWidth="0.8" />
+        </g>
+      ))}
+      {/* 4 stones in a row - winning pattern */}
+      <circle cx="25" cy="50" r="7" fill="#f59e0b" />
+      <circle cx="42" cy="50" r="7" fill="#f59e0b" />
+      <circle cx="59" cy="50" r="7" fill="#f59e0b" />
+      <circle cx="76" cy="50" r="7" fill="#f59e0b" />
+      {/* Opponent stones */}
+      <circle cx="50" cy="25" r="6" fill="#475569" />
+      <circle cx="50" cy="75" r="6" fill="#475569" />
+    </svg>
+  </div>
+)
+
 const Connect4Preview = () => (
   <div className="w-full h-full bg-white rounded border border-gray-200 p-2">
     <div className="grid grid-cols-4 grid-rows-4 gap-1 h-full">
@@ -140,9 +162,16 @@ const games = [
   },
   {
     id: 'gomoku',
-    name: 'CARO (GOMOKU)',
+    name: 'CARO 5 HÀNG',
     preview: GomokuPreview,
     path: '/games/gomoku',
+    available: true
+  },
+  {
+    id: 'caro4',
+    name: 'CARO 4 HÀNG',
+    preview: Caro4Preview,
+    path: '/games/caro4',
     available: true
   },
   {
