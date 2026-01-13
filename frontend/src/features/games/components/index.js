@@ -10,6 +10,8 @@ export { default as GameHeader } from './GameHeader';
 export { default as GameControls } from './GameControls';
 export { default as SnakeGame } from './Snake/SnakeGame';
 export { default as SnakeLobby } from './Snake/SnakeLobby';
+export { default as Match3Game } from './Match3/Match3Game';
+export { default as Match3Lobby } from './Match3/Match3Lobby';
 
 // Shared Caro components
 export { CaroCell, CaroBoard, CaroGame, CaroLobby, createCaroAI, gomokuAI, caro4AI } from './shared';

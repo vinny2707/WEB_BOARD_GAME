@@ -13,7 +13,7 @@ import Social from '../features/social/pages/social.jsx'
 import Profile from '../features/profile/pages/Profile.jsx'
 import UserManagement from '../features/userManagement/pages/UserManagement.jsx'
 import NotFound from '@/features/errors/pages/NotFound.jsx'
-import { TicTacToeGame, TicTacToeLobby, GomokuGame, GomokuLobby, Caro4Game, Caro4Lobby, SnakeGame, SnakeLobby } from '../features/games/components'
+import { TicTacToeGame, TicTacToeLobby, GomokuGame, GomokuLobby, Caro4Game, Caro4Lobby, SnakeGame, SnakeLobby, Match3Game, Match3Lobby } from '../features/games/components'
 
 const router = createBrowserRouter([
   {
@@ -94,6 +94,16 @@ const router = createBrowserRouter([
             // Snake Game
             element: <SnakeGame />,
             path: "games/snake/play",
+          },
+          {
+            // Match3 Lobby
+            element: <Match3Lobby />,
+            path: "games/match3",
+          },
+          {
+            // Match3 Game
+            element: <Match3Game />,
+            path: "games/match3/play",
           },
         ],
       },

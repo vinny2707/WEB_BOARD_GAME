@@ -155,6 +155,18 @@ const SnakePreview = () => (
   </div>
 )
 
+const Match3Preview = () => (
+  <div className="w-full h-full relative bg-gradient-to-br from-purple-100 to-pink-100 rounded border border-purple-200">
+    <div className="absolute inset-1 grid grid-cols-4 grid-rows-4 gap-0.5">
+      {['🍎', '🍊', '🍋', '🍇', '🍓', '🍊', '🫐', '🍋', '🍇', '🍎', '🍓', '🫐', '🍋', '🍇', '🍎', '🍓'].map((candy, i) => (
+        <div key={i} className="flex items-center justify-center text-sm">
+          {candy}
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
 // Game data
 const games = [
   {
@@ -197,6 +209,13 @@ const games = [
     name: 'RẮN SĂN MỒI',
     preview: SnakePreview,
     path: '/games/snake',
+    available: true
+  },
+  {
+    id: 'match3',
+    name: 'GHÉP HÀNG 3',
+    preview: Match3Preview,
+    path: '/games/match3',
     available: true
   },
   {
