@@ -137,6 +137,24 @@ const Connect4Preview = () => (
   </div>
 )
 
+const SnakePreview = () => (
+  <div className="w-full h-full relative bg-green-50 rounded border border-green-200">
+    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
+      {/* Snake body */}
+      <rect x="20" y="45" width="12" height="12" rx="2" fill="#22c55e" />
+      <rect x="32" y="45" width="12" height="12" rx="2" fill="#22c55e" />
+      <rect x="44" y="45" width="12" height="12" rx="2" fill="#22c55e" />
+      <rect x="56" y="45" width="12" height="12" rx="2" fill="#16a34a" />
+      {/* Snake head */}
+      <rect x="68" y="45" width="14" height="12" rx="2" fill="#15803d" />
+      <circle cx="77" cy="49" r="2" fill="white" />
+      {/* Apple/Food */}
+      <circle cx="30" cy="25" r="6" fill="#ef4444" />
+      <path d="M30 19 Q33 16 35 19" stroke="#166534" strokeWidth="2" fill="none" />
+    </svg>
+  </div>
+)
+
 // Game data
 const games = [
   {
@@ -172,6 +190,13 @@ const games = [
     name: 'CARO 4 HÀNG',
     preview: Caro4Preview,
     path: '/games/caro4',
+    available: true
+  },
+  {
+    id: 'snake',
+    name: 'RẮN SĂN MỒI',
+    preview: SnakePreview,
+    path: '/games/snake',
     available: true
   },
   {
