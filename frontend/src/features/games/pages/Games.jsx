@@ -182,6 +182,18 @@ const MemoryPreview = () => (
   </div>
 )
 
+const DrawingPreview = () => (
+  <div className="w-full h-full relative bg-gradient-to-br from-teal-100 to-cyan-100 rounded border border-teal-200 overflow-hidden">
+    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+      <path d="M20 60 Q40 20 60 50 T90 40" stroke="#14b8a6" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <path d="M10 80 Q30 60 50 70" stroke="#0891b2" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="75" cy="25" r="8" fill="#f59e0b" opacity="0.8" />
+      <rect x="15" y="25" width="12" height="12" fill="#ec4899" opacity="0.8" rx="2" />
+    </svg>
+    <div className="absolute bottom-1 right-1 text-lg">🎨</div>
+  </div>
+)
+
 // Game data
 const games = [
   {
@@ -238,6 +250,13 @@ const games = [
     name: 'CỜ TRÍ NHỚ',
     preview: MemoryPreview,
     path: '/games/memory',
+    available: true
+  },
+  {
+    id: 'drawing',
+    name: 'BẢNG VẼ',
+    preview: DrawingPreview,
+    path: '/games/drawing',
     available: true
   },
   {
