@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, RotateCcw, Settings, Trophy, Zap, Clock } from 'lucide-react';
 
@@ -12,10 +12,11 @@ const createBoard = () => {
     for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
         board.push({
             type: Math.floor(Math.random() * CANDY_TYPES.length),
-            id: i
+            id: Date.now() + i,
+            fallDistance: 0,
+            isNew: false
         });
     }
-    // Remove initial matches
     return removeInitialMatches(board);
 };
 
@@ -26,7 +27,6 @@ const removeInitialMatches = (board) => {
         const row = Math.floor(i / BOARD_SIZE);
         const col = i % BOARD_SIZE;
 
-        // Check horizontal matches
         if (col >= 2) {
             while (
                 newBoard[i].type === newBoard[i - 1].type &&
@@ -39,7 +39,6 @@ const removeInitialMatches = (board) => {
             }
         }
 
-        // Check vertical matches
         if (row >= 2) {
             while (
                 newBoard[i].type === newBoard[i - BOARD_SIZE].type &&
@@ -55,13 +54,74 @@ const removeInitialMatches = (board) => {
     return newBoard;
 };
 
+// Explosion Particle Component
+const ExplosionParticle = ({ x, y, color, delay }) => {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setVisible(false), 600);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (!visible) return null;
+
+    return (
+        <div
+            className="absolute pointer-events-none"
+            style={{
+                left: `${x}%`,
+                top: `${y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 100
+            }}
+        >
+            <div
+                className="absolute animate-ping"
+                style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    backgroundColor: color,
+                    opacity: 0.6,
+                    transform: 'translate(-50%, -50%)',
+                    animationDuration: '0.5s'
+                }}
+            />
+
+            {[...Array(8)].map((_, i) => (
+                <div
+                    key={i}
+                    className="absolute text-lg"
+                    style={{
+                        animation: `particle-fly-${i % 4} 0.5s ease-out forwards`,
+                        animationDelay: `${delay + i * 20}ms`,
+                        opacity: 0
+                    }}
+                >
+                    ✨
+                </div>
+            ))}
+
+            <div
+                className="absolute text-sm font-bold text-yellow-400 whitespace-nowrap"
+                style={{
+                    animation: 'score-popup 0.6s ease-out forwards',
+                    textShadow: '0 0 10px rgba(0,0,0,0.5)'
+                }}
+            >
+                +10
+            </div>
+        </div>
+    );
+};
+
 const Match3Game = () => {
     const navigate = useNavigate();
     const [board, setBoard] = useState(() => createBoard());
     const [selectedCell, setSelectedCell] = useState(null);
     const [score, setScore] = useState(0);
     const [moves, setMoves] = useState(30);
-    const [gameStatus, setGameStatus] = useState('playing'); // 'playing', 'gameover', 'win'
+    const [gameStatus, setGameStatus] = useState('playing');
     const [combo, setCombo] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [matchedCells, setMatchedCells] = useState([]);
@@ -72,7 +132,10 @@ const Match3Game = () => {
         return saved ? parseInt(saved, 10) : 0;
     });
 
-    // Check if two cells are adjacent
+    const [swappingCells, setSwappingCells] = useState({ from: null, to: null });
+    const [explosions, setExplosions] = useState([]);
+    const [fallingCells, setFallingCells] = useState({});
+
     const areAdjacent = (index1, index2) => {
         const row1 = Math.floor(index1 / BOARD_SIZE);
         const col1 = index1 % BOARD_SIZE;
@@ -85,11 +148,22 @@ const Match3Game = () => {
         );
     };
 
-    // Find all matches on the board
+    const getSwapDirection = (from, to) => {
+        const rowFrom = Math.floor(from / BOARD_SIZE);
+        const colFrom = from % BOARD_SIZE;
+        const rowTo = Math.floor(to / BOARD_SIZE);
+        const colTo = to % BOARD_SIZE;
+
+        if (rowTo < rowFrom) return 'up';
+        if (rowTo > rowFrom) return 'down';
+        if (colTo < colFrom) return 'left';
+        if (colTo > colFrom) return 'right';
+        return null;
+    };
+
     const findMatches = useCallback((boardState) => {
         const matches = new Set();
 
-        // Check horizontal matches
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE - 2; col++) {
                 const idx = row * BOARD_SIZE + col;
@@ -102,7 +176,6 @@ const Match3Game = () => {
                     matches.add(idx + 1);
                     matches.add(idx + 2);
 
-                    // Check for longer matches
                     let k = 3;
                     while (col + k < BOARD_SIZE && boardState[idx + k].type === type) {
                         matches.add(idx + k);
@@ -112,7 +185,6 @@ const Match3Game = () => {
             }
         }
 
-        // Check vertical matches
         for (let col = 0; col < BOARD_SIZE; col++) {
             for (let row = 0; row < BOARD_SIZE - 2; row++) {
                 const idx = row * BOARD_SIZE + col;
@@ -125,7 +197,6 @@ const Match3Game = () => {
                     matches.add(idx + BOARD_SIZE);
                     matches.add(idx + BOARD_SIZE * 2);
 
-                    // Check for longer matches
                     let k = 3;
                     while (row + k < BOARD_SIZE && boardState[idx + BOARD_SIZE * k].type === type) {
                         matches.add(idx + BOARD_SIZE * k);
@@ -138,52 +209,81 @@ const Match3Game = () => {
         return Array.from(matches);
     }, []);
 
-    // Swap two cells
-    const swapCells = useCallback((index1, index2) => {
-        setBoard(prev => {
-            const newBoard = [...prev];
-            const temp = newBoard[index1];
-            newBoard[index1] = newBoard[index2];
-            newBoard[index2] = temp;
-            return newBoard;
-        });
-    }, []);
-
-    // Drop candies to fill empty spaces
+    // Drop candies with fall distance tracking
     const dropCandies = useCallback((boardState) => {
         const newBoard = [...boardState];
+        const newFallingCells = {};
 
-        // Process each column
         for (let col = 0; col < BOARD_SIZE; col++) {
-            let emptyRow = BOARD_SIZE - 1;
+            let emptyCount = 0;
 
-            // Move existing candies down
+            // Count empty cells and track fall distances
             for (let row = BOARD_SIZE - 1; row >= 0; row--) {
                 const idx = row * BOARD_SIZE + col;
-                if (newBoard[idx].type !== null) {
-                    const targetIdx = emptyRow * BOARD_SIZE + col;
-                    if (idx !== targetIdx) {
-                        newBoard[targetIdx] = { ...newBoard[idx] };
-                        newBoard[idx] = { ...newBoard[idx], type: null };
-                    }
-                    emptyRow--;
+                if (newBoard[idx].type === null) {
+                    emptyCount++;
+                } else if (emptyCount > 0) {
+                    // This candy needs to fall
+                    const targetRow = row + emptyCount;
+                    const targetIdx = targetRow * BOARD_SIZE + col;
+
+                    newBoard[targetIdx] = {
+                        ...newBoard[idx],
+                        fallDistance: emptyCount,
+                        isNew: false
+                    };
+                    newBoard[idx] = { ...newBoard[idx], type: null };
+                    newFallingCells[targetIdx] = emptyCount;
                 }
             }
 
             // Fill empty spaces at top with new candies
-            for (let row = emptyRow; row >= 0; row--) {
-                const idx = row * BOARD_SIZE + col;
+            for (let i = 0; i < emptyCount; i++) {
+                const idx = i * BOARD_SIZE + col;
+                const fallDist = emptyCount - i + BOARD_SIZE; // Extra distance for "from above"
                 newBoard[idx] = {
                     type: Math.floor(Math.random() * CANDY_TYPES.length),
-                    id: Date.now() + idx
+                    id: Date.now() + idx + Math.random() * 1000,
+                    fallDistance: fallDist,
+                    isNew: true
                 };
+                newFallingCells[idx] = fallDist;
             }
         }
+
+        setFallingCells(newFallingCells);
+
+        // Clear falling state after animation
+        setTimeout(() => {
+            setFallingCells({});
+        }, 500);
 
         return newBoard;
     }, []);
 
-    // Process matches and cascade
+    const createExplosions = (matches, boardState) => {
+        const newExplosions = matches.map((idx, i) => {
+            const row = Math.floor(idx / BOARD_SIZE);
+            const col = idx % BOARD_SIZE;
+            const cellSize = 100 / BOARD_SIZE;
+            const candyType = boardState[idx].type;
+
+            return {
+                id: Date.now() + idx,
+                x: (col + 0.5) * cellSize,
+                y: (row + 0.5) * cellSize,
+                color: CANDY_COLORS[candyType] || '#fff',
+                delay: i * 30
+            };
+        });
+
+        setExplosions(prev => [...prev, ...newExplosions]);
+
+        setTimeout(() => {
+            setExplosions(prev => prev.filter(e => !newExplosions.find(ne => ne.id === e.id)));
+        }, 800);
+    };
+
     const processMatches = useCallback(async (boardState, currentCombo = 0) => {
         const matches = findMatches(boardState);
 
@@ -193,11 +293,11 @@ const Match3Game = () => {
             return boardState;
         }
 
-        // Highlight matched cells
         setMatchedCells(matches);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        createExplosions(matches, boardState);
 
-        // Calculate score with combo multiplier
+        await new Promise(resolve => setTimeout(resolve, 400));
+
         const matchScore = matches.length * 10 * (currentCombo + 1);
         setScore(prev => {
             const newScore = prev + matchScore;
@@ -209,26 +309,25 @@ const Match3Game = () => {
         });
         setCombo(currentCombo + 1);
 
-        // Remove matched candies
         let newBoard = [...boardState];
         matches.forEach(idx => {
             newBoard[idx] = { ...newBoard[idx], type: null };
         });
 
         setMatchedCells([]);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        setBoard(newBoard);
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Drop candies
+        // Drop with animation
         newBoard = dropCandies(newBoard);
         setBoard(newBoard);
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for fall animation to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Recursively check for new matches (cascade)
         return processMatches(newBoard, currentCombo + 1);
     }, [findMatches, dropCandies, highScore]);
 
-    // Handle cell click
     const handleCellClick = async (index) => {
         if (isAnimating || gameStatus !== 'playing') return;
 
@@ -238,28 +337,35 @@ const Match3Game = () => {
             setSelectedCell(null);
         } else if (areAdjacent(selectedCell, index)) {
             setIsAnimating(true);
+            const fromIndex = selectedCell;
+            const toIndex = index;
             setSelectedCell(null);
 
-            // Swap cells
-            swapCells(selectedCell, index);
+            setSwappingCells({ from: fromIndex, to: toIndex });
+            await new Promise(resolve => setTimeout(resolve, 300));
 
-            await new Promise(resolve => setTimeout(resolve, 200));
-
-            // Check for matches after swap
             const newBoard = [...board];
-            const temp = newBoard[selectedCell];
-            newBoard[selectedCell] = newBoard[index];
-            newBoard[index] = temp;
+            const temp = newBoard[fromIndex];
+            newBoard[fromIndex] = newBoard[toIndex];
+            newBoard[toIndex] = temp;
+            setBoard(newBoard);
+            setSwappingCells({ from: null, to: null });
 
             const matches = findMatches(newBoard);
 
             if (matches.length === 0) {
-                // No match, swap back
-                await new Promise(resolve => setTimeout(resolve, 200));
-                swapCells(selectedCell, index);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                setSwappingCells({ from: toIndex, to: fromIndex });
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                const revertBoard = [...newBoard];
+                const temp2 = revertBoard[fromIndex];
+                revertBoard[fromIndex] = revertBoard[toIndex];
+                revertBoard[toIndex] = temp2;
+                setBoard(revertBoard);
+                setSwappingCells({ from: null, to: null });
                 setIsAnimating(false);
             } else {
-                // Valid move, process matches
                 setMoves(prev => prev - 1);
                 await processMatches(newBoard);
             }
@@ -268,7 +374,6 @@ const Match3Game = () => {
         }
     };
 
-    // Check game status
     useEffect(() => {
         if (score >= targetScore) {
             setGameStatus('win');
@@ -277,7 +382,6 @@ const Match3Game = () => {
         }
     }, [score, moves, targetScore]);
 
-    // Restart game
     const restartGame = () => {
         setBoard(createBoard());
         setScore(0);
@@ -287,36 +391,135 @@ const Match3Game = () => {
         setGameStatus('playing');
         setIsAnimating(false);
         setMatchedCells([]);
+        setSwappingCells({ from: null, to: null });
+        setExplosions([]);
+        setFallingCells({});
+    };
+
+    const getSwapTransform = (index) => {
+        if (swappingCells.from === null || swappingCells.to === null) return '';
+
+        const cellSize = 100 / BOARD_SIZE;
+
+        if (index === swappingCells.from) {
+            const dir = getSwapDirection(swappingCells.from, swappingCells.to);
+            switch (dir) {
+                case 'up': return `translateY(-${cellSize}%)`;
+                case 'down': return `translateY(${cellSize}%)`;
+                case 'left': return `translateX(-${cellSize}%)`;
+                case 'right': return `translateX(${cellSize}%)`;
+                default: return '';
+            }
+        }
+
+        if (index === swappingCells.to) {
+            const dir = getSwapDirection(swappingCells.from, swappingCells.to);
+            switch (dir) {
+                case 'up': return `translateY(${cellSize}%)`;
+                case 'down': return `translateY(-${cellSize}%)`;
+                case 'left': return `translateX(${cellSize}%)`;
+                case 'right': return `translateX(-${cellSize}%)`;
+                default: return '';
+            }
+        }
+
+        return '';
     };
 
     const renderCell = (candy, index) => {
         const isSelected = selectedCell === index;
         const isMatched = matchedCells.includes(index);
+        const isSwapping = swappingCells.from === index || swappingCells.to === index;
         const candyType = candy.type;
+        const swapTransform = getSwapTransform(index);
+        const isFalling = fallingCells[index] !== undefined;
+        const fallDistance = fallingCells[index] || 0;
+
+        // Calculate fall animation
+        const cellHeight = 100 / BOARD_SIZE;
+        const fallOffset = isFalling ? -fallDistance * cellHeight : 0;
 
         return (
-            <button
+            <div
                 key={candy.id}
-                className={`aspect-square rounded-lg flex items-center justify-center text-2xl sm:text-3xl transition-all duration-200 transform bg-secondary border border-border
-                    ${isSelected ? 'scale-110 ring-2 ring-pink-500 ring-offset-2 ring-offset-transparent' : ''}
-                    ${isMatched ? 'animate-pulse scale-110' : ''}
+                className={`aspect-square rounded-lg flex items-center justify-center text-2xl sm:text-3xl bg-secondary border border-border relative overflow-visible
+                    ${isSelected ? 'ring-2 ring-pink-500 ring-offset-2 ring-offset-background z-10' : ''}
                     ${!isAnimating && gameStatus === 'playing' ? 'hover:scale-105 cursor-pointer hover:bg-accent' : 'cursor-default'}
                 `}
+                style={{
+                    transform: swapTransform || (isSelected ? 'scale(1.1)' : ''),
+                    transition: isSwapping
+                        ? 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        : 'transform 0.15s ease-out',
+                    zIndex: isSwapping ? 20 : isSelected ? 10 : 1
+                }}
                 onClick={() => handleCellClick(index)}
-                disabled={isAnimating || gameStatus !== 'playing'}
             >
                 {candyType !== null && (
-                    <span className={`drop-shadow-lg ${isMatched ? 'animate-bounce' : ''}`}>
+                    <span
+                        className="drop-shadow-lg absolute"
+                        style={{
+                            transform: isMatched
+                                ? 'scale(1.5) rotate(15deg)'
+                                : isFalling
+                                    ? `translateY(${fallOffset}%)`
+                                    : 'scale(1)',
+                            opacity: isMatched ? 0 : 1,
+                            transition: isFalling
+                                ? `transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${candy.isNew ? '0.1s' : '0s'}`
+                                : 'all 0.3s ease-out',
+                            animationName: isFalling ? 'none' : undefined
+                        }}
+                    >
                         {CANDY_TYPES[candyType]}
                     </span>
                 )}
-            </button>
+
+                {isMatched && (
+                    <div
+                        className="absolute inset-0 rounded-lg"
+                        style={{
+                            background: `radial-gradient(circle, ${CANDY_COLORS[candyType]}80 0%, transparent 70%)`,
+                            animation: 'pulse 0.3s ease-out'
+                        }}
+                    />
+                )}
+            </div>
         );
     };
 
     return (
         <div className="flex flex-col flex-1 w-full h-full bg-background">
-            {/* Top Navigation */}
+            <style>{`
+                @keyframes particle-fly-0 {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% + 30px), calc(-50% - 30px)) scale(0); opacity: 0; }
+                }
+                @keyframes particle-fly-1 {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% + 40px), calc(-50% + 10px)) scale(0); opacity: 0; }
+                }
+                @keyframes particle-fly-2 {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% - 30px), calc(-50% + 30px)) scale(0); opacity: 0; }
+                }
+                @keyframes particle-fly-3 {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(calc(-50% - 40px), calc(-50% - 20px)) scale(0); opacity: 0; }
+                }
+                @keyframes score-popup {
+                    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                    50% { transform: translate(-50%, -80%) scale(1.2); opacity: 1; }
+                    100% { transform: translate(-50%, -120%) scale(1); opacity: 0; }
+                }
+                @keyframes bounce-in {
+                    0% { transform: translateY(-100%) scale(0.8); }
+                    60% { transform: translateY(10%) scale(1.1); }
+                    80% { transform: translateY(-5%) scale(0.95); }
+                    100% { transform: translateY(0) scale(1); }
+                }
+            `}</style>
+
             <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
@@ -333,7 +536,6 @@ const Match3Game = () => {
                 </button>
             </div>
 
-            {/* Score Bar */}
             <div className="flex items-center justify-center gap-4 p-3 bg-card">
                 <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-full">
                     <Trophy size={16} className="text-yellow-500" />
@@ -352,7 +554,6 @@ const Match3Game = () => {
                 </div>
             </div>
 
-            {/* Combo Display */}
             {combo > 1 && (
                 <div className="text-center py-2 animate-bounce">
                     <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500">
@@ -361,7 +562,6 @@ const Match3Game = () => {
                 </div>
             )}
 
-            {/* Progress Bar */}
             <div className="px-4 py-2">
                 <div className="h-3 bg-secondary rounded-full overflow-hidden">
                     <div
@@ -371,11 +571,10 @@ const Match3Game = () => {
                 </div>
             </div>
 
-            {/* Game Area */}
             <div className="flex-1 flex items-center justify-center p-4">
-                <div className="bg-card rounded-2xl p-2 shadow-lg border-2 border-border relative">
+                <div className="bg-card rounded-2xl p-2 shadow-lg border-2 border-border relative overflow-hidden">
                     <div
-                        className="grid gap-1"
+                        className="grid gap-1 relative"
                         style={{
                             gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
                             width: 'min(85vw, 400px)',
@@ -385,7 +584,18 @@ const Match3Game = () => {
                         {board.map((candy, index) => renderCell(candy, index))}
                     </div>
 
-                    {/* Game Over / Win Overlay */}
+                    <div className="absolute inset-0 pointer-events-none overflow-visible">
+                        {explosions.map(exp => (
+                            <ExplosionParticle
+                                key={exp.id}
+                                x={exp.x}
+                                y={exp.y}
+                                color={exp.color}
+                                delay={exp.delay}
+                            />
+                        ))}
+                    </div>
+
                     {gameStatus !== 'playing' && (
                         <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl">
                             {gameStatus === 'win' ? (
@@ -413,13 +623,11 @@ const Match3Game = () => {
                 </div>
             </div>
 
-            {/* High Score */}
             <div className="text-center pb-2">
                 <span className="text-muted-foreground text-sm">Điểm cao nhất: </span>
                 <span className="text-yellow-500 font-bold">{highScore.toLocaleString()}</span>
             </div>
 
-            {/* Bottom Actions */}
             <div className="flex items-center justify-center gap-4 p-4 bg-card border-t border-border">
                 <button
                     className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
