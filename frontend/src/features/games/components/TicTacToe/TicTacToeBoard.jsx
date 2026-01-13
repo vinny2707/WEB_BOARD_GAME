@@ -1,7 +1,7 @@
 import React from 'react';
 import TicTacToeCell from './TicTacToeCell';
 
-const TicTacToeBoard = ({ board, onCellClick, winningLine, hintCell, disabled }) => {
+const TicTacToeBoard = ({ board, onCellClick, winningLine, hintCell, disabled, highlightCells = [] }) => {
     return (
         <div className={`relative w-80 h-80 bg-transparent ${disabled ? 'opacity-50' : ''}`}>
             {/* Dot matrix background - hidden in papergames layout */}
@@ -19,7 +19,7 @@ const TicTacToeBoard = ({ board, onCellClick, winningLine, hintCell, disabled })
                         value={cell}
                         onClick={() => onCellClick(index)}
                         isWinning={winningLine?.includes(index)}
-                        isHint={hintCell === index}
+                        isHint={hintCell === index || highlightCells.includes(index)}
                         disabled={disabled}
                         cellIndex={index}
                     />
