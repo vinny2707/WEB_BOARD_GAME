@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Play, Pause, RotateCcw, Settings, Trophy } from 'lucide-react';
+import { Home, Play, Pause, RotateCcw, Settings, Trophy, BookOpen, X, ChevronRight } from 'lucide-react';
 
 const BOARD_SIZE = 20;
 const INITIAL_SPEED = 150;
@@ -20,12 +20,79 @@ const DIFFICULTY_SETTINGS = {
     hard: { speed: 80, label: 'Khó' }
 };
 
+// Tutorial steps - press key → snake moves until eating food → next step
+const TUTORIAL_STEPS = [
+    {
+        id: 1,
+        title: 'Chào mừng! 🐍',
+        message: 'Hãy học cách điều khiển rắn bằng bàn phím nhé!',
+        action: 'click_next',
+        snakePos: { x: 10, y: 10 },
+        foodPos: { x: 14, y: 10 }, // Food to the right
+        requiredKey: null
+    },
+    {
+        id: 2,
+        title: 'Đi sang phải ➡️',
+        message: 'Nhấn phím → hoặc D. Rắn sẽ đi sang phải và ăn táo!',
+        action: 'press_key_and_eat',
+        snakePos: null,
+        foodPos: { x: 14, y: 10 },
+        requiredKey: 'RIGHT'
+    },
+    {
+        id: 3,
+        title: 'Đi lên ⬆️',
+        message: 'Nhấn phím ↑ hoặc W. Rắn sẽ đi lên và ăn táo!',
+        action: 'press_key_and_eat',
+        snakePos: null,
+        foodPos: { x: 14, y: 6 }, // Food above
+        requiredKey: 'UP'
+    },
+    {
+        id: 4,
+        title: 'Đi xuống ⬇️',
+        message: 'Nhấn phím ↓ hoặc S. Rắn sẽ đi xuống và ăn táo!',
+        action: 'press_key_and_eat',
+        snakePos: null,
+        foodPos: { x: 14, y: 12 }, // Food below
+        requiredKey: 'DOWN'
+    },
+    {
+        id: 5,
+        title: 'Đi sang trái ⬅️',
+        message: 'Nhấn phím ← hoặc A. Rắn sẽ đi sang trái và ăn táo!',
+        action: 'press_key_and_eat',
+        snakePos: null,
+        foodPos: { x: 8, y: 12 }, // Food to the left
+        requiredKey: 'LEFT'
+    },
+    {
+        id: 6,
+        title: 'Cảnh báo! ⚠️',
+        message: 'Nhớ: KHÔNG va vào tường và KHÔNG cắn thân mình!',
+        action: 'click_next',
+        snakePos: null,
+        foodPos: null,
+        requiredKey: null
+    },
+    {
+        id: 7,
+        title: 'Hoàn thành! 🏆',
+        message: 'Bạn đã sẵn sàng! Chúc may mắn!',
+        action: 'finish',
+        snakePos: null,
+        foodPos: null,
+        requiredKey: null
+    }
+];
+
 const SnakeGame = () => {
     const navigate = useNavigate();
     const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
     const [food, setFood] = useState({ x: 15, y: 10 });
     const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
-    const [gameStatus, setGameStatus] = useState('idle'); // 'idle', 'playing', 'paused', 'gameover'
+    const [gameStatus, setGameStatus] = useState('idle'); // 'idle', 'playing', 'paused', 'gameover', 'tutorial'
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(() => {
         const saved = localStorage.getItem('snakeHighScore');
@@ -35,8 +102,40 @@ const SnakeGame = () => {
     const [difficulty, setDifficulty] = useState('medium');
     const [showSettings, setShowSettings] = useState(false);
 
+    // Tutorial state
+    const [tutorialStep, setTutorialStep] = useState(0);
+    const [tutorialFoodEaten, setTutorialFoodEaten] = useState(0);
+    const [isTyping, setIsTyping] = useState(false);
+    const [displayedText, setDisplayedText] = useState('');
+    const [displayedTitle, setDisplayedTitle] = useState('');
+    const [isNearDanger, setIsNearDanger] = useState(null);
+    const [tutorialMoving, setTutorialMoving] = useState(false); // Snake is moving after key press
+
     const directionRef = useRef(direction);
     const gameLoopRef = useRef(null);
+    const typingRef = useRef(null);
+
+    // Check if snake is near danger (wall or body)
+    const checkNearDanger = useCallback((snakeHead, snakeBody) => {
+        // Check near wall (1 cell away)
+        if (snakeHead.x <= 1 || snakeHead.x >= BOARD_SIZE - 2 ||
+            snakeHead.y <= 1 || snakeHead.y >= BOARD_SIZE - 2) {
+            return 'wall';
+        }
+        // Check near body (adjacent to any body segment)
+        const adjacentPositions = [
+            { x: snakeHead.x + 1, y: snakeHead.y },
+            { x: snakeHead.x - 1, y: snakeHead.y },
+            { x: snakeHead.x, y: snakeHead.y + 1 },
+            { x: snakeHead.x, y: snakeHead.y - 1 }
+        ];
+        for (const pos of adjacentPositions) {
+            if (snakeBody.slice(2).some(seg => seg.x === pos.x && seg.y === pos.y)) {
+                return 'body';
+            }
+        }
+        return null;
+    }, []);
 
     // Generate random food position
     const generateFood = useCallback((currentSnake) => {
@@ -70,6 +169,10 @@ const SnakeGame = () => {
 
             // Check collision
             if (checkCollision(newHead, prevSnake)) {
+                if (gameStatus === 'tutorial') {
+                    // In tutorial, just reset position
+                    return [{ x: 10, y: 10 }];
+                }
                 setGameStatus('gameover');
                 return prevSnake;
             }
@@ -78,89 +181,199 @@ const SnakeGame = () => {
 
             // Check if eating food
             if (newHead.x === food.x && newHead.y === food.y) {
+                if (gameStatus === 'tutorial') {
+                    setTutorialFoodEaten(prev => prev + 1);
+                }
                 setScore(prev => {
                     const newScore = prev + 10;
-                    if (newScore > highScore) {
+                    if (newScore > highScore && gameStatus !== 'tutorial') {
                         setHighScore(newScore);
                         localStorage.setItem('snakeHighScore', newScore.toString());
                     }
                     return newScore;
                 });
                 setFood(generateFood(newSnake));
-                // Increase speed
-                setSpeed(prev => Math.max(MIN_SPEED, prev - SPEED_INCREMENT));
+                // Increase speed (only in normal game)
+                if (gameStatus !== 'tutorial') {
+                    setSpeed(prev => Math.max(MIN_SPEED, prev - SPEED_INCREMENT));
+                }
             } else {
                 newSnake.pop();
             }
 
             return newSnake;
         });
-    }, [food, generateFood, checkCollision, highScore]);
+    }, [food, generateFood, checkCollision, highScore, gameStatus]);
+
+    // Check danger proximity for tutorial warning
+    useEffect(() => {
+        if (gameStatus !== 'tutorial' && gameStatus !== 'playing') return;
+        const danger = checkNearDanger(snake[0], snake);
+        setIsNearDanger(danger);
+    }, [snake, gameStatus, checkNearDanger]);
+
+    // Tutorial step advancement when eating food
+    useEffect(() => {
+        if (gameStatus !== 'tutorial') return;
+
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (!currentStep) return;
+
+        // press_key_and_eat: when food is eaten, stop moving and go to next step
+        if (currentStep.action === 'press_key_and_eat') {
+            // Count how many foods should have been eaten by this step
+            const expectedEaten = tutorialStep - 1; // step 1=0, step 2=1, step 3=2, etc
+            if (tutorialFoodEaten > expectedEaten) {
+                setTutorialMoving(false);
+                setTutorialStep(prev => prev + 1);
+            }
+        }
+    }, [tutorialFoodEaten, tutorialStep, gameStatus]);
+
+    // Place food according to tutorial step
+    useEffect(() => {
+        if (gameStatus !== 'tutorial') return;
+
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (currentStep?.foodPos) {
+            setFood(currentStep.foodPos);
+        }
+    }, [tutorialStep, gameStatus]);
+
+    // Typewriter effect for tutorial
+    useEffect(() => {
+        if (gameStatus !== 'tutorial') return;
+
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (!currentStep) return;
+
+        // Clear previous typing
+        if (typingRef.current) {
+            clearInterval(typingRef.current);
+        }
+
+        setIsTyping(true);
+        setDisplayedTitle('');
+        setDisplayedText('');
+
+        const fullTitle = currentStep.title;
+        const fullMessage = currentStep.message;
+        let titleIndex = 0;
+        let messageIndex = 0;
+        let typingPhase = 'title'; // 'title' then 'message'
+
+        typingRef.current = setInterval(() => {
+            if (typingPhase === 'title') {
+                if (titleIndex < fullTitle.length) {
+                    setDisplayedTitle(fullTitle.slice(0, titleIndex + 1));
+                    titleIndex++;
+                } else {
+                    typingPhase = 'message';
+                }
+            } else {
+                if (messageIndex < fullMessage.length) {
+                    setDisplayedText(fullMessage.slice(0, messageIndex + 1));
+                    messageIndex++;
+                } else {
+                    clearInterval(typingRef.current);
+                    setIsTyping(false);
+                }
+            }
+        }, 40); // 40ms per character
+
+        return () => {
+            if (typingRef.current) {
+                clearInterval(typingRef.current);
+            }
+        };
+    }, [tutorialStep, gameStatus]);
+
+    // Handle direction change for tutorial (press_button_up action)
+    const handleTutorialButtonUp = () => {
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (currentStep?.action === 'press_button_up') {
+            directionRef.current = DIRECTIONS.UP;
+            setDirection(DIRECTIONS.UP);
+            setTutorialStep(3); // Move to next step
+        }
+    };
 
     // Handle keyboard input
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (gameStatus !== 'playing') {
+            if (gameStatus !== 'playing' && gameStatus !== 'tutorial') {
                 if (e.key === ' ' && gameStatus === 'idle') {
                     startGame();
                 }
                 return;
             }
 
+            // Get current tutorial step
+            const currentStep = TUTORIAL_STEPS[tutorialStep];
+
+            // Map key to direction name
+            let pressedDirection = null;
             switch (e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    if (directionRef.current !== DIRECTIONS.DOWN) {
-                        directionRef.current = DIRECTIONS.UP;
-                        setDirection(DIRECTIONS.UP);
-                    }
+                case 'ArrowUp': case 'w': case 'W':
+                    pressedDirection = 'UP';
                     break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    if (directionRef.current !== DIRECTIONS.UP) {
-                        directionRef.current = DIRECTIONS.DOWN;
-                        setDirection(DIRECTIONS.DOWN);
-                    }
+                case 'ArrowDown': case 's': case 'S':
+                    pressedDirection = 'DOWN';
                     break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    if (directionRef.current !== DIRECTIONS.RIGHT) {
-                        directionRef.current = DIRECTIONS.LEFT;
-                        setDirection(DIRECTIONS.LEFT);
-                    }
+                case 'ArrowLeft': case 'a': case 'A':
+                    pressedDirection = 'LEFT';
                     break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    if (directionRef.current !== DIRECTIONS.LEFT) {
-                        directionRef.current = DIRECTIONS.RIGHT;
-                        setDirection(DIRECTIONS.RIGHT);
-                    }
+                case 'ArrowRight': case 'd': case 'D':
+                    pressedDirection = 'RIGHT';
                     break;
                 case ' ':
-                    togglePause();
-                    break;
+                    if (gameStatus === 'playing') togglePause();
+                    return;
                 default:
-                    break;
+                    return;
+            }
+
+            // In tutorial with press_key_and_eat action, only accept correct key
+            if (gameStatus === 'tutorial' && currentStep?.action === 'press_key_and_eat' && !tutorialMoving) {
+                if (pressedDirection === currentStep.requiredKey) {
+                    // Correct key! Change direction, move one step, and advance
+                    directionRef.current = DIRECTIONS[pressedDirection];
+                    setDirection(DIRECTIONS[pressedDirection]);
+                    // Start continuous movement - step advances when food is eaten
+                    setTutorialMoving(true);
+                }
+                // Wrong key - ignore
+                return;
+            }
+
+            // Normal play or eat_food_free tutorial step - allow any valid direction
+            const opposite = {
+                UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'
+            };
+            const currentDirName = Object.keys(DIRECTIONS).find(
+                key => DIRECTIONS[key] === directionRef.current
+            );
+
+            if (pressedDirection !== opposite[currentDirName]) {
+                directionRef.current = DIRECTIONS[pressedDirection];
+                setDirection(DIRECTIONS[pressedDirection]);
             }
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [gameStatus]);
+    }, [gameStatus, tutorialStep]);
 
-    // Game loop interval
+    // Game loop interval - run when playing or tutorialMoving
     useEffect(() => {
-        if (gameStatus === 'playing') {
-            gameLoopRef.current = setInterval(gameLoop, speed);
+        if (gameStatus === 'playing' || (gameStatus === 'tutorial' && tutorialMoving && !isTyping)) {
+            const currentSpeed = gameStatus === 'tutorial' ? 180 : speed;
+            gameLoopRef.current = setInterval(gameLoop, currentSpeed);
         } else {
             clearInterval(gameLoopRef.current);
         }
         return () => clearInterval(gameLoopRef.current);
-    }, [gameStatus, speed, gameLoop]);
+    }, [gameStatus, speed, gameLoop, isTyping, tutorialMoving]);
 
     const startGame = () => {
         const initialSnake = [{ x: 10, y: 10 }];
@@ -171,6 +384,34 @@ const SnakeGame = () => {
         setScore(0);
         setSpeed(DIFFICULTY_SETTINGS[difficulty].speed);
         setGameStatus('playing');
+    };
+
+    const startTutorial = () => {
+        const initialSnake = [{ x: 5, y: 10 }];
+        setSnake(initialSnake);
+        setFood({ x: 12, y: 10 }); // Food to the right - logical!
+        setDirection(DIRECTIONS.RIGHT);
+        directionRef.current = DIRECTIONS.RIGHT;
+        setScore(0);
+        setTutorialStep(0);
+        setTutorialFoodEaten(0);
+        setIsTyping(false);
+        setGameStatus('tutorial');
+    };
+
+    const exitTutorial = () => {
+        setGameStatus('idle');
+        setTutorialStep(0);
+        setTutorialFoodEaten(0);
+    };
+
+    const nextTutorialStep = () => {
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (currentStep.action === 'finish') {
+            startGame();
+        } else {
+            setTutorialStep(prev => prev + 1);
+        }
     };
 
     const togglePause = () => {
@@ -191,7 +432,7 @@ const SnakeGame = () => {
 
     // Mobile controls
     const handleMobileControl = (dir) => {
-        if (gameStatus !== 'playing') return;
+        if (gameStatus !== 'playing' && gameStatus !== 'tutorial') return;
 
         const newDir = DIRECTIONS[dir];
         const opposite = {
@@ -212,6 +453,9 @@ const SnakeGame = () => {
         const isSnakeBody = snake.slice(1).some(segment => segment.x === x && segment.y === y);
         const isFood = food.x === x && food.y === y;
 
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        const shouldHighlightFood = gameStatus === 'tutorial' && currentStep?.highlight === 'food' && isFood;
+
         let cellClass = 'aspect-square rounded-sm transition-colors duration-100 ';
 
         if (isSnakeHead) {
@@ -219,13 +463,18 @@ const SnakeGame = () => {
         } else if (isSnakeBody) {
             cellClass += 'bg-green-400';
         } else if (isFood) {
-            cellClass += 'bg-red-500 animate-pulse rounded-full';
+            cellClass += shouldHighlightFood
+                ? 'bg-red-500 animate-ping rounded-full'
+                : 'bg-red-500 animate-pulse rounded-full';
         } else {
             cellClass += 'bg-secondary/50';
         }
 
         return <div key={`${x}-${y}`} className={cellClass} />;
     };
+
+    const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
+    const showNextButton = currentTutorialStep?.action === 'click_next' || currentTutorialStep?.action === 'finish';
 
     return (
         <div className="flex flex-col flex-1 w-full h-full bg-background">
@@ -237,7 +486,9 @@ const SnakeGame = () => {
                 >
                     <Home size={20} />
                 </button>
-                <div className="text-lg font-bold tracking-wider text-foreground">RẮN SĂN MỒI</div>
+                <div className="text-lg font-bold tracking-wider text-foreground">
+                    {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : 'RẮN SĂN MỒI'}
+                </div>
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                     onClick={() => setShowSettings(!showSettings)}
@@ -267,87 +518,203 @@ const SnakeGame = () => {
                 </div>
             )}
 
+
+
             {/* Score Bar */}
             <div className="flex items-center justify-center gap-8 p-4 bg-card">
                 <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
                     <span className="text-sm text-muted-foreground">Điểm:</span>
                     <span className="font-mono text-xl font-bold text-green-500">{score}</span>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
-                    <Trophy size={16} className="text-yellow-500" />
-                    <span className="text-sm text-muted-foreground">Cao nhất:</span>
-                    <span className="font-mono text-xl font-bold text-yellow-500">{highScore}</span>
-                </div>
+                {gameStatus !== 'tutorial' && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
+                        <Trophy size={16} className="text-yellow-500" />
+                        <span className="text-sm text-muted-foreground">Cao nhất:</span>
+                        <span className="font-mono text-xl font-bold text-yellow-500">{highScore}</span>
+                    </div>
+                )}
             </div>
 
             {/* Game Area */}
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
-                <div className="bg-card rounded-lg p-2 shadow-lg border-2 border-border relative">
-                    <div
-                        className="grid gap-[1px]"
-                        style={{
-                            gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-                            width: 'min(80vw, 400px)',
-                            height: 'min(80vw, 400px)'
-                        }}
-                    >
-                        {Array.from({ length: BOARD_SIZE * BOARD_SIZE }).map((_, i) => {
-                            const x = i % BOARD_SIZE;
-                            const y = Math.floor(i / BOARD_SIZE);
-                            return renderCell(x, y);
-                        })}
-                    </div>
-
-                    {/* Overlay for idle/paused/gameover */}
-                    {gameStatus !== 'playing' && (
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-lg">
-                            {gameStatus === 'idle' && (
-                                <>
-                                    <div className="text-2xl font-bold text-white mb-4">🐍 Rắn Săn Mồi</div>
-                                    <button
-                                        className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all"
-                                        onClick={startGame}
-                                    >
-                                        <Play size={20} />
-                                        Bắt đầu
-                                    </button>
-                                    <div className="text-sm text-gray-400 mt-4">Dùng phím mũi tên hoặc WASD</div>
-                                </>
-                            )}
-                            {gameStatus === 'paused' && (
-                                <>
-                                    <div className="text-2xl font-bold text-white mb-4">⏸️ Tạm dừng</div>
-                                    <button
-                                        className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all"
-                                        onClick={togglePause}
-                                    >
-                                        <Play size={20} />
-                                        Tiếp tục
-                                    </button>
-                                </>
-                            )}
-                            {gameStatus === 'gameover' && (
-                                <>
-                                    <div className="text-2xl font-bold text-red-400 mb-2">💀 Game Over</div>
-                                    <div className="text-lg text-white mb-4">Điểm: {score}</div>
-                                    <button
-                                        className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all"
-                                        onClick={startGame}
-                                    >
-                                        <RotateCcw size={20} />
-                                        Chơi lại
-                                    </button>
-                                </>
-                            )}
+            <div className="flex-1 flex items-center justify-center gap-6 p-4">
+                {/* Game Board Container */}
+                <div className="flex flex-col items-center gap-4">
+                    <div className={`bg-card rounded-lg p-2 shadow-lg relative
+                        ${gameStatus === 'tutorial' && isNearDanger === 'wall' ? 'border-4 border-red-500' :
+                            gameStatus === 'tutorial' && isNearDanger === 'body' ? 'border-4 border-orange-500' :
+                                'border-2 border-border'}`}>
+                        <div
+                            className="grid gap-[1px]"
+                            style={{
+                                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
+                                width: 'min(80vw, 400px)',
+                                height: 'min(80vw, 400px)'
+                            }}
+                        >
+                            {Array.from({ length: BOARD_SIZE * BOARD_SIZE }).map((_, i) => {
+                                const x = i % BOARD_SIZE;
+                                const y = Math.floor(i / BOARD_SIZE);
+                                return renderCell(x, y);
+                            })}
                         </div>
-                    )}
+
+                        {/* Overlay for idle/paused/gameover */}
+                        {(gameStatus === 'idle' || gameStatus === 'paused' || gameStatus === 'gameover') && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-lg">
+                                {gameStatus === 'idle' && (
+                                    <>
+                                        <div className="text-2xl font-bold text-white mb-4">🐍 Rắn Săn Mồi</div>
+                                        <button
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all mb-3"
+                                            onClick={startGame}
+                                        >
+                                            <Play size={20} />
+                                            Bắt đầu
+                                        </button>
+                                        <button
+                                            className="flex items-center gap-2 px-6 py-3 bg-blue-500 rounded-xl text-white font-semibold hover:bg-blue-600 transition-all"
+                                            onClick={startTutorial}
+                                        >
+                                            <BookOpen size={20} />
+                                            Hướng dẫn
+                                        </button>
+                                        <div className="text-sm text-gray-400 mt-4">Dùng phím mũi tên hoặc WASD</div>
+                                    </>
+                                )}
+                                {gameStatus === 'paused' && (
+                                    <>
+                                        <div className="text-2xl font-bold text-white mb-4">⏸️ Tạm dừng</div>
+                                        <button
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all"
+                                            onClick={togglePause}
+                                        >
+                                            <Play size={20} />
+                                            Tiếp tục
+                                        </button>
+                                    </>
+                                )}
+                                {gameStatus === 'gameover' && (
+                                    <>
+                                        <div className="text-2xl font-bold text-red-400 mb-2">💀 Game Over</div>
+                                        <div className="text-lg text-white mb-4">Điểm: {score}</div>
+                                        <button
+                                            className="flex items-center gap-2 px-6 py-3 bg-green-500 rounded-xl text-white font-semibold hover:bg-green-600 transition-all"
+                                            onClick={startGame}
+                                        >
+                                            <RotateCcw size={20} />
+                                            Chơi lại
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Mobile Controls */}
-                <div className="md:hidden grid grid-cols-3 gap-2 w-40">
+                {/* Tutorial Panel - Right Side */}
+                {gameStatus === 'tutorial' && currentTutorialStep && (
+                    <div className="hidden md:flex flex-col w-64 h-fit p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-2xl shadow-lg">
+                        {/* Progress */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <BookOpen size={18} className="text-blue-400" />
+                                <span className="text-sm font-semibold text-blue-400">Hướng dẫn</span>
+                            </div>
+                            <button
+                                className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent"
+                                onClick={exitTutorial}
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Step Progress Bar */}
+                        <div className="flex gap-1 mb-4">
+                            {TUTORIAL_STEPS.map((_, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`flex-1 h-1.5 rounded-full transition-colors
+                                        ${idx < tutorialStep ? 'bg-blue-500' : idx === tutorialStep ? 'bg-blue-400 animate-pulse' : 'bg-secondary'}`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Step Content */}
+                        <div className="mb-4">
+                            <div className="text-xs text-muted-foreground mb-1">Bước {tutorialStep + 1}/{TUTORIAL_STEPS.length}</div>
+                            <div className="text-lg font-bold text-foreground mb-2">
+                                {displayedTitle}
+                                {isTyping && displayedText.length === 0 && <span className="animate-pulse">|</span>}
+                            </div>
+                            <div className="text-sm text-muted-foreground leading-relaxed min-h-[3rem]">
+                                {displayedText}
+                                {isTyping && displayedText.length > 0 && <span className="animate-pulse text-blue-400">|</span>}
+                            </div>
+                        </div>
+
+                        {/* Action Button - only show when typing is done */}
+                        {!isTyping && currentTutorialStep.action === 'click_next' && (
+                            <button
+                                className="flex items-center justify-center gap-2 w-full py-2.5 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-all"
+                                onClick={nextTutorialStep}
+                            >
+                                Tiếp tục
+                                <ChevronRight size={16} />
+                            </button>
+                        )}
+
+                        {/* Keyboard Key Indicator for press_key_and_eat steps (show when waiting for key) */}
+                        {!isTyping && currentTutorialStep.action === 'press_key_and_eat' && !tutorialMoving && (
+                            <div className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border border-green-500/50">
+                                <div className="text-sm text-muted-foreground">Nhấn phím:</div>
+                                <div className="text-4xl font-bold text-green-400 animate-pulse">
+                                    {currentTutorialStep.requiredKey === 'UP' && '↑ W'}
+                                    {currentTutorialStep.requiredKey === 'DOWN' && '↓ S'}
+                                    {currentTutorialStep.requiredKey === 'LEFT' && '← A'}
+                                    {currentTutorialStep.requiredKey === 'RIGHT' && '→ D'}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Moving indicator - show when snake is moving toward food */}
+                        {tutorialMoving && (
+                            <div className="flex items-center justify-center gap-2 p-3 bg-blue-500/20 rounded-xl border border-blue-500/50">
+                                <div className="text-sm text-blue-400 animate-pulse">🐍 Rắn đang di chuyển đến táo...</div>
+                            </div>
+                        )}
+
+                        {/* Finish Button */}
+                        {!isTyping && currentTutorialStep.action === 'finish' && (
+                            <button
+                                className="flex items-center justify-center gap-2 w-full py-2.5 bg-green-500 text-white text-sm font-semibold rounded-xl hover:bg-green-600 transition-all"
+                                onClick={nextTutorialStep}
+                            >
+                                🎮 Bắt đầu chơi
+                            </button>
+                        )}
+
+                        {/* Tips */}
+                        <div className="mt-4 pt-4 border-t border-border">
+                            <div className="text-xs text-muted-foreground">
+                                💡 {currentTutorialStep.action === 'press_key_and_eat' && !tutorialMoving && `Nhấn ${currentTutorialStep.requiredKey === 'UP' ? '↑/W' : currentTutorialStep.requiredKey === 'DOWN' ? '↓/S' : currentTutorialStep.requiredKey === 'LEFT' ? '←/A' : '→/D'} để bắt đầu`}
+                                {currentTutorialStep.action === 'press_key_and_eat' && tutorialMoving && 'Chờ rắn ăn táo...'}
+                                {currentTutorialStep.action === 'click_next' && 'Nhấn Tiếp tục'}
+                                {currentTutorialStep.action === 'finish' && 'Sẵn sàng chơi!'}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Mobile Controls */}
+            <div className="md:hidden flex justify-center p-2">
+                <div className="grid grid-cols-3 gap-2 w-40">
                     <div />
                     <button
-                        className="aspect-square bg-secondary rounded-lg flex items-center justify-center text-foreground active:bg-accent"
+                        className={`aspect-square rounded-lg flex items-center justify-center text-foreground active:bg-accent
+                            ${gameStatus === 'tutorial' && currentTutorialStep?.highlight === 'up'
+                                ? 'bg-blue-500 text-white animate-pulse'
+                                : 'bg-secondary'}`}
                         onClick={() => handleMobileControl('UP')}
                     >
                         ▲
@@ -361,12 +728,15 @@ const SnakeGame = () => {
                     </button>
                     <button
                         className="aspect-square bg-secondary rounded-lg flex items-center justify-center text-foreground active:bg-accent"
-                        onClick={togglePause}
+                        onClick={gameStatus === 'tutorial' ? undefined : togglePause}
                     >
                         {gameStatus === 'playing' ? <Pause size={16} /> : <Play size={16} />}
                     </button>
                     <button
-                        className="aspect-square bg-secondary rounded-lg flex items-center justify-center text-foreground active:bg-accent"
+                        className={`aspect-square rounded-lg flex items-center justify-center text-foreground active:bg-accent
+                            ${gameStatus === 'tutorial' && currentTutorialStep?.highlight === 'right'
+                                ? 'bg-blue-500 text-white animate-pulse'
+                                : 'bg-secondary'}`}
                         onClick={() => handleMobileControl('RIGHT')}
                     >
                         ▶
@@ -391,6 +761,15 @@ const SnakeGame = () => {
                     >
                         <Pause size={18} />
                         <span>Tạm dừng (Space)</span>
+                    </button>
+                )}
+                {gameStatus === 'tutorial' && (
+                    <button
+                        className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+                        onClick={exitTutorial}
+                    >
+                        <X size={18} />
+                        <span>Thoát hướng dẫn</span>
                     </button>
                 )}
                 {(gameStatus === 'paused' || gameStatus === 'gameover') && (
