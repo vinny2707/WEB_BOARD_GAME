@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const session = require('express-session');
 const cors = require('cors');
 const morgan = require('morgan');
 const fs = require('fs');
@@ -8,6 +9,7 @@ const https = require('https');
 const http = require('http');
 const errorHandler = require('./src/middleware/errorHandler');
 const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
+const { requireDocsAuth } = require('./src/middleware/sessionAuth');
 const logger = require('./src/utils/logger');
 
 // ============================================
@@ -39,6 +41,18 @@ app.use(cors({
 // Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session middleware for docs authentication
+app.use(session({
+    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Set to true in production with HTTPS
+        httpOnly: true,
+        maxAge: null // Session cookie - expires when browser closes
+    }
+}));
 
 // HTTP Request Logging (morgan with custom format)
 morgan.token('colored-status', (req, res) => {
@@ -73,8 +87,25 @@ app.use(morgan(':colored-method :url :colored-status :response-time ms', {
     skip: (req) => req.url === '/health' // Skip logging health checks
 }));
 
-// Swagger API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Documentation Authentication Routes
+const docsAuthRoutes = require('./src/routes/docsAuth');
+app.use('/', docsAuthRoutes);
+
+// Swagger API Documentation (Protected with Session Auth)
+app.use('/api-docs', requireDocsAuth, swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: `
+        .topbar { display: none }
+        .swagger-ui .topbar { display: none }
+        .swagger-ui .wrapper {
+            padding-top: 60px !important;
+        }
+    `,
+    customSiteTitle: 'Board Game API Docs',
+    customJs: '/logout-handler.js'
+}));
+
+// Serve static files (for logout button script)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 const authRoutes = require('./src/routes/auth');
