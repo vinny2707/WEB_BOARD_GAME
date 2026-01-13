@@ -1,85 +1,114 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RotateCcw, Lightbulb, Settings, Home, BookOpen, X, ChevronRight } from 'lucide-react';
-import TicTacToeBoard from './TicTacToeBoard';
-import { findBestMove, getHint, checkWinner, isDraw } from './TicTacToeAI';
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  RotateCcw,
+  Lightbulb,
+  Settings,
+  Home,
+  BookOpen,
+  X,
+  ChevronRight,
+} from "lucide-react";
+import TicTacToeBoard from "./TicTacToeBoard";
+import { findBestMove, getHint, checkWinner, isDraw } from "./TicTacToeAI";
 
 const DIFFICULTY_LABELS = {
-  easy: 'Dễ',
-  medium: 'Trung Bình',
-  hard: 'Khó'
+  easy: "Dễ",
+  medium: "Trung Bình",
+  hard: "Khó",
 };
 
 // Tutorial steps for TicTacToe
 const TUTORIAL_STEPS = [
   {
     id: 1,
-    title: 'Chào mừng đến với Tic Tac Toe! 🎮',
-    message: 'Hãy cùng học cách chơi trò chơi cổ điển này nhé! Bạn sẽ là X (màu xanh), máy là O (màu xám).',
-    action: 'click_next',
+    title: "Chào mừng đến với Tic Tac Toe! 🎮",
+    message:
+      "Hãy cùng học cách chơi trò chơi cổ điển này nhé! Bạn sẽ là X (màu xanh), máy là O (màu xám).",
+    action: "click_next",
     highlightCells: [],
-    allowedMoves: []
+    allowedMoves: [],
   },
   {
     id: 2,
-    title: 'Đánh dấu X đầu tiên ✖️',
-    message: 'Nhấn vào ô giữa bàn cờ (ô số 5) để đánh dấu X. Ô giữa là vị trí chiến lược tốt nhất!',
-    action: 'click_cell',
+    title: "Đánh dấu X đầu tiên ✖️",
+    message:
+      "Nhấn vào ô giữa bàn cờ (ô số 5) để đánh dấu X. Ô giữa là vị trí chiến lược tốt nhất!",
+    action: "click_cell",
     highlightCells: [4],
     allowedMoves: [4],
-    boardState: Array(9).fill(null)
+    boardState: Array(9).fill(null),
   },
   {
     id: 3,
-    title: 'Tạo hàng ngang! ➡️',
-    message: 'Máy đã đánh O. Bây giờ hãy đánh X vào ô bên trái (ô số 4) để bắt đầu tạo hàng ngang!',
-    action: 'click_cell',
+    title: "Tạo hàng ngang! ➡️",
+    message:
+      "Máy đã đánh O. Bây giờ hãy đánh X vào ô bên trái (ô số 4) để bắt đầu tạo hàng ngang!",
+    action: "click_cell",
     highlightCells: [3],
     allowedMoves: [3],
-    boardState: [null, null, null, null, 'X', null, null, 'O', null]
+    boardState: [null, null, null, null, "X", null, null, "O", null],
   },
   {
     id: 4,
-    title: 'Chặn đối thủ! 🛡️',
-    message: 'Máy đang chuẩn bị thắng với 2 O liên tiếp! Nhanh tay đánh X vào ô số 9 để chặn máy!',
-    action: 'click_cell',
+    title: "Chặn đối thủ! 🛡️",
+    message:
+      "Máy đang chuẩn bị thắng với 2 O liên tiếp! Nhanh tay đánh X vào ô số 9 để chặn máy!",
+    action: "click_cell",
     highlightCells: [8],
     allowedMoves: [8],
-    boardState: [null, 'O', null, 'X', 'X', null, null, 'O', null]
+    boardState: [null, "O", null, "X", "X", null, null, "O", null],
   },
   {
     id: 5,
-    title: 'Tạo đường chéo thắng! ⚡',
-    message: 'Bạn có cơ hội thắng! Đánh X vào ô số 1 (góc trên trái) để tạo đường chéo và chiến thắng!',
-    action: 'click_cell',
+    title: "Tạo đường chéo thắng! ⚡",
+    message:
+      "Bạn có cơ hội thắng! Đánh X vào ô số 1 (góc trên trái) để tạo đường chéo và chiến thắng!",
+    action: "click_cell",
     highlightCells: [0],
     allowedMoves: [0],
-    boardState: [null, 'O', null, 'X', 'X', 'O', null, 'O', 'X']
+    boardState: [null, "O", null, "X", "X", "O", null, "O", "X"],
   },
   {
     id: 6,
-    title: 'Chiến thắng! 🏆',
-    message: 'Tuyệt vời! Bạn đã tạo được 3 X liên tiếp theo đường chéo. Đó là cách để thắng trong Tic Tac Toe!',
-    action: 'click_next',
+    title: "Chiến thắng! 🏆",
+    message:
+      "Tuyệt vời! Bạn đã tạo được 3 X liên tiếp theo đường chéo. Đó là cách để thắng trong Tic Tac Toe!",
+    action: "click_next",
     highlightCells: [0, 4, 8],
     allowedMoves: [],
-    boardState: ['X', 'O', null, 'X', 'X', 'O', null, 'O', 'X']
+    boardState: ["X", "O", null, "X", "X", "O", null, "O", "X"],
   },
   {
     id: 7,
-    title: 'Hoàn thành! 🎉',
-    message: 'Bạn đã sẵn sàng! Nhớ: tạo 3 ký hiệu liên tiếp (ngang, dọc, chéo) để thắng. Chúc may mắn!',
-    action: 'finish',
+    title: "Hoàn thành! 🎉",
+    message:
+      "Bạn đã sẵn sàng! Nhớ: tạo 3 ký hiệu liên tiếp (ngang, dọc, chéo) để thắng. Chúc may mắn!",
+    action: "finish",
     highlightCells: [],
-    allowedMoves: []
-  }
+    allowedMoves: [],
+  },
 ];
 
 // Player Card Component
-const PlayerCard = ({ name, symbol, avatar, isActive, timer, score, isLeft }) => (
-  <div className={`flex items-center gap-3 px-4 py-3 bg-secondary rounded-xl border-2 transition-all min-w-[140px]
-    ${isActive ? 'border-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]' : 'border-transparent'}
-    ${isLeft ? '' : 'flex-row-reverse text-right'}`}
+const PlayerCard = ({
+  name,
+  symbol,
+  avatar,
+  isActive,
+  timer,
+  score,
+  isLeft,
+}) => (
+  <div
+    className={`flex items-center gap-3 px-4 py-3 bg-secondary rounded-xl border-2 transition-all min-w-[140px]
+    ${
+      isActive
+        ? "border-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]"
+        : "border-transparent"
+    }
+    ${isLeft ? "" : "flex-row-reverse text-right"}`}
   >
     <div className="w-10 h-10 flex items-center justify-center bg-card rounded-full text-xl shadow-sm">
       {avatar}
@@ -88,8 +117,13 @@ const PlayerCard = ({ name, symbol, avatar, isActive, timer, score, isLeft }) =>
       <div className="text-sm font-semibold text-foreground">{name}</div>
       <div className="font-mono text-xs text-muted-foreground">{timer}</div>
     </div>
-    <div className={`w-7 h-7 flex items-center justify-center rounded-md text-base font-bold
-      ${symbol === 'X' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/15 text-slate-600'}`}
+    <div
+      className={`w-7 h-7 flex items-center justify-center rounded-md text-base font-bold
+      ${
+        symbol === "X"
+          ? "bg-emerald-500/15 text-emerald-500"
+          : "bg-slate-500/15 text-slate-600"
+      }`}
     >
       {symbol}
     </div>
@@ -99,9 +133,13 @@ const PlayerCard = ({ name, symbol, avatar, isActive, timer, score, isLeft }) =>
 // Score Display
 const ScoreDisplay = ({ playerScore, aiScore }) => (
   <div className="flex items-center gap-2 px-4 py-2 bg-foreground rounded-full">
-    <span className="font-mono text-xl font-bold text-emerald-500">{playerScore}</span>
+    <span className="font-mono text-xl font-bold text-emerald-500">
+      {playerScore}
+    </span>
     <span className="font-bold text-background">-</span>
-    <span className="font-mono text-xl font-bold text-orange-500">{aiScore}</span>
+    <span className="font-mono text-xl font-bold text-orange-500">
+      {aiScore}
+    </span>
   </div>
 );
 
@@ -110,12 +148,12 @@ const TicTacToeGame = () => {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
   const [score, setScore] = useState({ player: 0, ai: 0 });
-  const [gameStatus, setGameStatus] = useState('idle'); // 'idle', 'playing', 'win', 'draw', 'tutorial'
+  const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'draw', 'tutorial'
   const [winner, setWinner] = useState(null);
   const [moveHistory, setMoveHistory] = useState([]);
   const [playerTime, setPlayerTime] = useState(0);
   const [aiTime, setAiTime] = useState(0);
-  const [difficulty, setDifficulty] = useState('medium');
+  const [difficulty, setDifficulty] = useState("medium");
   const [hintCell, setHintCell] = useState(null);
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -123,14 +161,14 @@ const TicTacToeGame = () => {
   // Tutorial state
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-  const [displayedText, setDisplayedText] = useState('');
-  const [displayedTitle, setDisplayedTitle] = useState('');
-  
+  const [displayedText, setDisplayedText] = useState("");
+  const [displayedTitle, setDisplayedTitle] = useState("");
+
   const typingRef = useRef(null);
 
   // Typewriter effect for tutorial
   useEffect(() => {
-    if (gameStatus !== 'tutorial') return;
+    if (gameStatus !== "tutorial") return;
 
     const currentStep = TUTORIAL_STEPS[tutorialStep];
     if (!currentStep) return;
@@ -141,22 +179,22 @@ const TicTacToeGame = () => {
     }
 
     setIsTyping(true);
-    setDisplayedTitle('');
-    setDisplayedText('');
+    setDisplayedTitle("");
+    setDisplayedText("");
 
     const fullTitle = currentStep.title;
     const fullMessage = currentStep.message;
     let titleIndex = 0;
     let messageIndex = 0;
-    let typingPhase = 'title';
+    let typingPhase = "title";
 
     typingRef.current = setInterval(() => {
-      if (typingPhase === 'title') {
+      if (typingPhase === "title") {
         if (titleIndex < fullTitle.length) {
           setDisplayedTitle(fullTitle.slice(0, titleIndex + 1));
           titleIndex++;
         } else {
-          typingPhase = 'message';
+          typingPhase = "message";
         }
       } else {
         if (messageIndex < fullMessage.length) {
@@ -178,8 +216,8 @@ const TicTacToeGame = () => {
 
   // Set board for tutorial steps
   useEffect(() => {
-    if (gameStatus !== 'tutorial') return;
-    
+    if (gameStatus !== "tutorial") return;
+
     const currentStep = TUTORIAL_STEPS[tutorialStep];
     if (currentStep?.boardState) {
       setBoard(currentStep.boardState);
@@ -188,13 +226,13 @@ const TicTacToeGame = () => {
 
   // Timer for current player
   useEffect(() => {
-    if (gameStatus !== 'playing') return;
+    if (gameStatus !== "playing") return;
 
     const timer = setInterval(() => {
       if (isXNext && !isAIThinking) {
-        setPlayerTime(prev => prev + 1);
+        setPlayerTime((prev) => prev + 1);
       } else if (!isXNext) {
-        setAiTime(prev => prev + 1);
+        setAiTime((prev) => prev + 1);
       }
     }, 1000);
 
@@ -203,14 +241,14 @@ const TicTacToeGame = () => {
 
   // AI makes a move
   useEffect(() => {
-    if (!isXNext && gameStatus === 'playing' && !isAIThinking) {
+    if (!isXNext && gameStatus === "playing" && !isAIThinking) {
       setIsAIThinking(true);
       setHintCell(null);
 
       const timer = setTimeout(() => {
         const aiMove = findBestMove(board, difficulty);
         if (aiMove !== -1) {
-          makeMove(aiMove, 'O');
+          makeMove(aiMove, "O");
         }
         setIsAIThinking(false);
       }, 600);
@@ -219,59 +257,70 @@ const TicTacToeGame = () => {
     }
   }, [isXNext, gameStatus, board, difficulty]);
 
-  const makeMove = useCallback((index, player) => {
-    const newBoard = [...board];
-    newBoard[index] = player;
-    setBoard(newBoard);
-    setMoveHistory(prev => [...prev, { index, player }]);
+  const makeMove = useCallback(
+    (index, player) => {
+      const newBoard = [...board];
+      newBoard[index] = player;
+      setBoard(newBoard);
+      setMoveHistory((prev) => [...prev, { index, player }]);
 
-    const winnerMark = checkWinner(newBoard);
-    if (winnerMark) {
-      setWinner(winnerMark);
-      setGameStatus('win');
-      setScore(prev => ({
-        ...prev,
-        [winnerMark === 'X' ? 'player' : 'ai']: prev[winnerMark === 'X' ? 'player' : 'ai'] + 1
-      }));
-    } else if (isDraw(newBoard)) {
-      setGameStatus('draw');
-    } else {
-      setIsXNext(player === 'O');
-    }
-  }, [board]);
-
-  const handleCellClick = useCallback((index) => {
-    // Tutorial mode - only allow specific moves
-    if (gameStatus === 'tutorial') {
-      const currentStep = TUTORIAL_STEPS[tutorialStep];
-      if (currentStep?.action === 'click_cell' && currentStep.allowedMoves.includes(index)) {
-        const newBoard = [...board];
-        newBoard[index] = 'X';
-        setBoard(newBoard);
-        
-        // Check if this completes the win condition in tutorial
-        const winnerMark = checkWinner(newBoard);
-        if (winnerMark === 'X') {
-          setTutorialStep(prev => prev + 1);
-          return;
-        }
-        
-        // Move to next step
-        setTutorialStep(prev => prev + 1);
+      const winnerMark = checkWinner(newBoard);
+      if (winnerMark) {
+        setWinner(winnerMark);
+        setGameStatus("win");
+        setScore((prev) => ({
+          ...prev,
+          [winnerMark === "X" ? "player" : "ai"]:
+            prev[winnerMark === "X" ? "player" : "ai"] + 1,
+        }));
+      } else if (isDraw(newBoard)) {
+        setGameStatus("draw");
+      } else {
+        setIsXNext(player === "O");
       }
-      return;
-    }
+    },
+    [board]
+  );
 
-    // Normal game mode
-    if (!isXNext || board[index] || gameStatus !== 'playing' || isAIThinking) return;
-    setHintCell(null);
-    makeMove(index, 'X');
-  }, [board, isXNext, gameStatus, isAIThinking, makeMove, tutorialStep]);
+  const handleCellClick = useCallback(
+    (index) => {
+      // Tutorial mode - only allow specific moves
+      if (gameStatus === "tutorial") {
+        const currentStep = TUTORIAL_STEPS[tutorialStep];
+        if (
+          currentStep?.action === "click_cell" &&
+          currentStep.allowedMoves.includes(index)
+        ) {
+          const newBoard = [...board];
+          newBoard[index] = "X";
+          setBoard(newBoard);
+
+          // Check if this completes the win condition in tutorial
+          const winnerMark = checkWinner(newBoard);
+          if (winnerMark === "X") {
+            setTutorialStep((prev) => prev + 1);
+            return;
+          }
+
+          // Move to next step
+          setTutorialStep((prev) => prev + 1);
+        }
+        return;
+      }
+
+      // Normal game mode
+      if (!isXNext || board[index] || gameStatus !== "playing" || isAIThinking)
+        return;
+      setHintCell(null);
+      makeMove(index, "X");
+    },
+    [board, isXNext, gameStatus, isAIThinking, makeMove, tutorialStep]
+  );
 
   const handleReset = useCallback(() => {
     setBoard(Array(9).fill(null));
     setIsXNext(true);
-    setGameStatus('playing');
+    setGameStatus("playing");
     setWinner(null);
     setMoveHistory([]);
     setPlayerTime(0);
@@ -283,7 +332,7 @@ const TicTacToeGame = () => {
   const startGame = () => {
     setBoard(Array(9).fill(null));
     setIsXNext(true);
-    setGameStatus('playing');
+    setGameStatus("playing");
     setWinner(null);
     setMoveHistory([]);
     setPlayerTime(0);
@@ -295,32 +344,33 @@ const TicTacToeGame = () => {
   const startTutorial = () => {
     setBoard(Array(9).fill(null));
     setIsXNext(true);
-    setGameStatus('tutorial');
+    setGameStatus("tutorial");
     setWinner(null);
     setTutorialStep(0);
     setIsTyping(false);
-    setDisplayedText('');
-    setDisplayedTitle('');
+    setDisplayedText("");
+    setDisplayedTitle("");
     setHintCell(null);
   };
 
   const exitTutorial = () => {
-    setGameStatus('idle');
+    setGameStatus("idle");
     setTutorialStep(0);
     setBoard(Array(9).fill(null));
   };
 
   const nextTutorialStep = () => {
     const currentStep = TUTORIAL_STEPS[tutorialStep];
-    if (currentStep?.action === 'finish') {
+    if (currentStep?.action === "finish") {
       startGame();
     } else {
-      setTutorialStep(prev => prev + 1);
+      setTutorialStep((prev) => prev + 1);
     }
   };
 
   const handleUndo = useCallback(() => {
-    if (moveHistory.length < 2 || gameStatus !== 'playing' || isAIThinking) return;
+    if (moveHistory.length < 2 || gameStatus !== "playing" || isAIThinking)
+      return;
 
     const newHistory = [...moveHistory];
     const newBoard = [...board];
@@ -336,7 +386,7 @@ const TicTacToeGame = () => {
   }, [board, moveHistory, gameStatus, isAIThinking]);
 
   const handleHint = useCallback(() => {
-    if (gameStatus !== 'playing' || isAIThinking) return;
+    if (gameStatus !== "playing" || isAIThinking) return;
     const hint = getHint(board);
     if (hint !== -1) {
       setHintCell(hint);
@@ -347,15 +397,22 @@ const TicTacToeGame = () => {
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   const getWinningLine = () => {
     if (!winner) return null;
     const lines = [
-      [0, 1, 2], [3, 4, 5], [6, 7, 8],
-      [0, 3, 6], [1, 4, 7], [2, 5, 8],
-      [0, 4, 8], [2, 4, 6]
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
     ];
     for (const line of lines) {
       const [a, b, c] = line;
@@ -367,16 +424,19 @@ const TicTacToeGame = () => {
   };
 
   const getStatusMessage = () => {
-    if (gameStatus === 'tutorial') return '📖 Chế độ hướng dẫn';
-    if (isAIThinking) return 'Đang suy nghĩ...';
-    if (gameStatus === 'win') return winner === 'X' ? '🎉 Bạn thắng!' : '🤖 Máy thắng!';
-    if (gameStatus === 'draw') return '🤝 Hòa!';
-    return isXNext ? 'Lượt của bạn' : 'Lượt của máy';
+    if (gameStatus === "tutorial") return "📖 Chế độ hướng dẫn";
+    if (isAIThinking) return "Đang suy nghĩ...";
+    if (gameStatus === "win")
+      return winner === "X" ? "🎉 Bạn thắng!" : "🤖 Máy thắng!";
+    if (gameStatus === "draw") return "🤝 Hòa!";
+    return isXNext ? "Lượt của bạn" : "Lượt của máy";
   };
 
   const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
-  const showNextButton = gameStatus === 'tutorial' && 
-    (currentTutorialStep?.action === 'click_next' || currentTutorialStep?.action === 'finish') &&
+  const showNextButton =
+    gameStatus === "tutorial" &&
+    (currentTutorialStep?.action === "click_next" ||
+      currentTutorialStep?.action === "finish") &&
     !isTyping;
 
   return (
@@ -385,12 +445,12 @@ const TicTacToeGame = () => {
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <button
           className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-          onClick={() => navigate('/games')}
+          onClick={() => navigate("/games")}
         >
           <Home size={20} />
         </button>
         <div className="text-lg font-bold tracking-wider text-foreground">
-          {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : 'TIC TAC TOE'}
+          {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "TIC TAC TOE"}
         </div>
         <button
           className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
@@ -403,16 +463,24 @@ const TicTacToeGame = () => {
       {/* Settings Panel */}
       {showSettings && (
         <div className="px-4 py-3 bg-card border-b border-border">
-          <div className="text-sm font-semibold text-foreground mb-2">Độ khó</div>
+          <div className="text-sm font-semibold text-foreground mb-2">
+            Độ khó
+          </div>
           <div className="flex gap-2">
             {Object.entries(DIFFICULTY_LABELS).map(([key, label]) => (
               <button
                 key={key}
                 className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
-                  ${difficulty === key
-                    ? 'bg-emerald-500 text-white border-emerald-500'
-                    : 'text-muted-foreground border-transparent hover:border-emerald-500'}`}
-                onClick={() => { setDifficulty(key); handleReset(); setShowSettings(false); }}
+                  ${
+                    difficulty === key
+                      ? "bg-emerald-500 text-white border-emerald-500"
+                      : "text-muted-foreground border-transparent hover:border-emerald-500"
+                  }`}
+                onClick={() => {
+                  setDifficulty(key);
+                  handleReset();
+                  setShowSettings(false);
+                }}
               >
                 {label}
               </button>
@@ -422,13 +490,13 @@ const TicTacToeGame = () => {
       )}
 
       {/* Player Bar - Hide in tutorial */}
-      {gameStatus !== 'tutorial' && (
+      {gameStatus !== "tutorial" && (
         <div className="flex items-center justify-center gap-4 p-4 bg-card">
           <PlayerCard
             name="Bạn"
             symbol="X"
             avatar="👤"
-            isActive={isXNext && gameStatus === 'playing'}
+            isActive={isXNext && gameStatus === "playing"}
             timer={formatTime(playerTime)}
             score={score.player}
             isLeft={true}
@@ -440,7 +508,7 @@ const TicTacToeGame = () => {
             name="Paper Man"
             symbol="O"
             avatar="🤖"
-            isActive={!isXNext && gameStatus === 'playing'}
+            isActive={!isXNext && gameStatus === "playing"}
             timer={formatTime(aiTime)}
             score={score.ai}
             isLeft={false}
@@ -453,9 +521,11 @@ const TicTacToeGame = () => {
         {/* Left side - Game Board */}
         <div className="flex flex-col items-center gap-6">
           {/* Idle Screen Overlay */}
-          {gameStatus === 'idle' && (
+          {gameStatus === "idle" && (
             <div className="flex flex-col items-center justify-center gap-4 p-8 bg-card rounded-2xl shadow-lg border-2 border-border">
-              <div className="text-3xl font-bold text-foreground mb-2">⭕ Tic Tac Toe ❌</div>
+              <div className="text-3xl font-bold text-foreground mb-2">
+                ⭕ Tic Tac Toe ❌
+              </div>
               <button
                 className="flex items-center gap-2 px-6 py-3 bg-emerald-500 rounded-xl text-white font-semibold hover:bg-emerald-600 transition-all"
                 onClick={startGame}
@@ -474,26 +544,36 @@ const TicTacToeGame = () => {
           )}
 
           {/* Game Board */}
-          {gameStatus !== 'idle' && (
+          {gameStatus !== "idle" && (
             <>
               <TicTacToeBoard
                 board={board}
                 onCellClick={handleCellClick}
                 winningLine={getWinningLine()}
-                hintCell={gameStatus === 'tutorial' ? null : hintCell}
-                highlightCells={gameStatus === 'tutorial' ? (currentTutorialStep?.highlightCells ?? []) : []}
+                hintCell={gameStatus === "tutorial" ? null : hintCell}
+                highlightCells={
+                  gameStatus === "tutorial"
+                    ? currentTutorialStep?.highlightCells ?? []
+                    : []
+                }
                 disabled={
-                  gameStatus === 'tutorial' 
-                    ? !(currentTutorialStep?.action === 'click_cell' && !isTyping)
-                    : (!isXNext || isAIThinking || gameStatus !== 'playing')
+                  gameStatus === "tutorial"
+                    ? !(
+                        currentTutorialStep?.action === "click_cell" &&
+                        !isTyping
+                      )
+                    : !isXNext || isAIThinking || gameStatus !== "playing"
                 }
               />
 
               {/* Status Message */}
-              <div className={`text-base font-medium px-4 py-2 rounded-full shadow-sm
-                ${gameStatus !== 'playing' && gameStatus !== 'tutorial'
-                  ? 'text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white'
-                  : 'bg-card text-foreground'}`}
+              <div
+                className={`text-base font-medium px-4 py-2 rounded-full shadow-sm
+                ${
+                  gameStatus !== "playing" && gameStatus !== "tutorial"
+                    ? "text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                    : "bg-card text-foreground"
+                }`}
               >
                 {getStatusMessage()}
               </div>
@@ -502,13 +582,15 @@ const TicTacToeGame = () => {
         </div>
 
         {/* Right side - Tutorial Panel */}
-        {gameStatus === 'tutorial' && currentTutorialStep && (
+        {gameStatus === "tutorial" && currentTutorialStep && (
           <div className="hidden md:flex flex-col w-80 h-fit p-6 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-2xl shadow-lg">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <BookOpen size={20} className="text-emerald-400" />
-                <span className="text-sm font-semibold text-emerald-400">Hướng dẫn chơi</span>
+                <span className="text-sm font-semibold text-emerald-400">
+                  Hướng dẫn chơi
+                </span>
               </div>
               <button
                 className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent transition-all"
@@ -524,9 +606,13 @@ const TicTacToeGame = () => {
                 <div
                   key={idx}
                   className={`flex-1 h-1.5 rounded-full transition-colors
-                    ${idx < tutorialStep ? 'bg-emerald-500' : 
-                      idx === tutorialStep ? 'bg-emerald-400 animate-pulse' : 
-                      'bg-secondary'}`}
+                    ${
+                      idx < tutorialStep
+                        ? "bg-emerald-500"
+                        : idx === tutorialStep
+                        ? "bg-emerald-400 animate-pulse"
+                        : "bg-secondary"
+                    }`}
                 />
               ))}
             </div>
@@ -538,11 +624,15 @@ const TicTacToeGame = () => {
               </div>
               <div className="text-xl font-bold text-foreground mb-3 min-h-[2rem]">
                 {displayedTitle}
-                {isTyping && displayedText.length === 0 && <span className="animate-pulse">|</span>}
+                {isTyping && displayedText.length === 0 && (
+                  <span className="animate-pulse">|</span>
+                )}
               </div>
               <div className="text-sm text-muted-foreground leading-relaxed min-h-[4rem]">
                 {displayedText}
-                {isTyping && displayedText.length > 0 && <span className="animate-pulse text-emerald-400">|</span>}
+                {isTyping && displayedText.length > 0 && (
+                  <span className="animate-pulse text-emerald-400">|</span>
+                )}
               </div>
             </div>
 
@@ -552,10 +642,8 @@ const TicTacToeGame = () => {
                 className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all shadow-md"
                 onClick={nextTutorialStep}
               >
-                {currentTutorialStep.action === 'finish' ? (
-                  <>
-                    🎮 Bắt đầu chơi
-                  </>
+                {currentTutorialStep.action === "finish" ? (
+                  <>🎮 Bắt đầu chơi</>
                 ) : (
                   <>
                     Tiếp tục
@@ -566,9 +654,11 @@ const TicTacToeGame = () => {
             )}
 
             {/* Hint for click_cell action */}
-            {!isTyping && currentTutorialStep?.action === 'click_cell' && (
+            {!isTyping && currentTutorialStep?.action === "click_cell" && (
               <div className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-xl border border-emerald-500/50">
-                <div className="text-sm text-muted-foreground">Nhấn vào ô được đánh dấu!</div>
+                <div className="text-sm text-muted-foreground">
+                  Nhấn vào ô được đánh dấu!
+                </div>
                 <div className="text-3xl animate-bounce">👆</div>
               </div>
             )}
@@ -576,10 +666,17 @@ const TicTacToeGame = () => {
             {/* Tips */}
             <div className="mt-4 pt-4 border-t border-border">
               <div className="text-xs text-muted-foreground leading-relaxed">
-                💡 {currentTutorialStep?.action === 'click_cell' && !isTyping && 'Nhấn vào ô sáng lên để tiếp tục'}
-                {currentTutorialStep?.action === 'click_next' && !isTyping && 'Nhấn nút Tiếp tục bên dưới'}
-                {currentTutorialStep?.action === 'finish' && !isTyping && 'Bạn đã sẵn sàng chiến đấu!'}
-                {isTyping && 'Đang hiển thị hướng dẫn...'}
+                💡{" "}
+                {currentTutorialStep?.action === "click_cell" &&
+                  !isTyping &&
+                  "Nhấn vào ô sáng lên để tiếp tục"}
+                {currentTutorialStep?.action === "click_next" &&
+                  !isTyping &&
+                  "Nhấn nút Tiếp tục bên dưới"}
+                {currentTutorialStep?.action === "finish" &&
+                  !isTyping &&
+                  "Bạn đã sẵn sàng chiến đấu!"}
+                {isTyping && "Đang hiển thị hướng dẫn..."}
               </div>
             </div>
           </div>
@@ -588,7 +685,7 @@ const TicTacToeGame = () => {
 
       {/* Bottom Controls */}
       <div className="flex items-center justify-center gap-4 p-4 bg-card border-t border-border">
-        {gameStatus === 'tutorial' && (
+        {gameStatus === "tutorial" && (
           <button
             className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
             onClick={exitTutorial}
@@ -598,7 +695,7 @@ const TicTacToeGame = () => {
           </button>
         )}
 
-        {gameStatus === 'playing' && (
+        {gameStatus === "playing" && (
           <>
             <button
               className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
@@ -620,7 +717,7 @@ const TicTacToeGame = () => {
           </>
         )}
 
-        {(gameStatus === 'win' || gameStatus === 'draw') && (
+        {(gameStatus === "win" || gameStatus === "draw") && (
           <button
             className="flex items-center gap-2 px-5 py-3 bg-emerald-500 rounded-xl text-sm font-medium text-white transition-all hover:bg-emerald-600"
             onClick={handleReset}
