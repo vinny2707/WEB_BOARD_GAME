@@ -13,6 +13,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+  
+  config.headers["x-api-key"] = import.meta.env.VITE_APP_API_KEY;
   return config;
 }, (error) => {
   return Promise.reject(error);
