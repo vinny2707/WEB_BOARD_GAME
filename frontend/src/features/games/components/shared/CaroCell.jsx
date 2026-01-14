@@ -7,10 +7,11 @@ import React from 'react';
  * @param {Function} props.onClick - Click handler
  * @param {boolean} props.isWinning - Whether this cell is part of winning line
  * @param {boolean} props.isHint - Whether this cell is the hint
+ * @param {boolean} props.isHighlight - Whether this cell is highlighted (tutorial)
  * @param {boolean} props.disabled - Whether clicking is disabled
  * @param {string} props.theme - 'emerald' (default for 5-row) or 'amber' (for 4-row)
  */
-const CaroCell = ({ value, onClick, isWinning, isHint, disabled, theme = 'emerald' }) => {
+const CaroCell = ({ value, onClick, isWinning, isHint, isHighlight, disabled, theme = 'emerald' }) => {
     const themeColors = {
         emerald: {
             xStroke: 'stroke-emerald-500',
@@ -30,9 +31,10 @@ const CaroCell = ({ value, onClick, isWinning, isHint, disabled, theme = 'emeral
         let classes = 'aspect-square bg-secondary border border-border cursor-pointer flex items-center justify-center relative transition-all duration-150';
 
         if (isWinning) classes += ' animate-pulse shadow-[0_0_15px_rgba(255,215,0,0.9)]';
-        if (isHint && !value) classes += ` animate-pulse ${colors.hintBg}`;
+        if (isHighlight && !value) classes += ' animate-pulse bg-orange-500 border-orange-600 border-2 shadow-[0_0_20px_rgba(234,88,12,1)]';
+        else if (isHint && !value) classes += ` animate-pulse ${colors.hintBg}`;
         if (disabled) classes += ' cursor-default';
-        if (!disabled && !value) classes += ' hover:bg-black/10';
+        if (!disabled && !value && !isHighlight) classes += ' hover:bg-black/10';
 
         return classes;
     };

@@ -21,7 +21,7 @@ const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disable
 
         if (isWinning) classes += ' animate-pulse bg-yellow-500/20';
         if (isHint) classes += ' animate-pulse bg-amber-400/50 border-amber-500 shadow-[0_0_15px_rgba(251,191,36,0.6)]';
-        if (isHighlight) classes += ' animate-pulse bg-emerald-500/40 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]';
+        if (isHighlight) classes += ' animate-pulse bg-orange-500 border-orange-600 border-4 shadow-[0_0_40px_rgba(234,88,12,1)]';
         if (disabled || value) classes += ' cursor-default';
         if (!value && !disabled && !isHighlight) classes += ' hover:bg-emerald-500/10 hover:border-emerald-500';
 

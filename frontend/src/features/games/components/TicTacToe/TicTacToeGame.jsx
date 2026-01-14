@@ -19,22 +19,23 @@ const DIFFICULTY_LABELS = {
   hard: "Khó",
 };
 
-// Tutorial steps for TicTacToe
+// Tutorial steps for TicTacToe - Kịch bản logic
+// Board indices: 0=TopLeft, 1=TopCenter, 2=TopRight, 3=MidLeft, 4=Center, 5=MidRight, 6=BotLeft, 7=BotCenter, 8=BotRight
 const TUTORIAL_STEPS = [
   {
     id: 1,
     title: "Chào mừng đến với Tic Tac Toe! 🎮",
     message:
-      "Hãy cùng học cách chơi trò chơi cổ điển này nhé! Bạn sẽ là X (màu xanh), máy là O (màu xám).",
+      "Hãy cùng học cách chơi trò chơi cổ điển này nhé! Bạn sẽ là X (màu xanh), máy là O (màu xám). Mục tiêu: Tạo 3 ký hiệu liên tiếp theo hàng, cột hoặc đường chéo!",
     action: "click_next",
     highlightCells: [],
     allowedMoves: [],
   },
   {
     id: 2,
-    title: "Đánh dấu X đầu tiên ✖️",
+    title: "Bước 1: Chiếm ô giữa! ✖️",
     message:
-      "Nhấn vào ô giữa bàn cờ (ô số 5) để đánh dấu X. Ô giữa là vị trí chiến lược tốt nhất!",
+      "Ô giữa (ô số 5) là vị trí chiến lược tốt nhất vì nằm trên cả 4 đường thắng! Nhấn vào ô giữa.",
     action: "click_cell",
     highlightCells: [4],
     allowedMoves: [4],
@@ -42,47 +43,52 @@ const TUTORIAL_STEPS = [
   },
   {
     id: 3,
-    title: "Tạo hàng ngang! ➡️",
+    title: "Bước 2: Chiếm góc! 📍",
     message:
-      "Máy đã đánh O. Bây giờ hãy đánh X vào ô bên trái (ô số 4) để bắt đầu tạo hàng ngang!",
-    action: "click_cell",
-    highlightCells: [3],
-    allowedMoves: [3],
-    boardState: [null, null, null, null, "X", null, null, "O", null],
-  },
-  {
-    id: 4,
-    title: "Chặn đối thủ! 🛡️",
-    message:
-      "Máy đang chuẩn bị thắng với 2 O liên tiếp! Nhanh tay đánh X vào ô số 9 để chặn máy!",
+      "Máy đã đánh O ở góc trên trái. Hãy đánh X vào góc dưới phải để tạo đường chéo chính!",
     action: "click_cell",
     highlightCells: [8],
     allowedMoves: [8],
-    boardState: [null, "O", null, "X", "X", null, null, "O", null],
+    // O đánh góc trên trái (0), X ở giữa (4)
+    boardState: ["O", null, null, null, "X", null, null, null, null],
+  },
+  {
+    id: 4,
+    title: "Bước 3: Chặn đối thủ! 🛡️",
+    message:
+      "Cẩn thận! O ở góc trên trái (ô 1) và góc trên phải (ô 3) - sắp thắng hàng trên! Nhanh chặn bằng cách đánh X vào ô giữa hàng trên (ô 2)!",
+    action: "click_cell",
+    highlightCells: [1],
+    allowedMoves: [1],
+    // O thêm góc trên phải (2), X có 4 và 8. O đe dọa thắng hàng trên 0-1-2
+    boardState: ["O", null, "O", null, "X", null, null, null, "X"],
   },
   {
     id: 5,
-    title: "Tạo đường chéo thắng! ⚡",
+    title: "Bước 4: Chiến thắng! ⚡",
     message:
-      "Bạn có cơ hội thắng! Đánh X vào ô số 1 (góc trên trái) để tạo đường chéo và chiến thắng!",
+      "Tuyệt vời! Bây giờ bạn có X ở ô 2, 5, 9 theo đường chéo chính. Đường chéo gần hoàn thành! Nhưng khoan - hãy đánh vào ô 7 để hoàn thành cột giữa và thắng!",
     action: "click_cell",
-    highlightCells: [0],
-    allowedMoves: [0],
-    boardState: [null, "O", null, "X", "X", "O", null, "O", "X"],
+    highlightCells: [7],
+    allowedMoves: [7],
+    // O đánh ô 6, X đã chặn ở 1. Board: O(0,2,6), X(1,4,8). X có thể thắng cột giữa 1-4-7
+    boardState: ["O", "X", "O", null, "X", null, "O", null, "X"],
   },
   {
     id: 6,
     title: "Chiến thắng! 🏆",
     message:
-      "Tuyệt vời! Bạn đã tạo được 3 X liên tiếp theo đường chéo. Đó là cách để thắng trong Tic Tac Toe!",
+      "Xuất sắc! Bạn đã tạo được 3 X liên tiếp theo cột giữa (ô 2-5-8)! Đó là cách để thắng trong Tic Tac Toe!",
     action: "click_next",
-    highlightCells: [0, 4, 8],
+    highlightCells: [1, 4, 7],
     allowedMoves: [],
-    boardState: ["X", "O", null, "X", "X", "O", null, "O", "X"],
+    // X thắng với cột giữa 1-4-7
+    boardState: ["O", "X", "O", null, "X", null, "O", "X", "X"],
   },
   {
     id: 7,
     title: "Hoàn thành! 🎉",
+
     message:
       "Bạn đã sẵn sàng! Nhớ: tạo 3 ký hiệu liên tiếp (ngang, dọc, chéo) để thắng. Chúc may mắn!",
     action: "finish",
@@ -103,11 +109,10 @@ const PlayerCard = ({
 }) => (
   <div
     className={`flex items-center gap-3 px-4 py-3 bg-secondary rounded-xl border-2 transition-all min-w-[140px]
-    ${
-      isActive
+    ${isActive
         ? "border-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]"
         : "border-transparent"
-    }
+      }
     ${isLeft ? "" : "flex-row-reverse text-right"}`}
   >
     <div className="w-10 h-10 flex items-center justify-center bg-card rounded-full text-xl shadow-sm">
@@ -119,11 +124,10 @@ const PlayerCard = ({
     </div>
     <div
       className={`w-7 h-7 flex items-center justify-center rounded-md text-base font-bold
-      ${
-        symbol === "X"
+      ${symbol === "X"
           ? "bg-emerald-500/15 text-emerald-500"
           : "bg-slate-500/15 text-slate-600"
-      }`}
+        }`}
     >
       {symbol}
     </div>
@@ -471,10 +475,9 @@ const TicTacToeGame = () => {
               <button
                 key={key}
                 className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
-                  ${
-                    difficulty === key
-                      ? "bg-emerald-500 text-white border-emerald-500"
-                      : "text-muted-foreground border-transparent hover:border-emerald-500"
+                  ${difficulty === key
+                    ? "bg-emerald-500 text-white border-emerald-500"
+                    : "text-muted-foreground border-transparent hover:border-emerald-500"
                   }`}
                 onClick={() => {
                   setDifficulty(key);
@@ -559,9 +562,9 @@ const TicTacToeGame = () => {
                 disabled={
                   gameStatus === "tutorial"
                     ? !(
-                        currentTutorialStep?.action === "click_cell" &&
-                        !isTyping
-                      )
+                      currentTutorialStep?.action === "click_cell" &&
+                      !isTyping
+                    )
                     : !isXNext || isAIThinking || gameStatus !== "playing"
                 }
               />
@@ -569,11 +572,10 @@ const TicTacToeGame = () => {
               {/* Status Message */}
               <div
                 className={`text-base font-medium px-4 py-2 rounded-full shadow-sm
-                ${
-                  gameStatus !== "playing" && gameStatus !== "tutorial"
+                ${gameStatus !== "playing" && gameStatus !== "tutorial"
                     ? "text-xl font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                     : "bg-card text-foreground"
-                }`}
+                  }`}
               >
                 {getStatusMessage()}
               </div>
@@ -606,10 +608,9 @@ const TicTacToeGame = () => {
                 <div
                   key={idx}
                   className={`flex-1 h-1.5 rounded-full transition-colors
-                    ${
-                      idx < tutorialStep
-                        ? "bg-emerald-500"
-                        : idx === tutorialStep
+                    ${idx < tutorialStep
+                      ? "bg-emerald-500"
+                      : idx === tutorialStep
                         ? "bg-emerald-400 animate-pulse"
                         : "bg-secondary"
                     }`}

@@ -8,6 +8,7 @@ import CaroCell from './CaroCell';
  * @param {Function} props.onCellClick - Cell click handler
  * @param {Array|null} props.winningLine - Array of winning cell indices
  * @param {number|null} props.hintCell - Index of hint cell
+ * @param {Array} props.highlightCells - Array of cells to highlight (tutorial)
  * @param {boolean} props.disabled - Whether board is disabled
  * @param {number} props.boardSize - Size of board (default 15)
  * @param {string} props.theme - 'emerald' or 'amber'
@@ -17,6 +18,7 @@ const CaroBoard = ({
     onCellClick,
     winningLine,
     hintCell,
+    highlightCells = [],
     disabled,
     boardSize = 15,
     theme = 'emerald'
@@ -41,6 +43,7 @@ const CaroBoard = ({
                         onClick={() => onCellClick(index)}
                         isWinning={isWinningCell(index)}
                         isHint={hintCell === index}
+                        isHighlight={highlightCells.includes(index)}
                         disabled={disabled}
                         theme={theme}
                     />
@@ -51,3 +54,4 @@ const CaroBoard = ({
 };
 
 export default CaroBoard;
+
