@@ -13,6 +13,9 @@ import Social from '../features/social/pages/social.jsx'
 import Profile from '../features/profile/pages/Profile.jsx'
 import UserManagement from '../features/userManagement/pages/UserManagement.jsx'
 import NotFound from '@/features/errors/pages/NotFound.jsx'
+import { TicTacToeGame, TicTacToeLobby, GomokuGame, GomokuLobby, Caro4Game, Caro4Lobby, SnakeGame, SnakeLobby, Match3Game, Match3Lobby, MemoryGame, MemoryLobby, DrawingGame, DrawingLobby } from '../features/games/components'
+import Statistics from '@/features/statistics/pages/Statistics.jsx'
+import GameConfig from '@/features/gameConfig/pages/gameConfig.jsx'
 
 const router = createBrowserRouter([
   {
