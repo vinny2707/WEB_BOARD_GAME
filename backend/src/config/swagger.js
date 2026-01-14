@@ -30,6 +30,12 @@ const options = {
                     scheme: 'bearer',
                     bearerFormat: 'JWT',
                     description: 'Enter JWT token'
+                },
+                apiKeyAuth: {
+                    type: 'apiKey',
+                    in: 'header',
+                    name: 'x-api-key',
+                    description: 'Enter API key'
                 }
             },
             schemas: {
@@ -74,7 +80,12 @@ const options = {
                     }
                 }
             }
-        }
+        },
+        security: [
+            {
+                apiKeyAuth: []
+            }
+        ]
     },
     apis: ['./src/routes/*.js'] // Path to API routes
 };

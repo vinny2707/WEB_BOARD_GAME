@@ -10,6 +10,7 @@ const http = require('http');
 const errorHandler = require('./src/middleware/errorHandler');
 const { swaggerUi, swaggerSpec } = require('./src/config/swagger');
 const { requireDocsAuth } = require('./src/middleware/sessionAuth');
+const { validateAppToken } = require('./src/middleware/appToken');
 const logger = require('./src/utils/logger');
 
 // ============================================
@@ -23,6 +24,12 @@ if (!process.env.JWT_SECRET) {
 
 if (process.env.JWT_SECRET.length < 32) {
     logger.warn('JWT_SECRET should be at least 32 characters for security');
+}
+
+if (!process.env.APP_API_KEY) {
+    logger.error('FATAL ERROR: APP_API_KEY is not defined in environment variables');
+    logger.error('Please set APP_API_KEY in your .env file');
+    process.exit(1);
 }
 
 const app = express();
@@ -106,6 +113,9 @@ app.use('/api-docs', requireDocsAuth, swaggerUi.serve, swaggerUi.setup(swaggerSp
 
 // Serve static files (for logout button script)
 app.use(express.static(path.join(__dirname, 'public')));
+
+// App API Key Validation for all API routes
+app.use('/api', validateAppToken);
 
 // Routes
 const authRoutes = require('./src/routes/auth');
