@@ -1,8 +1,8 @@
-import React, { use } from 'react'
-import { useState, useEffect } from 'react';
+import React, { use } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeProvider";
-import { getInitials } from '@/utils/Username';
-import { useUser } from '@/contexts/UserProvider';
+import { getInitials } from "@/utils/Username";
+import { useUser } from "@/contexts/UserProvider";
 import { Send } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -26,11 +26,13 @@ const Message = () => {
       username: "Jane Smith",
       lastMessage: "Let's catch up later.",
       send_at: "Yesterday",
-    }
-  ]
+    },
+  ];
 
-
-  const [activeChat, setActiveChat] = useState({ user_id: conversations[0].user_id, username: conversations[0].username });
+  const [activeChat, setActiveChat] = useState({
+    user_id: conversations[0].user_id,
+    username: conversations[0].username,
+  });
 
   // Mock messages for the active chat
   const messages = [
@@ -75,7 +77,7 @@ const Message = () => {
       content: "Me too! See you soon.",
       send_at: "10:15 AM",
       sender_id: 2,
-    }
+    },
   ];
 
   const handleSendMessage = () => {
@@ -86,14 +88,16 @@ const Message = () => {
 
     // Clear input field after sending
     setMessageInput("");
-  }
+  };
 
   return (
     <div className="flex-1 w-full h-full flex gap-2 min-h-0">
       {/* Sidebar */}
-      <div className="w-80 h-full border-r border-gray-200 dark:border-zinc-800 flex flex-col">
-        <div className="p-4 border-b dark:border-zinc-800 border-gray-200">
-          <h2 className="text-xl text-gray-900 dark:text-white">Messages</h2>
+      <div className="w-full sm:w-80 h-full border-r border-gray-200 dark:border-zinc-800 flex flex-col">
+        <div className="p-3 sm:p-4 border-b dark:border-zinc-800 border-gray-200">
+          <h2 className="text-lg sm:text-xl text-gray-900 dark:text-white">
+            Messages
+          </h2>
         </div>
 
         <div className="h-full flex-1 overflow-y-auto min-h-0">
@@ -106,7 +110,7 @@ const Message = () => {
                   username: conv.username,
                 })
               }
-              className={`w-full p-4 flex items-center gap-3 transition-colors cursor-pointer ${
+              className={`w-full p-3 sm:p-4 flex items-center gap-3 transition-colors cursor-pointer ${
                 activeChat.user_id === conv.user_id
                   ? theme === "dark"
                     ? "bg-emerald-500/20 border-l-4 border-emerald-500"
@@ -117,7 +121,7 @@ const Message = () => {
               }`}
             >
               <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white text-sm sm:text-base">
                   {getInitials(conv.username)}
                 </div>
                 {/* <div
@@ -131,15 +135,15 @@ const Message = () => {
 
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="truncate text-gray-900 dark:text-white">
+                  <h3 className="truncate text-sm sm:text-base text-gray-900 dark:text-white">
                     {conv.username}
                   </h3>
-                  <span className="text-xs text-gray-500 dark:text-zinc-500">
+                  <span className="text-xs text-gray-500 dark:text-zinc-500 ml-2 flex-shrink-0">
                     {conv.send_at}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm truncate text-gray-600 dark:text-zinc-400">
+                  <p className="text-xs sm:text-sm truncate text-gray-600 dark:text-zinc-400">
                     {conv.lastMessage}
                   </p>
                   {conv.unread > 0 && (
@@ -157,15 +161,15 @@ const Message = () => {
       {/* Chat Area */}
       <div className="flex-1 flex flex-col h-full">
         {/* Chat Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3">
+        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-zinc-800 flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white text-sm">
               {getInitials(activeChat?.username)}
             </div>
-            <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-zinc-900"></div>
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-white dark:border-zinc-900"></div>
           </div>
           <div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white">
               {activeChat?.username}
             </h3>
           </div>
@@ -177,7 +181,7 @@ const Message = () => {
             <Spinner />
           </div>
         ) : (
-          <div className="h-full flex flex-col overflow-y-auto p-6 gap-4 min-h-0">
+          <div className="h-full flex flex-col overflow-y-auto p-3 sm:p-4 md:p-6 gap-3 sm:gap-4 min-h-0">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -188,12 +192,12 @@ const Message = () => {
                 }`}
               >
                 <div
-                  className={`max-w-md ${
+                  className={`max-w-[85%] sm:max-w-md ${
                     message.sender_id === user.id ? "order-2" : "order-1"
                   }`}
                 >
                   <div
-                    className={`rounded-2xl px-4 py-3 ${
+                    className={`rounded-2xl px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base ${
                       message.sender_id === user.id
                         ? "bg-emerald-500 text-white rounded-br-sm"
                         : theme === "dark"
@@ -217,15 +221,15 @@ const Message = () => {
         )}
 
         {/* Input Area */}
-        <div className="p-4 border-t border-gray-200 dark:border-zinc-800">
-          <div className="flex gap-3">
+        <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-zinc-800">
+          <div className="flex gap-2 sm:gap-3">
             <input
               type="text"
               placeholder="Type a message..."
               value={messageInput}
               onChange={(e) => setMessageInput(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-              className={`flex-1 px-4 py-3 rounded-xl border transition-colors ${
+              className={`flex-1 px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base rounded-xl border transition-colors ${
                 theme === "dark"
                   ? "bg-zinc-800/50 border-zinc-700 text-white placeholder-zinc-500 focus:border-emerald-500"
                   : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-500"
@@ -233,16 +237,16 @@ const Message = () => {
             />
             <button
               onClick={handleSendMessage}
-              className="px-6 py-3 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center gap-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center gap-2 text-sm sm:text-base"
             >
-              <Send className="w-5 h-5" />
-              Send
+              <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Send</span>
             </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default Message
+export default Message;
