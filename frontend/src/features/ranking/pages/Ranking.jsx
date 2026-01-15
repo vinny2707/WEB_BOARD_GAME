@@ -180,7 +180,7 @@ const Ranking = () => {
             onClick={() => setScopeTab("global")}
             className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
               scopeTab === "global"
-                ? "bg-emerald-500 text-white shadow-lg"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"
@@ -192,7 +192,7 @@ const Ranking = () => {
             onClick={() => setScopeTab("friends")}
             className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
               scopeTab === "friends"
-                ? "bg-emerald-500 text-white shadow-lg"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"
@@ -204,7 +204,7 @@ const Ranking = () => {
             onClick={() => setScopeTab("personal")}
             className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
               scopeTab === "personal"
-                ? "bg-emerald-500 text-white shadow-lg"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"

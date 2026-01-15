@@ -72,11 +72,8 @@ const Auth = () => {
       const { token, user } = response.data.data;
       login(token, user);
 
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+      // All users (including admin) go to home page
+      navigate("/");
     } catch (error) {
       console.error("Login error:", error);
 
@@ -189,11 +186,8 @@ const Auth = () => {
             <div className="relative flex flex-col items-center">
               {/* Logo/Brand */}
               <div className="text-center mb-6 sm:mb-8">
-                <h1
-                  className="text-3xl sm:text-4xl mb-2 text-emerald-400 tracking-[0.2em] sm:tracking-[0.3em]"
-                  style={{ textShadow: "0 0 20px rgba(16, 185, 129, 0.8)" }}
-                >
-                  RETROBIT
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400 bg-clip-text text-transparent">
+                  RETROGAMES
                 </h1>
                 <p className="text-zinc-400 text-sm sm:text-base">
                   Join the retro gaming revolution
@@ -206,7 +200,7 @@ const Auth = () => {
                   onClick={() => setActiveTab("login")}
                   className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "login"
-                      ? "bg-emerald-500 text-white shadow-lg"
+                      ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                       : "text-zinc-400 dark:hover:text-white"
                   }`}
                   style={{
@@ -222,7 +216,7 @@ const Auth = () => {
                   onClick={() => setActiveTab("register")}
                   className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "register"
-                      ? "bg-emerald-500 text-white shadow-lg"
+                      ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                       : "text-zinc-400 dark:hover:text-white"
                   }`}
                   style={{
@@ -298,7 +292,7 @@ const Auth = () => {
                   {/* Login Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                   >
                     {loading ? (
@@ -529,7 +523,7 @@ const Auth = () => {
                   {/* Register Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                     style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                   >
                     {loading ? (
@@ -582,8 +576,7 @@ const Auth = () => {
                 {/* Header */}
                 <div className="text-center mb-8">
                   <h1
-                    className="text-3xl mb-2 text-emerald-400 tracking-[0.2em]"
-                    style={{ textShadow: "0 0 20px rgba(16, 185, 129, 0.8)" }}
+                    className="text-3xl mb-2 font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400 bg-clip-text text-transparent"
                   >
                     FORGOT PASSWORD?
                   </h1>
@@ -624,8 +617,7 @@ const Auth = () => {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
-                    style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg rounded-xl transition-all shadow-lg cursor-pointer flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>

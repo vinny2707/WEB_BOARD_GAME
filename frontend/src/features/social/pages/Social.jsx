@@ -105,7 +105,7 @@ const social = () => {
             onClick={() => setScopeTab("friends")}
             className={`flex-1 min-w-[100px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
               scopeTab === "friends"
-                ? "bg-emerald-500 text-white shadow-lg"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"
@@ -117,7 +117,7 @@ const social = () => {
             onClick={() => setScopeTab("friendRequests")}
             className={`flex-1 min-w-[120px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
               scopeTab === "friendRequests"
-                ? "bg-emerald-500 text-white shadow-lg"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"
@@ -128,8 +128,8 @@ const social = () => {
           <button
             onClick={() => setScopeTab("messages")}
             className={`flex-1 min-w-[100px] py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all cursor-pointer text-sm sm:text-base whitespace-nowrap ${
-              scopeTab === "message"
-                ? "bg-emerald-500 text-white shadow-lg"
+              scopeTab === "messages"
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
                 : theme === "dark"
                 ? "text-zinc-400 hover:text-white"
                 : "text-gray-600 hover:text-gray-900"
@@ -231,7 +231,7 @@ const social = () => {
             </div>
 
             {/* Friends List */}
-            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="overflow-y-auto grid p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {friendsList.map((friend) => (
                 <FriendCard
                   key={friend.id}
