@@ -72,6 +72,7 @@ const UserManagement = () => {
       const data = response.data?.data;
 
       setUsers(data.users || []);
+      console.log('users data:', data.users);
       setTotalPages(data.pagination?.totalPages || 1);
       setCurrentPage(page);
       setError(null);
@@ -367,8 +368,8 @@ const UserManagement = () => {
                           >
                             <SelectValue>
                               <span className="font-semibold text-xs">
-                                {user.role.charAt(0).toUpperCase() +
-                                  user.role.slice(1)}
+                                {user.role?.charAt(0).toUpperCase() +
+                                  user.role?.slice(1)}
                               </span>
                             </SelectValue>
                           </SelectTrigger>
@@ -392,8 +393,8 @@ const UserManagement = () => {
                           >
                             <SelectValue>
                               <span className="font-semibold text-xs">
-                                {user.status.charAt(0).toUpperCase() +
-                                  user.status.slice(1)}
+                                {user.status?.charAt(0).toUpperCase() +
+                                  user.status?.slice(1)}
                               </span>
                             </SelectValue>
                           </SelectTrigger>
@@ -503,7 +504,7 @@ const UserManagement = () => {
                       }`}>
                         <SelectValue>
                           <span className="font-semibold">
-                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
                           </span>
                         </SelectValue>
                       </SelectTrigger>
@@ -521,7 +522,7 @@ const UserManagement = () => {
                       }`}>
                         <SelectValue>
                           <span className="font-semibold">
-                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                            {user.status?.charAt(0).toUpperCase() + user.status?.slice(1)}
                           </span>
                         </SelectValue>
                       </SelectTrigger>

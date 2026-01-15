@@ -75,8 +75,8 @@ const Sidebar = () => {
     {
       icon: Gamepad2,
       label: "Games",
-      page: "/",
-      active: currentPage === "/" || currentPage === "",
+      page: "games",
+      active: currentPage === "games" || currentPage === "",
     },
     {
       icon: Trophy,
