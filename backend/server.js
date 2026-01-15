@@ -43,7 +43,7 @@ const PORT = process.env.PORT || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Parse CORS origins if provided
-const allowedOrigins = process.env.CORS_ORIGIN 
+const allowedOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : [];
 
@@ -58,12 +58,12 @@ app.use(cors({
         if (!isProduction) {
             return callback(null, true);
         }
-        
+
         // Production mode with CORS_ORIGIN set: strict checking
         if (isProduction && process.env.CORS_ORIGIN) {
             // Allow requests with no origin (like mobile apps, Postman, Swagger UI)
             if (!origin) return callback(null, true);
-            
+
             if (allowedOrigins.indexOf(origin) !== -1) {
                 callback(null, true);
             } else {
@@ -155,12 +155,14 @@ const userRoutes = require('./src/routes/users');
 const gameRoutes = require('./src/routes/games');
 const sessionRoutes = require('./src/routes/sessions');
 const achievementRoutes = require('./src/routes/achievements');
+const reviewRoutes = require('./src/routes/reviews');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/achievements', achievementRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
