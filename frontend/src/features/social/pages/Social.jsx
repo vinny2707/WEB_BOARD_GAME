@@ -251,7 +251,7 @@ const social = () => {
             </h3>
 
             {/* Friend Requests List */}
-            <div className="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+            <div className="overflow-y-auto p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {friendRequestsList.map((request) => (
                 <FriendCard
                   key={request.id}
