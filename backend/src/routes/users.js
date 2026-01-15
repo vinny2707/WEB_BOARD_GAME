@@ -14,24 +14,12 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users (Admin sees all info, User sees public info for friend search)
+ *     summary: Get all users (Public - for friend search)
+ *     description: Returns basic user info for friend search. No login required. Only returns active users.
  *     tags: [Users]
  *     security:
  *       - apiKeyAuth: []
- *       - bearerAuth: []
  *     parameters:
- *       - in: query
- *         name: status
- *         schema:
- *           type: string
- *           enum: [active, inactive, banned]
- *         description: Filter by status (Admin only)
- *       - in: query
- *         name: role
- *         schema:
- *           type: string
- *           enum: [admin, user]
- *         description: Filter by role (Admin only)
  *       - in: query
  *         name: search
  *         schema:
@@ -51,11 +39,9 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *         description: Items per page
  *     responses:
  *       200:
- *         description: Users list retrieved (Admin gets full info, User gets public info only)
- *       401:
- *         description: Unauthorized
+ *         description: Users list retrieved (only public fields - id, username, full_name, email)
  */
-router.get('/', authenticateJWT, authorize('admin', 'user'), userController.getAllUsers);
+router.get('/', userController.getAllUsers);
 
 /**
  * @swagger
@@ -89,6 +75,7 @@ router.get('/:id', authenticateJWT, authorize('admin'), userController.getUserBy
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -125,6 +112,7 @@ router.patch('/:id/role', authenticateJWT, authorize('admin'), userController.ch
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -161,6 +149,7 @@ router.patch('/:id/status', authenticateJWT, authorize('admin'), userController.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id

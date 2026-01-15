@@ -216,6 +216,7 @@ router.get('/history', authenticateJWT, sessionController.getHistory);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -251,6 +252,7 @@ router.post('/start', authenticateJWT, sessionController.startSession);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -285,6 +287,7 @@ router.get('/:id', authenticateJWT, sessionController.getSessionById);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -325,6 +328,7 @@ router.put('/:id/save', authenticateJWT, sessionController.saveSession);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id

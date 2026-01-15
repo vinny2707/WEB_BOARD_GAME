@@ -9,7 +9,7 @@ const { success, error } = require('../utils/response');
 const getAllUsers = async (req, res, next) => {
     try {
         const { status, role, search, page = 1, limit = 10 } = req.query;
-        const isAdmin = req.user.role === 'admin';
+        const isAdmin = req.user && req.user.role === 'admin';
 
         const filters = {};
         
@@ -18,7 +18,7 @@ const getAllUsers = async (req, res, next) => {
             if (status) filters.status = status;
             if (role) filters.role = role;
         } else {
-            // Regular users can only see active users
+            // Guest and regular users can only see active users
             filters.status = 'active';
         }
 
@@ -36,12 +36,12 @@ const getAllUsers = async (req, res, next) => {
 
         // Filter fields based on role
         if (!isAdmin) {
-            // Regular users only see public info (for friend search)
+            // Guest and regular users only see public info (for friend search)
             users = users.map(user => ({
                 id: user.id,
                 username: user.username,
                 full_name: user.full_name,
-                email: user.email // Consider removing this if you want more privacy
+                email: user.email
             }));
         }
 
