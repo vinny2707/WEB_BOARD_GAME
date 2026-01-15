@@ -1,42 +1,66 @@
 /**
  * Email Configuration
- * Uses nodemailer with Gmail SMTP
+ * Uses Resend API (replacing nodemailer for Railway compatibility)
  */
 
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const logger = require('../utils/logger');
 
-// Create reusable transporter
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 465, // Changed from 587 to 465 for Railway
-    secure: true, // true for 465 (SSL), false for 587 (TLS)
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-    },
-    // Add timeouts to prevent hanging on Railway
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 30000,
-    tls: {
-        // Don't fail on invalid certs (for some hosting providers)
-        rejectUnauthorized: false
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * Send email using Resend API
+ * @param {Object} options - Email options
+ * @param {string} options.to - Recipient email
+ * @param {string} options.subject - Email subject
+ * @param {string} options.html - HTML content
+ * @returns {Promise<Object>} - Resend response
+ */
+const sendEmail = async ({ to, subject, html }) => {
+    try {
+        if (!process.env.RESEND_API_KEY) {
+            throw new Error('RESEND_API_KEY not configured');
+        }
+
+        const { data, error } = await resend.emails.send({
+            from: process.env.EMAIL_FROM || 'RetroBit <onboarding@resend.dev>',
+            to: [to],
+            subject: subject,
+            html: html
+        });
+
+        if (error) {
+            logger.error('Resend API error:', error);
+            throw new Error(error.message);
+        }
+
+        logger.info(`Email sent successfully to ${to}, ID: ${data.id}`);
+        return data;
+    } catch (error) {
+        logger.error('Failed to send email:', error);
+        throw error;
     }
-});
+};
 
-// Verify connection on startup
+/**
+ * Verify email service configuration
+ */
 const verifyConnection = async () => {
     try {
-        await transporter.verify();
-        console.log('Email service connected successfully');
+        if (!process.env.RESEND_API_KEY) {
+            logger.warn('RESEND_API_KEY not configured in environment variables');
+            return false;
+        }
+        logger.info('Resend email service configured successfully');
         return true;
     } catch (error) {
-        console.warn('Email service connection failed:', error.message);
+        logger.error('Email service verification failed:', error.message);
         return false;
     }
 };
 
 module.exports = {
-    transporter,
+    sendEmail,
     verifyConnection
 };
