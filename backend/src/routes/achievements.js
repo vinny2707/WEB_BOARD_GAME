@@ -91,6 +91,7 @@ router.get('/', achievementController.getAllAchievements);
  *     description: Returns user's achievements with progress, grouped by status
  *     tags: [Achievements]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     responses:
  *       200:

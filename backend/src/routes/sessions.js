@@ -61,6 +61,7 @@ const { authenticateJWT } = require('../middleware/auth');
  *     description: Submit a completed game session. This will update the user's ranking automatically.
  *     tags: [Sessions]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     requestBody:
  *       required: true

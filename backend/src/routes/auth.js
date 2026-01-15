@@ -420,6 +420,7 @@ router.post('/reset-password', authController.resetPassword);
  *     summary: Get current user profile
  *     tags: [Authentication]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     responses:
  *       200:

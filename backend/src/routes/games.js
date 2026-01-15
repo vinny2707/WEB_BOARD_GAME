@@ -134,6 +134,7 @@ router.get('/:id', gameController.getGameById);
  *     summary: Create new game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
@@ -187,6 +188,7 @@ router.post('/', authenticateJWT, authorize('admin'), gameController.createGame)
  *     summary: Update game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
@@ -233,6 +235,7 @@ router.put('/:id', authenticateJWT, authorize('admin'), gameController.updateGam
  *     summary: Toggle game enabled status (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
@@ -266,6 +269,7 @@ router.patch('/:id/status', authenticateJWT, authorize('admin'), gameController.
  *     summary: Delete game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path

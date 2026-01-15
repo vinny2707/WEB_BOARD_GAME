@@ -17,6 +17,7 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *     summary: Get all users
  *     tags: [Users]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
