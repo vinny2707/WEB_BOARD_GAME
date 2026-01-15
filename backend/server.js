@@ -39,9 +39,29 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 // ============================================
 
-// CORS
+// CORS Configuration
+const allowedOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
+// In production, warn if CORS_ORIGIN is not set
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+    logger.warn('CORS_ORIGIN not set in production! Allowing all origins (not recommended)');
+}
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN 
+        ? (origin, callback) => {
+            // Allow requests with no origin (like mobile apps, Postman, Swagger UI)
+            if (!origin) return callback(null, true);
+            
+            if (allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        }
+        : true, // In development without CORS_ORIGIN, allow all
     credentials: true
 }));
 
