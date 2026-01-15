@@ -14,7 +14,7 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users
+ *     summary: Get all users (Admin sees all info, User sees public info for friend search)
  *     tags: [Users]
  *     security:
  *       - apiKeyAuth: []
@@ -25,13 +25,13 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *         schema:
  *           type: string
  *           enum: [active, inactive, banned]
- *         description: Filter by status
+ *         description: Filter by status (Admin only)
  *       - in: query
  *         name: role
  *         schema:
  *           type: string
  *           enum: [admin, user]
- *         description: Filter by role
+ *         description: Filter by role (Admin only)
  *       - in: query
  *         name: search
  *         schema:
@@ -51,13 +51,11 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *         description: Items per page
  *     responses:
  *       200:
- *         description: Users list retrieved
+ *         description: Users list retrieved (Admin gets full info, User gets public info only)
  *       401:
  *         description: Unauthorized
- *       403:
- *         description: Access denied - Admin only
  */
-router.get('/', authenticateJWT, authorize('admin'), userController.getAllUsers);
+router.get('/', authenticateJWT, authorize('admin', 'user'), userController.getAllUsers);
 
 /**
  * @swagger
