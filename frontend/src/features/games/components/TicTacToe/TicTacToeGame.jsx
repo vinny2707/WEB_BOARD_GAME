@@ -1,23 +1,16 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   RotateCcw,
   Lightbulb,
-  Settings,
   Home,
   BookOpen,
   X,
   ChevronRight,
 } from "lucide-react";
 import TicTacToeBoard from "./TicTacToeBoard";
-import { findBestMove, getHint, checkWinner, isDraw } from "./TicTacToeAI";
-
-const DIFFICULTY_LABELS = {
-  easy: "Dễ",
-  medium: "Trung Bình",
-  hard: "Khó",
-};
+import { findBestMove, getHint, checkWinner, isDraw, getWinningLine } from "./TicTacToeAI";
 
 // Tutorial steps for TicTacToe - Kịch bản logic
 // Board indices: 0=TopLeft, 1=TopCenter, 2=TopRight, 3=MidLeft, 4=Center, 5=MidRight, 6=BotLeft, 7=BotCenter, 8=BotRight
@@ -149,18 +142,31 @@ const ScoreDisplay = ({ playerScore, aiScore }) => (
 
 const TicTacToeGame = () => {
   const navigate = useNavigate();
-  const [board, setBoard] = useState(Array(9).fill(null));
+  const location = useLocation();
+
+  // Get settings from lobby navigation state
+  const lobbySettings = location.state?.settings || {};
+  const boardSize = lobbySettings.boardSize || 3;
+  const timePerTurn = lobbySettings.timePerTurn || 30; // seconds
+  const timePerPlayer = lobbySettings.timePerPlayer || 120; // seconds (0 = unlimited)
+  const firstPlayer = lobbySettings.firstPlayer || 'random'; // 'random', 'player', 'ai'
+  const difficulty = lobbySettings.difficulty || 'medium'; // 'easy', 'medium', 'hard'
+
+  // Initialize board based on size
+  const initialBoard = Array(boardSize * boardSize).fill(null);
+
+  const [board, setBoard] = useState(initialBoard);
   const [isXNext, setIsXNext] = useState(true);
   const [score, setScore] = useState({ player: 0, ai: 0 });
   const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'draw', 'tutorial'
   const [winner, setWinner] = useState(null);
+  const [winReason, setWinReason] = useState(null); // 'normal', 'timeout', 'turnTimeout', 'lessTime'
   const [moveHistory, setMoveHistory] = useState([]);
-  const [playerTime, setPlayerTime] = useState(0);
-  const [aiTime, setAiTime] = useState(0);
-  const [difficulty, setDifficulty] = useState("medium");
+  const [playerTime, setPlayerTime] = useState(timePerPlayer);
+  const [aiTime, setAiTime] = useState(timePerPlayer);
+  const [turnTime, setTurnTime] = useState(timePerTurn);
   const [hintCell, setHintCell] = useState(null);
   const [isAIThinking, setIsAIThinking] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   // Tutorial state
   const [tutorialStep, setTutorialStep] = useState(0);
@@ -169,6 +175,7 @@ const TicTacToeGame = () => {
   const [displayedTitle, setDisplayedTitle] = useState("");
 
   const typingRef = useRef(null);
+  const turnTimerRef = useRef(null);
 
   // Typewriter effect for tutorial
   useEffect(() => {
@@ -228,20 +235,72 @@ const TicTacToeGame = () => {
     }
   }, [tutorialStep, gameStatus]);
 
-  // Timer for current player
+  // Timer for current player - countdown
   useEffect(() => {
     if (gameStatus !== "playing") return;
+    if (timePerPlayer === 0) return; // Unlimited time
 
     const timer = setInterval(() => {
       if (isXNext && !isAIThinking) {
-        setPlayerTime((prev) => prev + 1);
+        setPlayerTime((prev) => {
+          if (prev <= 1) {
+            // Player ran out of time - loses
+            clearInterval(timer);
+            setGameStatus("win");
+            setWinner("O");
+            setWinReason("timeout");
+            setScore((prev) => ({ ...prev, ai: prev.ai + 1 }));
+            return 0;
+          }
+          return prev - 1;
+        });
       } else if (!isXNext) {
-        setAiTime((prev) => prev + 1);
+        setAiTime((prev) => {
+          if (prev <= 1) {
+            // AI ran out of time - player wins
+            clearInterval(timer);
+            setGameStatus("win");
+            setWinner("X");
+            setWinReason("timeout");
+            setScore((prev) => ({ ...prev, player: prev.player + 1 }));
+            return 0;
+          }
+          return prev - 1;
+        });
       }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isXNext, gameStatus, isAIThinking]);
+  }, [isXNext, gameStatus, isAIThinking, timePerPlayer]);
+
+  // Turn timer countdown
+  useEffect(() => {
+    if (gameStatus !== "playing") return;
+    if (timePerTurn === 0) return; // Unlimited turn time
+
+    // Reset turn time when turn changes
+    setTurnTime(timePerTurn);
+
+    const turnTimer = setInterval(() => {
+      setTurnTime((prev) => {
+        if (prev <= 1) {
+          // Turn time ran out
+          clearInterval(turnTimer);
+          if (isXNext && !isAIThinking) {
+            // Player ran out of turn time - loses
+            setGameStatus("win");
+            setWinner("O");
+            setWinReason("turnTimeout");
+            setScore((prevScore) => ({ ...prevScore, ai: prevScore.ai + 1 }));
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(turnTimer);
+  }, [isXNext, gameStatus, isAIThinking, timePerTurn]);
 
   // AI makes a move
   useEffect(() => {
@@ -250,7 +309,7 @@ const TicTacToeGame = () => {
       setHintCell(null);
 
       const timer = setTimeout(() => {
-        const aiMove = findBestMove(board, difficulty);
+        const aiMove = findBestMove(board, difficulty, boardSize);
         if (aiMove !== -1) {
           makeMove(aiMove, "O");
         }
@@ -259,7 +318,7 @@ const TicTacToeGame = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [isXNext, gameStatus, board, difficulty]);
+  }, [isXNext, gameStatus, board, difficulty, boardSize]);
 
   const makeMove = useCallback(
     (index, player) => {
@@ -268,22 +327,40 @@ const TicTacToeGame = () => {
       setBoard(newBoard);
       setMoveHistory((prev) => [...prev, { index, player }]);
 
-      const winnerMark = checkWinner(newBoard);
+      const winnerMark = checkWinner(newBoard, boardSize);
       if (winnerMark) {
         setWinner(winnerMark);
+        setWinReason("normal");
         setGameStatus("win");
         setScore((prev) => ({
           ...prev,
           [winnerMark === "X" ? "player" : "ai"]:
             prev[winnerMark === "X" ? "player" : "ai"] + 1,
         }));
-      } else if (isDraw(newBoard)) {
-        setGameStatus("draw");
+      } else if (isDraw(newBoard, boardSize)) {
+        // Check if time-based win should apply (when there's a time limit)
+        if (timePerPlayer > 0 && playerTime !== aiTime) {
+          // Player with less remaining time loses
+          if (playerTime < aiTime) {
+            setWinner("O");
+            setWinReason("lessTime");
+            setGameStatus("win");
+            setScore((prev) => ({ ...prev, ai: prev.ai + 1 }));
+          } else {
+            setWinner("X");
+            setWinReason("lessTime");
+            setGameStatus("win");
+            setScore((prev) => ({ ...prev, player: prev.player + 1 }));
+          }
+        } else {
+          // No time limit or equal time - true draw
+          setGameStatus("draw");
+        }
       } else {
         setIsXNext(player === "O");
       }
     },
-    [board]
+    [board, boardSize, timePerPlayer, playerTime, aiTime]
   );
 
   const handleCellClick = useCallback(
@@ -300,7 +377,7 @@ const TicTacToeGame = () => {
           setBoard(newBoard);
 
           // Check if this completes the win condition in tutorial
-          const winnerMark = checkWinner(newBoard);
+          const winnerMark = checkWinner(newBoard, 3); // Tutorial is always 3x3
           if (winnerMark === "X") {
             setTutorialStep((prev) => prev + 1);
             return;
@@ -322,25 +399,36 @@ const TicTacToeGame = () => {
   );
 
   const handleReset = useCallback(() => {
-    setBoard(Array(9).fill(null));
+    setBoard(initialBoard);
     setIsXNext(true);
     setGameStatus("playing");
     setWinner(null);
+    setWinReason(null);
     setMoveHistory([]);
-    setPlayerTime(0);
-    setAiTime(0);
+    setPlayerTime(timePerPlayer);
+    setAiTime(timePerPlayer);
+    setTurnTime(timePerTurn);
     setHintCell(null);
     setIsAIThinking(false);
-  }, []);
+  }, [initialBoard, timePerPlayer, timePerTurn]);
 
   const startGame = () => {
-    setBoard(Array(9).fill(null));
-    setIsXNext(true);
+    setBoard(initialBoard);
+    // Determine who starts based on firstPlayer setting
+    if (firstPlayer === 'ai') {
+      setIsXNext(false);
+    } else if (firstPlayer === 'random') {
+      setIsXNext(Math.random() > 0.5);
+    } else {
+      setIsXNext(true);
+    }
     setGameStatus("playing");
     setWinner(null);
+    setWinReason(null);
     setMoveHistory([]);
-    setPlayerTime(0);
-    setAiTime(0);
+    setPlayerTime(timePerPlayer);
+    setAiTime(timePerPlayer);
+    setTurnTime(timePerTurn);
     setHintCell(null);
     setIsAIThinking(false);
   };
@@ -391,12 +479,12 @@ const TicTacToeGame = () => {
 
   const handleHint = useCallback(() => {
     if (gameStatus !== "playing" || isAIThinking) return;
-    const hint = getHint(board);
+    const hint = getHint(board, boardSize);
     if (hint !== -1) {
       setHintCell(hint);
       setTimeout(() => setHintCell(null), 3000);
     }
-  }, [board, gameStatus, isAIThinking]);
+  }, [board, boardSize, gameStatus, isAIThinking]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -406,32 +494,24 @@ const TicTacToeGame = () => {
       .padStart(2, "0")}`;
   };
 
-  const getWinningLine = () => {
-    if (!winner) return null;
-    const lines = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
-    for (const line of lines) {
-      const [a, b, c] = line;
-      if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-        return line;
-      }
-    }
-    return null;
-  };
+  // Use imported getWinningLine from AI module for dynamic board support
+  const winningLine = winner ? getWinningLine(board, boardSize) : null;
 
   const getStatusMessage = () => {
     if (gameStatus === "tutorial") return "📖 Chế độ hướng dẫn";
     if (isAIThinking) return "Đang suy nghĩ...";
-    if (gameStatus === "win")
-      return winner === "X" ? "🎉 Bạn thắng!" : "🤖 Máy thắng!";
+    if (gameStatus === "win") {
+      if (winner === "X") {
+        if (winReason === "timeout") return "🎉 Bạn thắng! (Máy hết giờ)";
+        if (winReason === "lessTime") return "🎉 Bạn thắng! (Hòa, máy ít thời gian hơn)";
+        return "🎉 Bạn thắng!";
+      } else {
+        if (winReason === "timeout") return "⏱️ Bạn thua! (Hết giờ)";
+        if (winReason === "turnTimeout") return "⏱️ Bạn thua! (Hết giờ lượt đi)";
+        if (winReason === "lessTime") return "⏱️ Bạn thua! (Hòa, bạn ít thời gian hơn)";
+        return "🤖 Máy thắng!";
+      }
+    }
     if (gameStatus === "draw") return "🤝 Hòa!";
     return isXNext ? "Lượt của bạn" : "Lượt của máy";
   };
@@ -449,48 +529,31 @@ const TicTacToeGame = () => {
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
         <button
           className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+          onClick={() => navigate("/games/tic-tac-toe")}
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold tracking-wider text-foreground">
+            {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : (
+              boardSize === 5 ? "TIC TAC TOE 5×5" : "TIC TAC TOE"
+            )}
+          </span>
+          {gameStatus !== "tutorial" && (
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+              difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+              }`}>
+              {difficulty === 'easy' ? 'Dễ' : difficulty === 'medium' ? 'TB' : 'Khó'}
+            </span>
+          )}
+        </div>
+        <button
+          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
           onClick={() => navigate("/games")}
         >
           <Home size={20} />
         </button>
-        <div className="text-lg font-bold tracking-wider text-foreground">
-          {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "TIC TAC TOE"}
-        </div>
-        <button
-          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-          onClick={() => setShowSettings(!showSettings)}
-        >
-          <Settings size={20} />
-        </button>
       </div>
-
-      {/* Settings Panel */}
-      {showSettings && (
-        <div className="px-4 py-3 bg-card border-b border-border">
-          <div className="text-sm font-semibold text-foreground mb-2">
-            Độ khó
-          </div>
-          <div className="flex gap-2">
-            {Object.entries(DIFFICULTY_LABELS).map(([key, label]) => (
-              <button
-                key={key}
-                className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
-                  ${difficulty === key
-                    ? "bg-emerald-500 text-white border-emerald-500"
-                    : "text-muted-foreground border-transparent hover:border-emerald-500"
-                  }`}
-                onClick={() => {
-                  setDifficulty(key);
-                  handleReset();
-                  setShowSettings(false);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Player Bar - Hide in tutorial */}
       {gameStatus !== "tutorial" && (
@@ -500,19 +563,26 @@ const TicTacToeGame = () => {
             symbol="X"
             avatar="👤"
             isActive={isXNext && gameStatus === "playing"}
-            timer={formatTime(playerTime)}
+            timer={timePerPlayer === 0 ? "∞" : formatTime(playerTime)}
             score={score.player}
             isLeft={true}
           />
 
-          <ScoreDisplay playerScore={score.player} aiScore={score.ai} />
+          <div className="flex flex-col items-center gap-1">
+            <ScoreDisplay playerScore={score.player} aiScore={score.ai} />
+            {gameStatus === "playing" && timePerTurn > 0 && (
+              <div className={`text-xs font-mono px-2 py-1 rounded ${turnTime <= 10 ? 'text-red-500 bg-red-500/10' : 'text-muted-foreground'}`}>
+                ⏱️ {turnTime}s
+              </div>
+            )}
+          </div>
 
           <PlayerCard
             name="Paper Man"
             symbol="O"
             avatar="🤖"
             isActive={!isXNext && gameStatus === "playing"}
-            timer={formatTime(aiTime)}
+            timer={timePerPlayer === 0 ? "∞" : formatTime(aiTime)}
             score={score.ai}
             isLeft={false}
           />
@@ -552,7 +622,7 @@ const TicTacToeGame = () => {
               <TicTacToeBoard
                 board={board}
                 onCellClick={handleCellClick}
-                winningLine={getWinningLine()}
+                winningLine={winningLine}
                 hintCell={gameStatus === "tutorial" ? null : hintCell}
                 highlightCells={
                   gameStatus === "tutorial"
@@ -567,6 +637,7 @@ const TicTacToeGame = () => {
                     )
                     : !isXNext || isAIThinking || gameStatus !== "playing"
                 }
+                boardSize={boardSize}
               />
 
               {/* Status Message */}
