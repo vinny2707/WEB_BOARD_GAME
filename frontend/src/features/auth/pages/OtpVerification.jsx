@@ -16,7 +16,12 @@ const otpSchema = z.object({
     .regex(/^\d+$/, "OTP must contain only numbers"),
 });
 
-const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) => {
+const OtpVerification = ({
+  otpSessionId,
+  maskedEmail,
+  onOtpType,
+  backToLogin,
+}) => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [canResend, setCanResend] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,12 +99,8 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
       localStorage.setItem("token", token);
       login(token, user);
 
-      // Redirect based on role
-      if (user.role === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/");
-      }
+      // All users (including admin) go to home page
+      navigate("/");
     } catch (error) {
       console.error("OTP verification error:", error);
       setErrorMessage(
@@ -193,8 +194,7 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
             {/* Header */}
             <div className="text-center mb-8">
               <h1
-                className="text-3xl mb-2 text-emerald-400 tracking-[0.2em]"
-                style={{ textShadow: "0 0 20px rgba(16, 185, 129, 0.8)" }}
+                className="text-3xl mb-2 font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400 bg-clip-text text-transparent"
               >
                 {otpVerified && onOtpType === "forgot-password"
                   ? "RESET PASSWORD"
@@ -267,7 +267,7 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white rounded-xl transition-all shadow-lg cursor-pointer"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg disabled:bg-emerald-500/50 rounded-xl transition-all shadow-lg cursor-pointer"
                   style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                 >
                   {isLoading ? "Verifying..." : "Verify OTP"}
@@ -353,7 +353,7 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-500/50 text-white rounded-xl transition-all shadow-lg cursor-pointer"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg disabled:bg-emerald-500/50 rounded-xl transition-all shadow-lg cursor-pointer"
                   style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.4)" }}
                 >
                   {isLoading ? "Resetting..." : "Reset Password"}
@@ -377,7 +377,7 @@ const OtpVerification = ({ otpSessionId, maskedEmail, onOtpType, backToLogin }) 
                       type="button"
                       onClick={handleResendOtp}
                       disabled={isLoading}
-                      className="w-full py-2 px-4 border-2 border-emerald-500 text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                      className="w-full py-2 px-4 border-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {isLoading ? "Resending..." : "Resend OTP"}
                     </button>

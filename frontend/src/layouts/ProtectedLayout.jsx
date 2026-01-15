@@ -4,16 +4,10 @@ import { useUser } from "@/contexts/UserProvider";
 import { Navigate } from "react-router-dom";
 
 const ProtectedLayout = () => {
-  const { isAuthenticated, isAdmin } = useUser();
-  const location = useLocation();
+  const { isAuthenticated } = useUser();
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Redirect admin to admin page if they try to access user routes
-  if (isAdmin && location.pathname === "/") {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   return <Outlet />;

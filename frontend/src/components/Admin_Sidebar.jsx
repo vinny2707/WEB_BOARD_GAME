@@ -2,15 +2,12 @@ import React from "react";
 import { useTheme } from "../contexts/ThemeProvider.jsx";
 import { useState, useEffect } from "react";
 import {
-  Sun,
-  Moon,
   Users,
   BarChart3,
   Gamepad2,
-  LogOut,
-  User,
   ChevronLeft,
   ChevronRight,
+  House,
 } from "lucide-react";
 import { useUser } from "../contexts/UserProvider.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -58,12 +55,6 @@ const Admin_Sidebar = () => {
       page: "game-config",
       active: activeSection === "game-config",
     },
-    {
-      icon: User,
-      label: "Profile",
-      page: "profile",
-      active: activeSection === "profile",
-    },
   ];
 
   const handleItemClick = (page) => {
@@ -93,29 +84,6 @@ const Admin_Sidebar = () => {
             isCollapsed ? "flex-col gap-3 justify-center" : "justify-between"
           }`}
         >
-          {/* Theme Toggle */}
-          <button
-            onClick={onToggleTheme}
-            className={`relative rounded-full transition-colors bg-gray-300 dark:bg-zinc-700 cursor-pointer flex-shrink-0 ${
-              isCollapsed ? "w-10 h-5" : "w-14 h-7"
-            }`}
-            title={isDarkMode ? "Light mode" : "Dark mode"}
-          >
-            <div
-              className={`absolute top-0.5 flex items-center justify-center rounded-full bg-white shadow-md transition-all ${
-                isCollapsed
-                  ? "w-4 h-4 dark:translate-x-5"
-                  : "w-6 h-6 dark:translate-x-7"
-              } translate-x-0.5`}
-            >
-              {isDarkMode ? (
-                <Moon className="w-3 h-3 text-zinc-900" />
-              ) : (
-                <Sun className="w-3 h-3 text-yellow-500" />
-              )}
-            </div>
-          </button>
-
           {/* Toggle Collapse Button */}
           <button
             onClick={toggleSidebar}
@@ -131,6 +99,18 @@ const Admin_Sidebar = () => {
             ) : (
               <ChevronLeft className="w-5 h-5" />
             )}
+          </button>
+
+          {/* Button Home */}
+          <button
+            onClick={() => navigate("/")}
+            className={`p-2 rounded-lg transition-all flex-shrink-0 cursor-pointer ${isDarkMode
+                ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
+                : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"
+              }`}
+            title="Go to Home"
+          >
+            <House className="w-5 h-5" />
           </button>
         </div>
 
@@ -178,18 +158,6 @@ const Admin_Sidebar = () => {
               )}
             </button>
           ))}
-
-          {/* Logout Button */}
-          <button
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all mt-8 cursor-pointer ${
-              isCollapsed ? "justify-center" : "justify-start"
-            }`}
-            onClick={() => logout()}
-            title={isCollapsed ? "Logout" : ""}
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="flex-1 text-left">Logout</span>}
-          </button>
         </nav>
       </div>
     </aside>
