@@ -40,18 +40,27 @@ const PORT = process.env.PORT || 3000;
 // ============================================
 
 // CORS Configuration
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Parse CORS origins if provided
 const allowedOrigins = process.env.CORS_ORIGIN 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:5173', 'http://localhost:3000'];
+    : [];
 
-// In production, warn if CORS_ORIGIN is not set
-if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+// Warn if production without CORS_ORIGIN
+if (isProduction && !process.env.CORS_ORIGIN) {
     logger.warn('CORS_ORIGIN not set in production! Allowing all origins (not recommended)');
 }
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN 
-        ? (origin, callback) => {
+    origin: (origin, callback) => {
+        // Development mode: always allow all origins
+        if (!isProduction) {
+            return callback(null, true);
+        }
+        
+        // Production mode with CORS_ORIGIN set: strict checking
+        if (isProduction && process.env.CORS_ORIGIN) {
             // Allow requests with no origin (like mobile apps, Postman, Swagger UI)
             if (!origin) return callback(null, true);
             
@@ -60,8 +69,11 @@ app.use(cors({
             } else {
                 callback(new Error('Not allowed by CORS'));
             }
+        } else {
+            // Production without CORS_ORIGIN: allow all (with warning above)
+            callback(null, true);
         }
-        : true, // In development without CORS_ORIGIN, allow all
+    },
     credentials: true
 }));
 
