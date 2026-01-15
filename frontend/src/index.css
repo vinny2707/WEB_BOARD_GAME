@@ -117,11 +117,12 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 #root {
-  @apply flex w-screen min-h-screen justify-center items-center;
+  @apply flex w-screen min-h-screen;
 }

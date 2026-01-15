@@ -9,10 +9,18 @@ const { success, error } = require('../utils/response');
 const getAllUsers = async (req, res, next) => {
     try {
         const { status, role, search, page = 1, limit = 10 } = req.query;
+        const isAdmin = req.user && req.user.role === 'admin';
 
         const filters = {};
-        if (status) filters.status = status;
-        if (role) filters.role = role;
+        
+        // Only admin can filter by status and role
+        if (isAdmin) {
+            if (status) filters.status = status;
+            if (role) filters.role = role;
+        } else {
+            // Guest and regular users can only see active users
+            filters.status = 'active';
+        }
 
         let users = await User.findAll(filters);
 
@@ -24,6 +32,17 @@ const getAllUsers = async (req, res, next) => {
                 u.email.toLowerCase().includes(searchLower) ||
                 (u.full_name && u.full_name.toLowerCase().includes(searchLower))
             );
+        }
+
+        // Filter fields based on role
+        if (!isAdmin) {
+            // Guest and regular users only see public info (for friend search)
+            users = users.map(user => ({
+                id: user.id,
+                username: user.username,
+                full_name: user.full_name,
+                email: user.email
+            }));
         }
 
         // Pagination

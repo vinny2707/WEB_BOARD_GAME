@@ -61,6 +61,7 @@ const { authenticateJWT } = require('../middleware/auth');
  *     description: Submit a completed game session. This will update the user's ranking automatically.
  *     tags: [Sessions]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
@@ -130,6 +131,7 @@ router.post('/complete', authenticateJWT, sessionController.completeGame);
  *     description: Returns paginated list of user's completed and in-progress games
  *     tags: [Sessions]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
@@ -214,6 +216,7 @@ router.get('/history', authenticateJWT, sessionController.getHistory);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -249,6 +252,7 @@ router.post('/start', authenticateJWT, sessionController.startSession);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -283,6 +287,7 @@ router.get('/:id', authenticateJWT, sessionController.getSessionById);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -323,6 +328,7 @@ router.put('/:id/save', authenticateJWT, sessionController.saveSession);
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id

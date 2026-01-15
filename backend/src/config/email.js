@@ -8,11 +8,19 @@ const nodemailer = require('nodemailer');
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+    port: parseInt(process.env.SMTP_PORT) || 465, // Changed from 587 to 465 for Railway
+    secure: true, // true for 465 (SSL), false for 587 (TLS)
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
+    },
+    // Add timeouts to prevent hanging on Railway
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 30000,
+    tls: {
+        // Don't fail on invalid certs (for some hosting providers)
+        rejectUnauthorized: false
     }
 });
 
