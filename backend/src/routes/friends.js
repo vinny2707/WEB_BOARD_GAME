@@ -223,4 +223,74 @@ router.delete('/:friendId', friendController.unfriend);
  */
 router.put('/:userId/block', friendController.blockUser);
 
+/**
+ * @swagger
+ * /api/friends/{userId}/unblock:
+ *   put:
+ *     summary: Unblock a user
+ *     tags: [Friends]
+ *     security:
+ *       - apiKeyAuth: []
+ *         bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of user to unblock
+ *     responses:
+ *       200:
+ *         description: User unblocked
+ *       404:
+ *         description: User is not blocked or not found
+ */
+router.put('/:userId/unblock', friendController.unblockUser);
+
+/**
+ * @swagger
+ * /api/friends/status/{userId}:
+ *   get:
+ *     summary: Check friendship status with another user
+ *     tags: [Friends]
+ *     security:
+ *       - apiKeyAuth: []
+ *         bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of user to check status with
+ *     responses:
+ *       200:
+ *         description: Friendship status retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [pending, accepted, blocked, null]
+ *                       description: Current friendship status
+ *                     direction:
+ *                       type: string
+ *                       enum: [incoming, outgoing, mutual, null]
+ *                       description: Direction of relationship
+ *                     friendship_id:
+ *                       type: integer
+ *                       nullable: true
+ *                       description: ID of friendship record
+ *       404:
+ *         description: User not found
+ */
+router.get('/status/:userId', friendController.getFriendshipStatus);
+
 module.exports = router;

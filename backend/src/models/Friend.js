@@ -237,6 +237,19 @@ class Friend {
             .del();
         return deleted > 0;
     }
+
+    /**
+     * Unblock user
+     * @param {number} userId 
+     * @param {number} targetId 
+     * @returns {Promise<boolean>}
+     */
+    static async unblockUser(userId, targetId) {
+        const deleted = await db('friends')
+            .where({ user_id: userId, friend_id: targetId, status: 'blocked' })
+            .del();
+        return deleted > 0;
+    }
 }
 
 module.exports = Friend;

@@ -233,6 +233,77 @@ const blockUser = async (req, res, next) => {
     }
 };
 
+/**
+ * Unblock user
+ */
+const unblockUser = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { userId: targetId } = req.params;
+
+        const unblocked = await Friend.unblockUser(userId, targetId);
+
+        if (!unblocked) {
+            return error(res, 'User is not blocked or not found', 404);
+        }
+
+        return success(res, null, 'User unblocked successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get friendship status with another user
+ */
+const getFriendshipStatus = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { userId: targetId } = req.params;
+
+        // Check if trying to check status with self
+        if (userId === parseInt(targetId)) {
+            return error(res, 'Cannot check status with yourself', 400);
+        }
+
+        // Check if target user exists
+        const targetUser = await User.findById(targetId);
+        if (!targetUser) {
+            return error(res, 'User not found', 404);
+        }
+
+        // Check friendship
+        const friendship = await Friend.checkFriendship(userId, targetId);
+
+        if (!friendship) {
+            // No relationship
+            return success(res, {
+                status: null,
+                direction: null,
+                friendship_id: null
+            }, 'No relationship found');
+        }
+
+        // Determine direction
+        let direction;
+        if (friendship.status === 'accepted') {
+            direction = 'mutual';
+        } else if (friendship.user_id === userId) {
+            direction = 'outgoing'; // Current user initiated
+        } else {
+            direction = 'incoming'; // Other user initiated
+        }
+
+        return success(res, {
+            status: friendship.status,
+            direction: direction,
+            friendship_id: friendship.id
+        }, 'Friendship status retrieved');
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     getFriends,
     getPendingRequests,
@@ -242,5 +313,7 @@ module.exports = {
     rejectFriendRequest,
     cancelFriendRequest,
     unfriend,
-    blockUser
+    blockUser,
+    unblockUser,
+    getFriendshipStatus
 };
