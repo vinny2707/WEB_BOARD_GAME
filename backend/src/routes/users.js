@@ -83,40 +83,6 @@ router.get('/:id', authenticateJWT, authorize('admin'), userController.getUserBy
 
 /**
  * @swagger
- * /api/users/{id}:
- *   put:
- *     summary: Update user profile info
- *     description: Update profile info only. Use PATCH /role or /status for those.
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               full_name:
- *                 type: string
- *               dob:
- *                 type: string
- *                 format: date
- *     responses:
- *       200:
- *         description: User updated
- *       404:
- *         description: User not found
- */
-router.put('/:id', authenticateJWT, authorize('admin'), userController.updateUser);
-
-/**
- * @swagger
  * /api/users/{id}/role:
  *   patch:
  *     summary: Change user role

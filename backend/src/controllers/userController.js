@@ -61,35 +61,6 @@ const getUserById = async (req, res, next) => {
     }
 };
 
-// Update user profile info only (use PATCH /role and /status for those)
-const updateUser = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        const { full_name, dob } = req.body;
-
-        // Check if user exists
-        const existingUser = await User.findById(id);
-        if (!existingUser) {
-            return error(res, 'User not found', 404);
-        }
-
-        // Build update object
-        const updateData = {};
-        if (full_name !== undefined) updateData.full_name = full_name;
-        if (dob !== undefined) updateData.dob = dob;
-
-        if (Object.keys(updateData).length === 0) {
-            return error(res, 'No valid fields to update. Use PATCH /role or /status for those.', 400);
-        }
-
-        const updatedUser = await User.update(id, updateData);
-
-        return success(res, updatedUser, 'User updated successfully');
-    } catch (err) {
-        next(err);
-    }
-};
-
 // Change user role
 const changeRole = async (req, res, next) => {
     try {
@@ -178,7 +149,6 @@ const deleteUser = async (req, res, next) => {
 module.exports = {
     getAllUsers,
     getUserById,
-    updateUser,
     changeRole,
     changeStatus,
     deleteUser

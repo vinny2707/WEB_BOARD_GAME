@@ -1,4 +1,5 @@
 const GameSession = require('../models/GameSession');
+const AchievementService = require('../services/achievementService');
 const { success, error } = require('../utils/response');
 
 /**
@@ -39,7 +40,16 @@ const completeGame = async (req, res, next) => {
             started_at
         });
 
-        return success(res, session, 'Game completed successfully', 201);
+        // Check achievements after game completion
+        const newlyUnlocked = await AchievementService.checkAchievements(userId, {
+            type: 'game_complete',
+            session: session
+        });
+
+        return success(res, { 
+            session, 
+            newly_unlocked: newlyUnlocked 
+        }, 'Game completed successfully', 201);
     } catch (err) {
         if (err.code === '23503') { // Foreign key violation
             return error(res, 'Game not found', 404);
