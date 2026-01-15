@@ -59,15 +59,7 @@ const TicTacToeLobby = () => {
     const handleSaveSettings = () => {
         setShowSettingsModal(false);
         setIsCustomMode(false);
-        if (settingsMode === 'robot') {
-            navigate('/games/tic-tac-toe/play', { state: { settings: gameSettings } });
-        } else if (settingsMode === 'friend') {
-            alert('Tính năng chơi với bạn bè đang được phát triển!');
-        } else if (settingsMode === 'tournament') {
-            alert('Tính năng tạo giải đấu đang được phát triển!');
-        } else if (settingsMode === 'online') {
-            alert('Tính năng chơi online đang được phát triển!');
-        }
+        // Settings are saved in state, game starts when clicking "Chơi với máy"
     };
 
     const handleSetUnlimitedTime = () => {
@@ -490,8 +482,8 @@ const TicTacToeLobby = () => {
                                                     <button
                                                         key={diff.key}
                                                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
-                                                                ? `${diff.color} text-white`
-                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                            ? `${diff.color} text-white`
+                                                            : 'bg-secondary text-foreground hover:bg-accent'
                                                             }`}
                                                         onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
                                                     >

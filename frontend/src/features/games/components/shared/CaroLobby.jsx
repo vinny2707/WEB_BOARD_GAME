@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal } from 'lucide-react';
+import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
+
+// Default game settings
+const DEFAULT_SETTINGS = {
+    boardSize: 15, // Fixed 15x15 for Caro games
+    timePerTurn: 40,
+    timePerPlayer: 300, // 5 minutes
+    firstPlayer: 'random',
+    difficulty: 'medium',
+};
 
 /**
- * Shared Lobby component for Caro games
- * @param {Object} props
- * @param {string} props.gameName - Display name
- * @param {string} props.gameDescription - Description
- * @param {string} props.playPath - Path to play (e.g., "/games/gomoku/play")
- * @param {string} props.gamesPath - Path to games list (default "/games")
- * @param {Array} props.leaderboard - Leaderboard data
- * @param {Object} props.currentUser - Current user rank info
- * @param {string} props.theme - 'emerald' or 'amber'
- * @param {React.ReactNode} props.icon - Icon component
+ * Shared Lobby component for Caro games with Settings Modal
  */
 const CaroLobby = ({
     gameName,
@@ -22,10 +22,17 @@ const CaroLobby = ({
     leaderboard = [],
     currentUser = { rank: 999, name: 'You', score: 1000 },
     theme = 'emerald',
-    icon
+    icon,
+    defaultBoardSize = 10,
+    winCondition = 5, // 4 for Caro4, 5 for Gomoku
 }) => {
     const navigate = useNavigate();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
+
+    // Settings modal state
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS, boardSize: defaultBoardSize });
+    const [isCustomMode, setIsCustomMode] = useState(false);
 
     const themeColors = {
         emerald: {
@@ -38,6 +45,8 @@ const CaroLobby = ({
             textHover: 'hover:text-emerald-600',
             userBg: 'from-emerald-500/15',
             userBorder: 'border-emerald-500/30',
+            btnBg: 'bg-emerald-500',
+            btnHover: 'hover:bg-emerald-600',
         },
         amber: {
             iconBg: 'from-amber-300 to-amber-500',
@@ -49,6 +58,8 @@ const CaroLobby = ({
             textHover: 'hover:text-amber-600',
             userBg: 'from-amber-500/15',
             userBorder: 'border-amber-500/30',
+            btnBg: 'bg-amber-500',
+            btnHover: 'hover:bg-amber-600',
         }
     };
 
@@ -69,8 +80,51 @@ const CaroLobby = ({
         return () => clearInterval(timer);
     }, []);
 
+    const formatTime = (seconds) => {
+        if (seconds === 0) return 'Không giới hạn';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        if (mins > 0 && secs === 0) return `${mins} phút`;
+        if (mins > 0) return `${mins}p ${secs}s`;
+        return `${secs} giây`;
+    };
+
+    const openSettings = (e) => {
+        e.stopPropagation();
+        setIsCustomMode(false);
+        setShowSettingsModal(true);
+    };
+
+    const handleSaveSettings = () => {
+        setShowSettingsModal(false);
+        setIsCustomMode(false);
+        // Settings are saved in state, game starts when clicking "Chơi với máy"
+    };
+
+    const handleSetUnlimitedTime = () => {
+        setGameSettings(prev => ({
+            ...prev,
+            timePerTurn: 0,
+            timePerPlayer: 0
+        }));
+    };
+
+    const adjustTimePerTurn = (delta) => {
+        setGameSettings(prev => ({
+            ...prev,
+            timePerTurn: Math.max(0, prev.timePerTurn + delta)
+        }));
+    };
+
+    const adjustTimePerPlayer = (delta) => {
+        setGameSettings(prev => ({
+            ...prev,
+            timePerPlayer: Math.max(0, prev.timePerPlayer + delta)
+        }));
+    };
+
     const handlePlayVsRobot = () => {
-        navigate(playPath);
+        navigate(playPath, { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
@@ -118,32 +172,52 @@ const CaroLobby = ({
                 {/* Left Side - Play Modes */}
                 <div className="flex-1 max-w-[400px] max-md:max-w-full">
                     <div className="flex flex-col gap-3">
-                        <button
-                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent ${colors.hoverBorder}`}
-                            onClick={handlePlayWithFriend}
-                        >
-                            <Users size={20} />
-                            <span className="flex-1 text-left">Chơi với bạn bè</span>
-                            <Settings size={16} className="text-muted-foreground" />
-                        </button>
+                        {/* Play with Friends */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent ${colors.hoverBorder}`}
+                                onClick={handlePlayWithFriend}
+                            >
+                                <Users size={20} />
+                                <span className="flex-1 text-left">Chơi với bạn bè</span>
+                            </button>
+                            <button
+                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                onClick={openSettings}
+                            >
+                                <Settings size={18} />
+                            </button>
+                        </div>
 
-                        <button
-                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent ${colors.hoverBorder}`}
-                            onClick={handlePlayVsRobot}
-                        >
-                            <Bot size={20} />
-                            <span className="flex-1 text-left">Chơi với máy</span>
-                            <Settings size={16} className="text-muted-foreground" />
-                        </button>
+                        {/* Play with AI */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 ${colors.btnBg}/10 border ${colors.border}/30 rounded-xl ${colors.text} text-base font-medium cursor-pointer transition-all hover:${colors.btnBg}/20`}
+                                onClick={handlePlayVsRobot}
+                            >
+                                <Bot size={20} />
+                                <span className="flex-1 text-left">Chơi với máy</span>
+                            </button>
+                            <button
+                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                onClick={openSettings}
+                            >
+                                <Settings size={18} />
+                            </button>
+                        </div>
 
-                        <button
-                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent ${colors.hoverBorder}`}
-                            onClick={handleCreateTournament}
-                        >
-                            <Trophy size={20} />
-                            <span className="flex-1 text-left">Tạo giải đấu</span>
-                        </button>
+                        {/* Create Tournament */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent ${colors.hoverBorder}`}
+                                onClick={handleCreateTournament}
+                            >
+                                <Trophy size={20} />
+                                <span className="flex-1 text-left">Tạo giải đấu</span>
+                            </button>
+                        </div>
 
+                        {/* Play Online */}
                         <button
                             className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r ${colors.primary} ${colors.border} rounded-xl text-white text-base font-medium cursor-pointer transition-all ${colors.primaryHover}`}
                             onClick={handlePlayOnline}
@@ -207,6 +281,238 @@ const CaroLobby = ({
                     </div>
                 </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                            <div className="flex items-center gap-3">
+                                {isCustomMode && (
+                                    <button
+                                        className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all mr-1"
+                                        onClick={() => setIsCustomMode(false)}
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                )}
+                                <Bot size={20} className={colors.text} />
+                                <h2 className="text-lg font-bold text-foreground m-0">
+                                    {isCustomMode ? 'Tùy chỉnh cài đặt' : 'Chơi với máy'}
+                                </h2>
+                            </div>
+                            <button
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                onClick={() => { setShowSettingsModal(false); setIsCustomMode(false); }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Game Info */}
+                        <div className="px-6 py-4 border-b border-border">
+                            <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                                <div className={`w-10 h-10 bg-gradient-to-br ${colors.iconBg} rounded-lg p-1.5 flex items-center justify-center`}>
+                                    {icon}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-foreground m-0">{gameName}</p>
+                                    <p className="text-xs text-muted-foreground m-0">{gameDescription}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Settings Content */}
+                        <div className="px-6 py-5 space-y-4">
+                            {!isCustomMode ? (
+                                <>
+                                    {/* Current Settings Summary */}
+                                    <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Time per turn:</span>
+                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Minutes per player:</span>
+                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Who plays first?</span>
+                                            <span className="font-semibold text-foreground">
+                                                {gameSettings.firstPlayer === 'random' ? 'Random' :
+                                                    gameSettings.firstPlayer === 'player' ? 'Bạn' : 'Máy'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Difficulty:</span>
+                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                }`}>
+                                                {gameSettings.difficulty === 'easy' ? 'Dễ' :
+                                                    gameSettings.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions */}
+                                    <div className="flex gap-2">
+                                        <button
+                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={handleSetUnlimitedTime}
+                                        >
+                                            Set unlimited time
+                                        </button>
+                                        <button
+                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={() => setIsCustomMode(true)}
+                                        >
+                                            Custom options
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Custom Settings Editor */}
+                                    <div className="space-y-4">
+                                        {/* Board Size */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground">Board size:</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {[7, 10, 15].map(size => (
+                                                    <button
+                                                        key={size}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
+                                                            ? `${colors.btnBg} text-white`
+                                                            : 'bg-secondary text-foreground hover:bg-accent'
+                                                            }`}
+                                                        onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
+                                                    >
+                                                        {size}x{size}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Time per Turn */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Clock size={16} className="text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Time per turn:</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                    onClick={() => adjustTimePerTurn(-10)}
+                                                >
+                                                    <Minus size={16} />
+                                                </button>
+                                                <span className="text-sm font-semibold text-foreground w-24 text-center">
+                                                    {formatTime(gameSettings.timePerTurn)}
+                                                </span>
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                    onClick={() => adjustTimePerTurn(10)}
+                                                >
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Minutes per Player */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <User size={16} className="text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Minutes per player:</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                    onClick={() => adjustTimePerPlayer(-60)}
+                                                >
+                                                    <Minus size={16} />
+                                                </button>
+                                                <span className="text-sm font-semibold text-foreground w-24 text-center">
+                                                    {formatTime(gameSettings.timePerPlayer)}
+                                                </span>
+                                                <button
+                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                    onClick={() => adjustTimePerPlayer(60)}
+                                                >
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Who Plays First */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Shuffle size={16} className="text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Who plays first?</span>
+                                            </div>
+                                            <select
+                                                className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm font-medium border-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                                value={gameSettings.firstPlayer}
+                                                onChange={(e) => setGameSettings(prev => ({ ...prev, firstPlayer: e.target.value }))}
+                                            >
+                                                <option value="random">Random</option>
+                                                <option value="player">Bạn đi trước</option>
+                                                <option value="ai">Máy đi trước</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Difficulty */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Trophy size={16} className="text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Độ khó:</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {[
+                                                    { key: 'easy', label: 'Dễ', color: 'text-green-500 bg-green-500' },
+                                                    { key: 'medium', label: 'TB', color: 'text-yellow-500 bg-yellow-500' },
+                                                    { key: 'hard', label: 'Khó', color: 'text-red-500 bg-red-500' }
+                                                ].map(diff => (
+                                                    <button
+                                                        key={diff.key}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
+                                                            ? `${diff.color} text-white`
+                                                            : 'bg-secondary text-foreground hover:bg-accent'
+                                                            }`}
+                                                        onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
+                                                    >
+                                                        {diff.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Reset */}
+                                    <button
+                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                                        onClick={() => setGameSettings({ ...DEFAULT_SETTINGS, boardSize: defaultBoardSize })}
+                                    >
+                                        Đặt lại mặc định
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-6 py-4 border-t border-border">
+                            <button
+                                className={`w-full py-3 ${colors.btnBg} rounded-xl text-white text-sm font-semibold ${colors.btnHover} transition-all shadow-md`}
+                                onClick={handleSaveSettings}
+                            >
+                                {isCustomMode ? 'Áp dụng & Bắt đầu' : 'Lưu cài đặt'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
