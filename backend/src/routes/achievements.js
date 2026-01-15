@@ -56,6 +56,8 @@ const { authenticateJWT } = require('../middleware/auth');
  *     summary: Get all achievements
  *     description: Returns list of all available achievements
  *     tags: [Achievements]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: query
  *         name: category
@@ -130,6 +132,8 @@ router.get('/me', authenticateJWT, achievementController.getMyAchievements);
  *   get:
  *     summary: Get achievement by ID
  *     tags: [Achievements]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id

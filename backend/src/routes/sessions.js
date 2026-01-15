@@ -131,6 +131,7 @@ router.post('/complete', authenticateJWT, sessionController.completeGame);
  *     description: Returns paginated list of user's completed and in-progress games
  *     tags: [Sessions]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: query

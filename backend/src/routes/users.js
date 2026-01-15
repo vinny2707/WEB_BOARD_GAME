@@ -64,6 +64,7 @@ router.get('/', authenticateJWT, authorize('admin', 'user'), userController.getA
  *     summary: Get user by ID
  *     tags: [Users]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path

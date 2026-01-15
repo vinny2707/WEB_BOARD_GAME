@@ -21,6 +21,8 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *     summary: Get all games (summary info)
  *     description: Returns all games including disabled ones. Summary fields only for list display. Supports pagination, search, and filter.
  *     tags: [Games]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -99,6 +101,8 @@ router.get('/', gameController.getAllGames);
  *     summary: Get game by ID (full details)
  *     description: Returns complete game info including rows, cols, rules, and settings
  *     tags: [Games]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
