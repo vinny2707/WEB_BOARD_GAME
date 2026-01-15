@@ -17,6 +17,8 @@ const { validateRegister, validateLogin, validateUpdateProfile } = require('../m
  *   post:
  *     summary: Register a new user
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -86,6 +88,8 @@ router.post('/register', validateRegister, authController.register);
  *   post:
  *     summary: Verify OTP and complete registration
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -139,6 +143,8 @@ router.post('/verify-otp', authController.verifyOtp);
  *   post:
  *     summary: Resend OTP for registration
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -188,6 +194,8 @@ router.post('/resend-otp', authController.resendOtp);
  *   post:
  *     summary: Login user
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -241,6 +249,8 @@ router.post('/login', validateLogin, authController.login);
  *   post:
  *     summary: Verify OTP and reactivate inactive account
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -294,6 +304,8 @@ router.post('/verify-reactivation-otp', authController.verifyReactivationOtp);
  *   post:
  *     summary: Logout user
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
@@ -318,6 +330,8 @@ router.post('/logout', authController.logout);
  *   post:
  *     summary: Request password reset OTP
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -369,6 +383,8 @@ router.post('/forgot-password', authController.forgotPassword);
  *   post:
  *     summary: Reset password with OTP verification
  *     tags: [Authentication]
+ *     security:
+ *       - apiKeyAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -420,6 +436,7 @@ router.post('/reset-password', authController.resetPassword);
  *     summary: Get current user profile
  *     tags: [Authentication]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     responses:
  *       200:
@@ -453,6 +470,7 @@ router.get('/profile', authenticateJWT, authController.getProfile);
  *     summary: Update user profile
  *     tags: [Authentication]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     requestBody:
  *       required: true

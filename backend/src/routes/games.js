@@ -18,9 +18,11 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  * @swagger
  * /api/games:
  *   get:
- *     summary: Get all games (summary info)
+ *     summary: Get all games (Public)
  *     description: Returns all games including disabled ones. Summary fields only for list display. Supports pagination, search, and filter.
  *     tags: [Games]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -96,9 +98,11 @@ router.get('/', gameController.getAllGames);
  * @swagger
  * /api/games/{id}:
  *   get:
- *     summary: Get game by ID (full details)
+ *     summary: Get game by ID (Public)
  *     description: Returns complete game info including rows, cols, rules, and settings
  *     tags: [Games]
+ *     security:
+ *       - apiKeyAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -134,6 +138,7 @@ router.get('/:id', gameController.getGameById);
  *     summary: Create new game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
@@ -187,6 +192,7 @@ router.post('/', authenticateJWT, authorize('admin'), gameController.createGame)
  *     summary: Update game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
@@ -233,6 +239,7 @@ router.put('/:id', authenticateJWT, authorize('admin'), gameController.updateGam
  *     summary: Toggle game enabled status (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
@@ -266,6 +273,7 @@ router.patch('/:id/status', authenticateJWT, authorize('admin'), gameController.
  *     summary: Delete game (Admin only)
  *     tags: [Games]
  *     security:
+ *       - apiKeyAuth: []
  *       - bearerAuth: []
  *     parameters:
  *       - in: path

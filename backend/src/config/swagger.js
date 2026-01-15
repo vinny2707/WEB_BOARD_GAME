@@ -85,6 +85,43 @@ const options = {
                             }
                         }
                     }
+                },
+                Game: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        name: { type: 'string', example: 'Tic Tac Toe' },
+                        type: { type: 'string', example: 'tic_tac_toe' },
+                        description: { type: 'string', example: 'Classic 3x3 grid game' },
+                        rows: { type: 'integer', example: 3 },
+                        cols: { type: 'integer', example: 3 },
+                        enabled: { type: 'boolean', example: true },
+                        icon: { type: 'string', example: '🎮' },
+                        rules: { type: 'string', example: 'Connect 3 in a row to win' },
+                        settings: { 
+                            type: 'object',
+                            example: { winCondition: 3, playerSymbols: ['X', 'O'] }
+                        },
+                        created_at: { type: 'string', format: 'date-time' },
+                        updated_at: { type: 'string', format: 'date-time' }
+                    }
+                },
+                GameSession: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'integer', example: 1 },
+                        game_id: { type: 'integer', example: 1 },
+                        user_id: { type: 'integer', example: 1 },
+                        status: { type: 'string', enum: ['in_progress', 'completed', 'abandoned'], example: 'in_progress' },
+                        winner_id: { type: 'integer', nullable: true },
+                        board_state: { 
+                            type: 'object',
+                            example: { grid: [['X', 'O', null], [null, 'X', null], [null, null, 'O']] }
+                        },
+                        duration_seconds: { type: 'integer', example: 120 },
+                        created_at: { type: 'string', format: 'date-time' },
+                        completed_at: { type: 'string', format: 'date-time', nullable: true }
+                    }
                 }
             }
         },
