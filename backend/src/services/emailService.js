@@ -3,7 +3,8 @@
  * Handles sending emails (OTP, notifications, etc.)
  */
 
-const { transporter } = require('../config/email');
+
+const { sendEmail } = require('../config/email');
 
 // Email types configuration
 const EMAIL_TYPES = {
@@ -42,15 +43,12 @@ class EmailService {
     async sendOtpEmail(email, otpCode, expiresInMinutes = 5, type = 'register') {
         const config = EMAIL_TYPES[type] || EMAIL_TYPES.register;
 
-        const mailOptions = {
-            from: process.env.EMAIL_FROM || process.env.SMTP_USER,
-            to: email,
-            subject: config.subject,
-            html: this.getOtpEmailTemplate(otpCode, expiresInMinutes, config)
-        };
-
         try {
-            await transporter.sendMail(mailOptions);
+            await sendEmail({
+                to: email,
+                subject: config.subject,
+                html: this.getOtpEmailTemplate(otpCode, expiresInMinutes, config)
+            });
             return true;
         } catch (error) {
             console.error(`Failed to send ${type} email:`, error.message);
