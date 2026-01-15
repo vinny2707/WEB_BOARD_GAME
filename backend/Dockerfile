@@ -5,8 +5,8 @@ FROM node:20-alpine AS dependencies
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (ensure package-lock.json is included)
+COPY package.json package-lock.json ./
 
 # Install dependencies (production only for final image)
 RUN npm ci --only=production && \
