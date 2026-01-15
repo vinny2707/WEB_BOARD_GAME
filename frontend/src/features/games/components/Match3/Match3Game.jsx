@@ -7,25 +7,27 @@ const CANDY_TYPES = ['🍎', '🍊', '🍋', '🍇', '🍓', '🫐'];
 const CANDY_COLORS = ['#ef4444', '#f97316', '#eab308', '#8b5cf6', '#ec4899', '#3b82f6'];
 
 // Tutorial board - fixed layout for learning
-// Swap [2,4] với [3,4] để tạo 3 🍎 theo cột 4
+// Swap [2,4] với [2,5] để tạo 3 🍎 theo cột 4
+// Logic: [1,4]=🍎, [2,4]=🍊, [3,4]=🍎, [2,5]=🍎
+// Sau swap [2,4]↔[2,5]: [2,4]=🍎 => cột 4 có 3 🍎 liên tiếp
 const createTutorialBoard = () => {
-    // Index = row*8 + col
-    // [1,4]=12: 🍎, [2,4]=20: 🍊 (swap này), [3,4]=28: 🍎 (với này) -> kết quả [1,4][2,4][3,4] = 🍎🍎🍎
+    // CANDY_TYPES: 0=🍎, 1=🍊, 2=🍋, 3=🍇, 4=🍓, 5=🫐
+    // [1,4]=12: 🍎(0), [2,4]=20: 🍊(1), [3,4]=28: 🍎(0), [2,5]=21: 🍎(0)
     const pattern = [
-        0, 1, 2, 3, 4, 5, 0, 1,  // Row 0
-        1, 2, 3, 4, 0, 5, 1, 2,  // Row 1: col 4 = 🍎
-        2, 1, 0, 1, 1, 3, 4, 5,  // Row 2: col 4 = 🍊 (swap)
-        3, 4, 5, 0, 0, 2, 3, 4,  // Row 3: col 4 = 🍎 (swap với row2,col4)
-        4, 1, 2, 3, 4, 1, 0, 1,  // Row 4
-        5, 0, 1, 2, 3, 4, 1, 2,  // Row 5
-        0, 1, 2, 3, 4, 5, 0, 1,  // Row 6
-        1, 2, 3, 4, 5, 0, 1, 2,  // Row 7
+        2, 3, 4, 5, 3, 2, 4, 5,  // Row 0: tránh match
+        3, 4, 5, 2, 0, 3, 5, 4,  // Row 1: col4=🍎
+        4, 5, 3, 4, 1, 0, 2, 3,  // Row 2: col4=🍊(swap), col5=🍎(swap với)
+        5, 2, 4, 3, 0, 4, 3, 2,  // Row 3: col4=🍎
+        2, 3, 5, 4, 2, 5, 4, 3,  // Row 4: tránh match
+        3, 4, 2, 5, 3, 2, 5, 4,  // Row 5
+        4, 5, 3, 2, 4, 3, 2, 5,  // Row 6
+        5, 2, 4, 3, 5, 4, 3, 2,  // Row 7
     ];
     return pattern.map((type, i) => ({ type, key: i }));
 };
 
-// Tutorial steps - Swap [2,4] with [3,4]
-// Cell indices: [1,4]=12, [2,4]=20, [3,4]=28
+// Tutorial steps - Swap [2,4] with [2,5] (swap ngang để tạo match dọc)
+// Cell indices: [1,4]=12, [2,4]=20, [2,5]=21, [3,4]=28
 const TUTORIAL_STEPS = [
     {
         id: 1,
@@ -38,9 +40,9 @@ const TUTORIAL_STEPS = [
     {
         id: 2,
         title: "Bước 1: Nhận diện cơ hội! 👀",
-        message: "Nhìn cột thứ 5: có 2 quả 🍎 ở hàng 2 và hàng 4! Nếu swap viên 🍊 ở giữa với 🍎 bên dưới, sẽ tạo 3 🍎 liên tiếp theo cột!",
+        message: "Nhìn cột thứ 5: có 2 quả 🍎 ở hàng 2 và hàng 4. Nếu swap viên 🍊 ở giữa với 🍎 bên phải, sẽ tạo 3 🍎 liên tiếp theo cột!",
         action: "click_next",
-        highlightCells: [12, 20, 28], // col 4: row 1,2,3
+        highlightCells: [12, 20, 28], // col 4: row 1,2,3 - highlight cột sẽ match
         swapPair: null,
     },
     {
@@ -49,17 +51,17 @@ const TUTORIAL_STEPS = [
         message: "Click vào viên 🍊 ở vị trí (hàng 3, cột 5) để chọn nó.",
         action: "click_cell",
         highlightCells: [20],
-        targetCell: 20, // [2,4]
+        targetCell: 20, // [2,4] - viên 🍊
         swapPair: null,
     },
     {
         id: 4,
         title: "Bước 3: Swap để tạo match! 🔄",
-        message: "Giờ click vào viên 🍎 bên dưới để hoán đổi! Kết quả: 3 quả 🍎 liên tiếp theo cột!",
+        message: "Giờ click vào viên 🍎 bên phải để hoán đổi! Kết quả: 3 quả 🍎 liên tiếp theo cột!",
         action: "click_cell",
-        highlightCells: [28],
-        targetCell: 28, // [3,4]
-        swapPair: [20, 28],
+        highlightCells: [21],
+        targetCell: 21, // [2,5] - viên 🍎 bên phải
+        swapPair: [20, 21],
     },
     {
         id: 5,
@@ -314,24 +316,42 @@ const Match3Game = () => {
             const currentStep = TUTORIAL_STEPS[tutorialStep];
             if (currentStep?.action === 'click_cell' && !isTyping) {
                 if (currentStep.targetCell === index) {
-                    // Step 3: Chọn cell đầu tiên (cell 16)
+                    // Step 3: Chọn cell đầu tiên
                     if (!currentStep.swapPair) {
                         setSelectedCell(index);
                         setTutorialStep(prev => prev + 1);
                     } else {
-                        // Step 4: Thực hiện swap (cell 17)
+                        // Step 4: Thực hiện swap và tạo match effect
                         const [from, to] = currentStep.swapPair;
                         setSelectedCell(null);
                         setSwappingCells({ from, to });
                         await new Promise(r => setTimeout(r, 250));
+                        
                         const newBoard = [...board];
                         [newBoard[from], newBoard[to]] = [newBoard[to], newBoard[from]];
                         setBoard(newBoard);
                         setSwappingCells({ from: null, to: null });
-                        // Show match effect on cells 12, 20, 28 (col 4: row 1,2,3)
-                        setMatchedCells([12, 20, 28]);
-                        await new Promise(r => setTimeout(r, 600));
+                        
+                        // Hiệu ứng match: highlight các cells sẽ match
+                        const matchCells = [12, 20, 28]; // col 4: row 1,2,3
+                        setMatchedCells(matchCells);
+                        
+                        // Tạo hiệu ứng explosion
+                        createExplosions(matchCells, newBoard);
+                        
+                        await new Promise(r => setTimeout(r, 400));
+                        
+                        // Xóa các cells match và tạo hiệu ứng rơi
+                        const matchedSet = new Set(matchCells);
+                        const fallingBoard = prepareNewBoard(newBoard, matchedSet);
                         setMatchedCells([]);
+                        setBoard(fallingBoard);
+                        
+                        await new Promise(r => setTimeout(r, 400));
+                        
+                        // Reset board state sau animation
+                        setBoard(prev => prev.map(c => ({ type: c.type, key: c.key })));
+                        
                         setTutorialStep(prev => prev + 1);
                     }
                 }
@@ -566,7 +586,7 @@ const Match3Game = () => {
                 </div>
             )}
 
-            <div className="flex-1 flex items-center justify-center p-4 gap-6">
+            <div className={`flex-1 flex items-center justify-center p-4 gap-6 ${gameStatus === 'tutorial' ? 'md:pb-4 pb-48' : ''}`}>
                 {/* Idle Screen */}
                 {gameStatus === 'idle' && (
                     <div className="flex flex-col items-center justify-center gap-4 p-8 bg-card rounded-2xl shadow-lg border-2 border-border">
@@ -607,7 +627,7 @@ const Match3Game = () => {
                     </div>
                 )}
 
-                {/* Tutorial Panel */}
+                {/* Tutorial Panel - Desktop */}
                 {gameStatus === 'tutorial' && currentTutorialStep && (
                     <div className="hidden md:flex flex-col w-80 h-fit p-6 bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-pink-500/30 rounded-2xl shadow-lg">
                         <div className="flex items-center justify-between mb-4">
@@ -664,6 +684,46 @@ const Match3Game = () => {
                                 {isTyping && 'Đang hiển thị hướng dẫn...'}
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {/* Tutorial Panel - Mobile (shown below board) */}
+                {gameStatus === 'tutorial' && currentTutorialStep && (
+                    <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-t border-pink-500/30 shadow-lg z-50">
+                        {/* Progress Bar */}
+                        <div className="flex gap-1 mb-3">
+                            {TUTORIAL_STEPS.map((_, idx) => (
+                                <div key={idx} className={`flex-1 h-1 rounded-full transition-colors ${idx < tutorialStep ? 'bg-pink-500' : idx === tutorialStep ? 'bg-pink-400 animate-pulse' : 'bg-secondary'}`} />
+                            ))}
+                        </div>
+
+                        {/* Step Content */}
+                        <div className="mb-3">
+                            <div className="text-xs text-muted-foreground mb-1">Bước {tutorialStep + 1}/{TUTORIAL_STEPS.length}</div>
+                            <div className="text-base font-bold text-foreground mb-2">
+                                {displayedTitle}
+                                {isTyping && displayedText.length === 0 && <span className="animate-pulse">|</span>}
+                            </div>
+                            <div className="text-xs text-muted-foreground leading-relaxed">
+                                {displayedText}
+                                {isTyping && displayedText.length > 0 && <span className="animate-pulse text-pink-400">|</span>}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        {showNextButton && (
+                            <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-pink-500 text-white text-sm font-semibold rounded-xl hover:bg-pink-600 transition-all shadow-md" onClick={nextTutorialStep}>
+                                {currentTutorialStep.action === 'finish' ? <>🎮 Bắt đầu chơi</> : <>Tiếp tục<ChevronRight size={18} /></>}
+                            </button>
+                        )}
+
+                        {/* Hint for click_cell */}
+                        {!isTyping && currentTutorialStep?.action === 'click_cell' && (
+                            <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
+                                <span className="animate-bounce">👆</span>
+                                <span>Nhấn vào ô được đánh dấu!</span>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
