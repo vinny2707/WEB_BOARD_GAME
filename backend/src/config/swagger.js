@@ -13,16 +13,23 @@ const options = {
                 email: 'support@boardgame.com'
             }
         },
-        servers: [
-            {
-                url: 'https://localhost:3000',
-                description: 'Development Server (HTTPS)'
-            },
-            {
-                url: 'http://localhost:3000',
-                description: 'Development Server (HTTP)'
-            }
-        ],
+        servers: process.env.RAILWAY_PUBLIC_DOMAIN 
+            ? [
+                {
+                    url: `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`,
+                    description: 'Production Server (Railway)'
+                }
+            ]
+            : [
+                {
+                    url: 'https://localhost:3000',
+                    description: 'Development Server (HTTPS)'
+                },
+                {
+                    url: 'http://localhost:3000',
+                    description: 'Development Server (HTTP)'
+                }
+            ],
         components: {
             securitySchemes: {
                 bearerAuth: {
