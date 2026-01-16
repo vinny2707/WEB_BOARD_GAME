@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Home,
     Trash2,
@@ -16,6 +16,19 @@ import {
     ChevronRight,
     Check,
 } from "lucide-react";
+
+const CANVAS_SIZES = {
+    small: { width: 600, height: 400 },
+    medium: { width: 800, height: 600 },
+    large: { width: 1000, height: 700 },
+};
+
+const BACKGROUNDS = {
+    white: { color: '#ffffff', textColor: '#000000' },
+    black: { color: '#1a1a1a', textColor: '#ffffff' },
+    grid: { color: '#ffffff', textColor: '#000000' },
+    ruled: { color: '#ffffff', textColor: '#000000' },
+};
 
 const COLORS = [
     "#000000",
@@ -129,17 +142,25 @@ const TUTORIAL_STEPS = [
 
 const DrawingGame = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Get settings from lobby navigation state
+    const lobbySettings = location.state?.settings || {};
+    const canvasSizeSetting = lobbySettings.canvasSize || 'medium';
+    const backgroundSetting = lobbySettings.background || 'white';
+    const showGridSetting = lobbySettings.showGrid || false;
+
     const canvasRef = useRef(null);
     const templateCanvasRef = useRef(null);
     const contextRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [color, setColor] = useState("#000000");
+    const [color, setColor] = useState(backgroundSetting === 'black' ? '#ffffff' : '#000000');
     const [brushSize, setBrushSize] = useState(4);
     const [tool, setTool] = useState("pencil");
     const [history, setHistory] = useState([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
     const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-    const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+    const [canvasSize, setCanvasSize] = useState(CANVAS_SIZES[canvasSizeSetting] || CANVAS_SIZES.medium);
     const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'tutorial'
 
     // Tutorial states
@@ -218,10 +239,12 @@ const DrawingGame = () => {
             const container = canvas.parentElement;
             if (!container) return;
 
+            // Use settings canvas size instead of container size
+            const settingsSize = CANVAS_SIZES[canvasSizeSetting] || CANVAS_SIZES.medium;
             const rect = container.getBoundingClientRect();
-            const width = Math.min(rect.width - 16, 900);
-            const height = Math.min(rect.height - 16, 600);
-            setCanvasSize({ width, height });
+            const maxWidth = Math.min(rect.width - 16, settingsSize.width);
+            const maxHeight = Math.min(rect.height - 16, settingsSize.height);
+            setCanvasSize({ width: maxWidth, height: maxHeight });
         };
 
         initCanvas();
@@ -231,10 +254,11 @@ const DrawingGame = () => {
             if (!canvas) return;
             const container = canvas.parentElement;
             if (!container) return;
+            const settingsSize = CANVAS_SIZES[canvasSizeSetting] || CANVAS_SIZES.medium;
             const rect = container.getBoundingClientRect();
-            const width = Math.min(rect.width - 16, 900);
-            const height = Math.min(rect.height - 16, 600);
-            setCanvasSize({ width, height });
+            const maxWidth = Math.min(rect.width - 16, settingsSize.width);
+            const maxHeight = Math.min(rect.height - 16, settingsSize.height);
+            setCanvasSize({ width: maxWidth, height: maxHeight });
         };
 
         window.addEventListener("resize", handleResize);
@@ -255,15 +279,81 @@ const DrawingGame = () => {
         context.lineWidth = brushSize;
         contextRef.current = context;
 
-        // Fill with white background
-        context.fillStyle = "#ffffff";
+        // Fill with background color
+        const bgColor = BACKGROUNDS[backgroundSetting]?.color || '#ffffff';
+        context.fillStyle = bgColor;
         context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid or ruled lines if enabled
+        if (backgroundSetting === 'grid') {
+            drawGridPattern(context, canvas.width, canvas.height);
+        } else if (backgroundSetting === 'ruled') {
+            drawRuledPattern(context, canvas.width, canvas.height);
+        }
+
+        // Draw helper grid if enabled
+        if (showGridSetting && backgroundSetting !== 'grid') {
+            drawHelperGrid(context, canvas.width, canvas.height);
+        }
 
         // Save initial state
         if (history.length === 0) {
             saveState();
         }
     }, [canvasSize, gameStatus]);
+
+    // Grid pattern helper
+    const drawGridPattern = (ctx, width, height) => {
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 0.5;
+        const gridSize = 20;
+        for (let x = 0; x <= width; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= height; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+    };
+
+    // Ruled pattern helper
+    const drawRuledPattern = (ctx, width, height) => {
+        ctx.strokeStyle = '#cce5ff';
+        ctx.lineWidth = 1;
+        const lineSpacing = 28;
+        for (let y = lineSpacing; y <= height; y += lineSpacing) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+        // Red margin line
+        ctx.strokeStyle = '#ffcccc';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(50, 0);
+        ctx.lineTo(50, height);
+        ctx.stroke();
+    };
+
+    // Helper grid (dots)
+    const drawHelperGrid = (ctx, width, height) => {
+        const dotColor = backgroundSetting === 'black' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)';
+        ctx.fillStyle = dotColor;
+        const gridSize = 40;
+        for (let x = gridSize; x < width; x += gridSize) {
+            for (let y = gridSize; y < height; y += gridSize) {
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    };
 
     const saveState = useCallback(() => {
         const canvas = canvasRef.current;

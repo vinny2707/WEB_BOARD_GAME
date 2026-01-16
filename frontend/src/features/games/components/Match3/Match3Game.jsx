@@ -13,7 +13,21 @@ import {
 } from "lucide-react";
 
 const DEFAULT_BOARD_SIZE = 8;
-const ALL_CANDY_TYPES = ["🍎", "🍊", "🍋", "🍇", "🍓", "🫐", "🍒"];
+
+// Icon paths from Icons8 folder
+const ALL_CANDY_ICONS = [
+  "/Icons8/icons8-strawberry-50.png",
+  "/Icons8/icons8-orange-50.png",
+  "/Icons8/icons8-banana-50.png",
+  "/Icons8/icons8-grapes-50.png",
+  "/Icons8/icons8-cherry-50.png",
+  "/Icons8/icons8-blueberry-50.png",
+  "/Icons8/icons8-watermelon-50.png",
+];
+
+// Keep emoji as fallback labels
+const ALL_CANDY_TYPES = ["🍓", "🍊", "🍌", "🍇", "🍒", "🫐", "🍉"];
+
 const CANDY_COLORS = [
   "#ef4444",
   "#f97316",
@@ -21,6 +35,7 @@ const CANDY_COLORS = [
   "#8b5cf6",
   "#ec4899",
   "#3b82f6",
+  "#06b6d4",
 ];
 
 // Tutorial board - fixed layout for learning
@@ -238,6 +253,7 @@ const Match3Game = () => {
   }, [difficulty]);
 
   const CANDY_TYPES = useMemo(() => ALL_CANDY_TYPES.slice(0, candyCount), [candyCount]);
+  const CANDY_ICONS = useMemo(() => ALL_CANDY_ICONS.slice(0, candyCount), [candyCount]);
 
   const keyRef = useRef(1000);
   const [board, setBoard] = useState(() => createBoard(boardSize, candyCount));
@@ -716,7 +732,12 @@ const Match3Game = () => {
               animationDelay: hasFall ? `${(idx % boardSize) * 15}ms` : "0ms",
             }}
           >
-            <span className="drop-shadow">{CANDY_TYPES[candy.type]}</span>
+            <img
+              src={CANDY_ICONS[candy.type]}
+              alt={CANDY_TYPES[candy.type]}
+              className="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-md object-contain"
+              draggable={false}
+            />
           </div>
         )}
         {isMatched && (
@@ -764,7 +785,7 @@ const Match3Game = () => {
           {gameStatus !== "tutorial" && gameStatus !== "idle" && (
             <>
               <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
-                  difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
                 }`}>
                 {difficulty === 'easy' ? 'Dễ' : difficulty === 'medium' ? 'TB' : 'Khó'}
               </span>
@@ -967,10 +988,10 @@ const Match3Game = () => {
                 <div
                   key={idx}
                   className={`flex-1 h-1.5 rounded-full transition-colors ${idx < tutorialStep
-                      ? "bg-pink-500"
-                      : idx === tutorialStep
-                        ? "bg-pink-400 animate-pulse"
-                        : "bg-secondary"
+                    ? "bg-pink-500"
+                    : idx === tutorialStep
+                      ? "bg-pink-400 animate-pulse"
+                      : "bg-secondary"
                     }`}
                 />
               ))}
@@ -1050,10 +1071,10 @@ const Match3Game = () => {
                 <div
                   key={idx}
                   className={`flex-1 h-1 rounded-full transition-colors ${idx < tutorialStep
-                      ? "bg-pink-500"
-                      : idx === tutorialStep
-                        ? "bg-pink-400 animate-pulse"
-                        : "bg-secondary"
+                    ? "bg-pink-500"
+                    : idx === tutorialStep
+                      ? "bg-pink-400 animate-pulse"
+                      : "bg-secondary"
                     }`}
                 />
               ))}
