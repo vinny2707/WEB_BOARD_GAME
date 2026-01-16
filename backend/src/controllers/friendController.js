@@ -13,11 +13,11 @@ const { success, error } = require('../utils/response');
 const getFriends = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { status } = req.query;
+        const { status, page, limit } = req.query;
 
-        const friends = await Friend.getFriends(userId, status || 'accepted');
+        const result = await Friend.getFriends(userId, { status, page, limit });
 
-        return success(res, friends, 'Friends retrieved successfully');
+        return success(res, result.data, 'Friends retrieved successfully', 200, result.pagination);
     } catch (err) {
         next(err);
     }
@@ -29,10 +29,11 @@ const getFriends = async (req, res, next) => {
 const getPendingRequests = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        const { page, limit } = req.query;
 
-        const requests = await Friend.getPendingRequests(userId);
+        const result = await Friend.getPendingRequests(userId, { page, limit });
 
-        return success(res, requests, 'Pending requests retrieved successfully');
+        return success(res, result.data, 'Pending requests retrieved successfully', 200, result.pagination);
     } catch (err) {
         next(err);
     }
@@ -44,10 +45,11 @@ const getPendingRequests = async (req, res, next) => {
 const getSentRequests = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        const { page, limit } = req.query;
 
-        const requests = await Friend.getSentRequests(userId);
+        const result = await Friend.getSentRequests(userId, { page, limit });
 
-        return success(res, requests, 'Sent requests retrieved successfully');
+        return success(res, result.data, 'Sent requests retrieved successfully', 200, result.pagination);
     } catch (err) {
         next(err);
     }

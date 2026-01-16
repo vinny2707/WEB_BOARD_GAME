@@ -8,19 +8,38 @@ const db = require('../config/database');
 
 class Friend {
     /**
-     * Get user's friends (bidirectional)
+     * Get user's friends (bidirectional) with pagination
      * @param {number} userId 
-     * @param {string} status - 'accepted', 'pending', 'blocked', etc.
-     * @returns {Promise<Array>}
+     * @param {Object} options - { status, page, limit }
+     * @returns {Promise<Object>} - { data, pagination }
      */
-    static async getFriends(userId, status = 'accepted') {
-        // Query both directions: where user is user_id OR friend_id
+    static async getFriends(userId, options = {}) {
+        const status = options.status || 'accepted';
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count
+        const [{ count }] = await db('friends')
+            .where(function () {
+                this.where('user_id', userId)
+                    .orWhere('friend_id', userId);
+            })
+            .andWhere('status', status)
+            .count('* as count');
+
+        const total = parseInt(count);
+
+        // Query both directions with pagination
         const friends = await db('friends')
             .where(function () {
                 this.where('user_id', userId)
                     .orWhere('friend_id', userId);
             })
             .andWhere('status', status)
+            .orderBy('created_at', 'desc')
+            .limit(limit)
+            .offset(offset)
             .select('*');
 
         // Map to get the friend's user info
@@ -28,7 +47,17 @@ class Friend {
             f.user_id === userId ? f.friend_id : f.user_id
         );
 
-        if (friendIds.length === 0) return [];
+        if (friendIds.length === 0) {
+            return {
+                data: [],
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit)
+                }
+            };
+        }
 
         // Get user details
         const users = await db('users')
@@ -36,7 +65,7 @@ class Friend {
             .select('id', 'username', 'full_name', 'email', 'status');
 
         // Combine with friendship data
-        return friends.map(f => {
+        const data = friends.map(f => {
             const friendId = f.user_id === userId ? f.friend_id : f.user_id;
             const user = users.find(u => u.id === friendId);
             return {
@@ -47,18 +76,45 @@ class Friend {
                 updated_at: f.updated_at
             };
         });
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 
     /**
-     * Get incoming friend requests (where current user is friend_id)
+     * Get incoming friend requests with pagination
      * @param {number} userId 
-     * @returns {Promise<Array>}
+     * @param {Object} options - { page, limit }
+     * @returns {Promise<Object>} - { data, pagination }
      */
-    static async getPendingRequests(userId) {
+    static async getPendingRequests(userId, options = {}) {
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count
+        const [{ count }] = await db('friends')
+            .where('friend_id', userId)
+            .andWhere('status', 'pending')
+            .count('* as count');
+
+        const total = parseInt(count);
+
+        // Get requests with pagination
         const requests = await db('friends')
             .join('users', 'friends.user_id', 'users.id')
             .where('friends.friend_id', userId)
             .andWhere('friends.status', 'pending')
+            .orderBy('friends.created_at', 'desc')
+            .limit(limit)
+            .offset(offset)
             .select(
                 'friends.id as friendship_id',
                 'friends.user_id as requester_id',
@@ -68,7 +124,7 @@ class Friend {
                 'friends.created_at'
             );
 
-        return requests.map(r => ({
+        const data = requests.map(r => ({
             friendship_id: r.friendship_id,
             requester: {
                 id: r.requester_id,
@@ -78,18 +134,45 @@ class Friend {
             },
             created_at: r.created_at
         }));
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 
     /**
-     * Get outgoing friend requests (where current user is user_id)
+     * Get outgoing friend requests with pagination
      * @param {number} userId 
-     * @returns {Promise<Array>}
+     * @param {Object} options - { page, limit }
+     * @returns {Promise<Object>} - { data, pagination }
      */
-    static async getSentRequests(userId) {
+    static async getSentRequests(userId, options = {}) {
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count
+        const [{ count }] = await db('friends')
+            .where('user_id', userId)
+            .andWhere('status', 'pending')
+            .count('* as count');
+
+        const total = parseInt(count);
+
+        // Get requests with pagination
         const requests = await db('friends')
             .join('users', 'friends.friend_id', 'users.id')
             .where('friends.user_id', userId)
             .andWhere('friends.status', 'pending')
+            .orderBy('friends.created_at', 'desc')
+            .limit(limit)
+            .offset(offset)
             .select(
                 'friends.id as friendship_id',
                 'friends.friend_id',
@@ -99,7 +182,7 @@ class Friend {
                 'friends.created_at'
             );
 
-        return requests.map(r => ({
+        const data = requests.map(r => ({
             friendship_id: r.friendship_id,
             recipient: {
                 id: r.friend_id,
@@ -109,6 +192,16 @@ class Friend {
             },
             created_at: r.created_at
         }));
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 
     /**

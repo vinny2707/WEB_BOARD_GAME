@@ -30,9 +30,21 @@ router.use(authenticateJWT);
  *           enum: [accepted, pending, blocked]
  *           default: accepted
  *         description: Filter by friendship status
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
  *     responses:
  *       200:
- *         description: Friends list retrieved
+ *         description: Friends list retrieved with pagination
  */
 router.get('/', friendController.getFriends);
 
@@ -45,9 +57,22 @@ router.get('/', friendController.getFriends);
  *     security:
  *       - apiKeyAuth: []
  *         bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
  *     responses:
  *       200:
- *         description: Pending requests retrieved
+ *         description: Pending requests retrieved with pagination
  */
 router.get('/requests/pending', friendController.getPendingRequests);
 
@@ -60,9 +85,22 @@ router.get('/requests/pending', friendController.getPendingRequests);
  *     security:
  *       - apiKeyAuth: []
  *         bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
  *     responses:
  *       200:
- *         description: Sent requests retrieved
+ *         description: Sent requests retrieved with pagination
  */
 router.get('/requests/sent', friendController.getSentRequests);
 
