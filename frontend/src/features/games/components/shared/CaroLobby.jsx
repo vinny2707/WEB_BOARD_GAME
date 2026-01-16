@@ -23,8 +23,8 @@ const CaroLobby = ({
     currentUser = { rank: 999, name: 'You', score: 1000 },
     theme = 'emerald',
     icon,
-    defaultBoardSize = 10,
-    winCondition = 5, // 4 for Caro4, 5 for Gomoku
+    defaultBoardSize = 15,
+    showBoardSizeSelector = false, // true for Caro4, false for Gomoku
 }) => {
     const navigate = useNavigate();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
@@ -329,6 +329,13 @@ const CaroLobby = ({
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
+                                        {/* Board Size - Only for Caro4 */}
+                                        {showBoardSizeSelector && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Board size:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-muted-foreground">Time per turn:</span>
                                             <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
@@ -375,26 +382,28 @@ const CaroLobby = ({
                                 <>
                                     {/* Custom Settings Editor */}
                                     <div className="space-y-4">
-                                        {/* Board Size */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Board size:</span>
+                                        {/* Board Size - Only show for Caro4 */}
+                                        {showBoardSizeSelector && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm text-muted-foreground">Board size:</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {[7, 10, 15].map(size => (
+                                                        <button
+                                                            key={size}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
+                                                                ? `${colors.btnBg} text-white`
+                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                                }`}
+                                                            onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
+                                                        >
+                                                            {size}x{size}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                {[7, 10, 15].map(size => (
-                                                    <button
-                                                        key={size}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
-                                                            ? `${colors.btnBg} text-white`
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
-                                                    >
-                                                        {size}x{size}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Time per Turn */}
                                         <div className="flex items-center justify-between">
