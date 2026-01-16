@@ -99,15 +99,18 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
     // Audio
     const gameStartSoundRef = useRef(null);
     const victorySoundRef = useRef(null);
+    const defeatSoundRef = useRef(null);
     const tickSoundRef = useRef(null);
 
     // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
         victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        defeatSoundRef.current = new Audio('/sounds/Defeat.mp3');
         tickSoundRef.current = new Audio('/sounds/tick.mp3');
         gameStartSoundRef.current.load();
         victorySoundRef.current.load();
+        defeatSoundRef.current.load();
         tickSoundRef.current.load();
     }, []);
 
@@ -200,6 +203,13 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         }
     }, [tutorialStep, gameStatus, tutorialSteps]);
 
+    // Play defeat sound when player loses (for timeout cases)
+    useEffect(() => {
+        if (gameStatus === 'win' && winner === 'O' && (winReason === 'timeout' || winReason === 'turnTimeout' || winReason === 'lessTime')) {
+            playSound(defeatSoundRef);
+        }
+    }, [gameStatus, winner, winReason]);
+
     // Timer for current player - countdown
     useEffect(() => {
         if (gameStatus !== 'playing') return;
@@ -290,7 +300,7 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         newBoard[index] = player;
         setBoard(newBoard);
         setMoveHistory(prev => [...prev, { index, player }]);
-        
+
         // Play tick sound for each move
         playSound(tickSoundRef);
 
@@ -304,7 +314,11 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 ...prev,
                 [result.winner === 'X' ? 'player' : 'ai']: prev[result.winner === 'X' ? 'player' : 'ai'] + 1
             }));
-            if (result.winner === 'X') playSound(victorySoundRef);
+            if (result.winner === 'X') {
+                playSound(victorySoundRef);
+            } else {
+                playSound(defeatSoundRef);
+            }
         } else if (isDraw(newBoard)) {
             // Check if time-based win should apply
             if (timePerPlayer > 0 && playerTime !== aiTime) {
@@ -335,7 +349,7 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 const newBoard = [...board];
                 newBoard[index] = 'X';
                 setBoard(newBoard);
-                
+
                 // Play tick sound in tutorial
                 playSound(tickSoundRef);
 

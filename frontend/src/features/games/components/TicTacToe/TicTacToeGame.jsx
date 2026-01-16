@@ -180,15 +180,18 @@ const TicTacToeGame = () => {
   // Audio
   const gameStartSoundRef = useRef(null);
   const victorySoundRef = useRef(null);
+  const defeatSoundRef = useRef(null);
   const tickSoundRef = useRef(null);
 
   // Initialize sounds
   useEffect(() => {
     gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
     victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+    defeatSoundRef.current = new Audio('/sounds/Defeat.mp3');
     tickSoundRef.current = new Audio('/sounds/tick.mp3');
     gameStartSoundRef.current.load();
     victorySoundRef.current.load();
+    defeatSoundRef.current.load();
     tickSoundRef.current.load();
   }, []);
 
@@ -256,6 +259,13 @@ const TicTacToeGame = () => {
       setBoard(currentStep.boardState);
     }
   }, [tutorialStep, gameStatus]);
+
+  // Play defeat sound when player loses (for timeout cases)
+  useEffect(() => {
+    if (gameStatus === "win" && winner === "O" && (winReason === "timeout" || winReason === "turnTimeout" || winReason === "lessTime")) {
+      playSound(defeatSoundRef);
+    }
+  }, [gameStatus, winner, winReason]);
 
   // Timer for current player - countdown
   useEffect(() => {
@@ -362,7 +372,11 @@ const TicTacToeGame = () => {
           [winnerMark === "X" ? "player" : "ai"]:
             prev[winnerMark === "X" ? "player" : "ai"] + 1,
         }));
-        if (winnerMark === "X") playSound(victorySoundRef);
+        if (winnerMark === "X") {
+          playSound(victorySoundRef);
+        } else {
+          playSound(defeatSoundRef);
+        }
       } else if (isDraw(newBoard, boardSize)) {
         // Check if time-based win should apply (when there's a time limit)
         if (timePerPlayer > 0 && playerTime !== aiTime) {
