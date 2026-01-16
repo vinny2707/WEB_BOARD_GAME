@@ -13,23 +13,41 @@ const options = {
                 email: 'support@boardgame.com'
             }
         },
-        servers: process.env.RAILWAY_PUBLIC_DOMAIN 
-            ? [
-                {
+        servers: (() => {
+            const servers = [];
+            
+            // 1. Custom Domain (highest priority) - set API_BASE_URL in Railway
+            if (process.env.API_BASE_URL) {
+                servers.push({
+                    url: process.env.API_BASE_URL,
+                    description: 'Production Server (Custom Domain)'
+                });
+            }
+            
+            // 2. Railway Public Domain (auto-set by Railway)
+            if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+                servers.push({
                     url: `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`,
                     description: 'Production Server (Railway)'
-                }
-            ]
-            : [
-                {
-                    url: 'https://localhost:3000',
-                    description: 'Development Server (HTTPS)'
-                },
-                {
-                    url: 'http://localhost:3000',
-                    description: 'Development Server (HTTP)'
-                }
-            ],
+                });
+            }
+            
+            // 3. Local Development (fallback if no production env)
+            if (servers.length === 0) {
+                servers.push(
+                    {
+                        url: 'https://localhost:3000',
+                        description: 'Development Server (HTTPS)'
+                    },
+                    {
+                        url: 'http://localhost:3000',
+                        description: 'Development Server (HTTP)'
+                    }
+                );
+            }
+            
+            return servers;
+        })(),
         components: {
             securitySchemes: {
                 bearerAuth: {
