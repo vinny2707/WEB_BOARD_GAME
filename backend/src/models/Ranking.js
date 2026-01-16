@@ -55,32 +55,61 @@ class Ranking {
         const [{ count }] = await countQuery.count('* as count');
         const total = parseInt(count);
 
-        // Get rankings with dynamic rank calculation
-        const rankings = await query
-            .select(
-                'r.user_id',
-                'u.username',
-                'u.full_name',
-                'u.email',
-                'r.total_games',
-                'r.total_wins',
-                'r.total_losses',
-                'r.total_draws',
-                'r.win_rate',
-                'r.total_score',
-                'r.best_score',
-                'r.created_at',
-                'r.updated_at'
-            )
-            .orderBy('r.total_score', 'desc')
-            .orderBy('r.best_score', 'desc')
-            .orderBy('r.total_wins', 'desc')
-            .limit(limit)
-            .offset(offset);
+        // Build WHERE clause for scope
+        let whereClause = 'r.game_id = ?';
+        let params = [gameId];
 
-        // Calculate ranks based on current page
-        const data = rankings.map((r, index) => ({
-            rank: offset + index + 1,
+        if (scope === 'friends' && userId) {
+            const friendships = await db('friends')
+                .where(function () {
+                    this.where('user_id', userId)
+                        .orWhere('friend_id', userId);
+                })
+                .andWhere('status', 'accepted')
+                .select('user_id', 'friend_id');
+
+            const friendIds = friendships.map(f =>
+                f.user_id === userId ? f.friend_id : f.user_id
+            );
+            friendIds.push(userId);
+
+            whereClause += ' AND r.user_id = ANY(?)';
+            params.push(friendIds);
+        } else if (scope === 'personal' && userId) {
+            whereClause += ' AND r.user_id = ?';
+            params.push(userId);
+        }
+
+        const result = await db.raw(`
+            SELECT 
+                ROW_NUMBER() OVER (
+                    ORDER BY r.total_score DESC
+                ) as rank,
+                r.user_id,
+                r.total_games,
+                r.total_wins,
+                r.total_losses,
+                r.total_draws,
+                r.win_rate,
+                r.total_score,
+                r.best_score,
+                r.created_at,
+                r.updated_at,
+                u.username,
+                u.full_name,
+                u.email
+            FROM rankings r
+            JOIN users u ON r.user_id = u.id
+            WHERE ${whereClause}
+            ORDER BY r.total_score DESC
+            LIMIT ? OFFSET ?
+        `, [...params, limit, offset]);
+
+        const rankings = result.rows;
+
+        // Format data
+        const data = rankings.map(r => ({
+            rank: parseInt(r.rank),
             user: {
                 id: r.user_id,
                 username: r.username,
@@ -127,21 +156,11 @@ class Ranking {
             return null;
         }
 
-        // Calculate rank (count users with higher scores)
+        // Calculate rank (count users with higher total_score)
+        // NOTE: Only based on total_score (consistent with global_rank)
         const [{ count }] = await db('rankings')
             .where('game_id', gameId)
-            .andWhere(function () {
-                this.where('total_score', '>', ranking.total_score)
-                    .orWhere(function () {
-                        this.where('total_score', ranking.total_score)
-                            .andWhere('best_score', '>', ranking.best_score);
-                    })
-                    .orWhere(function () {
-                        this.where('total_score', ranking.total_score)
-                            .andWhere('best_score', ranking.best_score)
-                            .andWhere('total_wins', '>', ranking.total_wins);
-                    });
-            })
+            .andWhere('total_score', '>', ranking.total_score)
             .count('* as count');
 
         const rank = parseInt(count) + 1;
@@ -217,6 +236,8 @@ class Ranking {
                 total_score: r.total_score,
                 best_score: r.best_score
             },
+            // NOTE: global_rank is a cached value updated by GameSession.recalculateRanks()
+            // It may be slightly stale if new players joined recently
             global_rank: r.global_rank,
             created_at: r.created_at,
             updated_at: r.updated_at

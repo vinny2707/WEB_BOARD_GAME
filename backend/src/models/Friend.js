@@ -9,6 +9,7 @@ const db = require('../config/database');
 class Friend {
     /**
      * Get user's friends (bidirectional) with pagination
+     * NOTE: 'blocked' status is unidirectional - only shows users blocked BY current user
      * @param {number} userId 
      * @param {Object} options - { status, page, limit }
      * @returns {Promise<Object>} - { data, pagination }
@@ -19,23 +20,45 @@ class Friend {
         const limit = parseInt(options.limit) || 10;
         const offset = (page - 1) * limit;
 
+        // IMPORTANT: 'blocked' is unidirectional (only user_id = blocker)
+        // Other statuses are bidirectional
+        const isBlocked = status === 'blocked';
+
         // Get total count
-        const [{ count }] = await db('friends')
-            .where(function () {
+        let countQuery = db('friends');
+
+        if (isBlocked) {
+            // Unidirectional: only where current user is the blocker
+            countQuery = countQuery.where('user_id', userId);
+        } else {
+            // Bidirectional: either direction
+            countQuery = countQuery.where(function () {
                 this.where('user_id', userId)
                     .orWhere('friend_id', userId);
-            })
+            });
+        }
+
+        const [{ count }] = await countQuery
             .andWhere('status', status)
             .count('* as count');
 
         const total = parseInt(count);
 
-        // Query both directions with pagination
-        const friends = await db('friends')
-            .where(function () {
+        // Query with pagination
+        let friendsQuery = db('friends');
+
+        if (isBlocked) {
+            // Unidirectional: only where current user is the blocker
+            friendsQuery = friendsQuery.where('user_id', userId);
+        } else {
+            // Bidirectional: either direction
+            friendsQuery = friendsQuery.where(function () {
                 this.where('user_id', userId)
                     .orWhere('friend_id', userId);
-            })
+            });
+        }
+
+        const friends = await friendsQuery
             .andWhere('status', status)
             .orderBy('created_at', 'desc')
             .limit(limit)
@@ -43,9 +66,15 @@ class Friend {
             .select('*');
 
         // Map to get the friend's user info
-        const friendIds = friends.map(f =>
-            f.user_id === userId ? f.friend_id : f.user_id
-        );
+        const friendIds = friends.map(f => {
+            if (isBlocked) {
+                // For blocked: friend_id is always the blocked user
+                return f.friend_id;
+            } else {
+                // For others: get the other user
+                return f.user_id === userId ? f.friend_id : f.user_id;
+            }
+        });
 
         if (friendIds.length === 0) {
             return {
@@ -67,7 +96,7 @@ class Friend {
 
         // Combine with friendship data
         const data = friends.map(f => {
-            const friendId = f.user_id === userId ? f.friend_id : f.user_id;
+            const friendId = isBlocked ? f.friend_id : (f.user_id === userId ? f.friend_id : f.user_id);
             const user = users.find(u => u.id === friendId);
             return {
                 friendship_id: f.id,
@@ -349,6 +378,69 @@ class Friend {
             .where({ user_id: userId, friend_id: targetId, status: 'blocked' })
             .del();
         return deleted > 0;
+    }
+
+    /**
+     * Check relationships with multiple users (for search/bulk operations)
+     * @param {number} userId - Current user
+     * @param {Array<number>} targetIds - Array of user IDs to check
+     * @returns {Promise<Object>} - Map of userId -> relationship info
+     */
+    static async checkBulkRelationships(userId, targetIds) {
+        if (!targetIds || targetIds.length === 0) {
+            return {};
+        }
+
+        // Get all relationships with target users
+        const relationships = await db('friends')
+            .where(function () {
+                this.where('user_id', userId).whereIn('friend_id', targetIds)
+                    .orWhere('friend_id', userId).whereIn('user_id', targetIds);
+            })
+            .select('*');
+
+        // Build result map
+        const result = {};
+
+        targetIds.forEach(targetId => {
+            // Find relationship
+            const rel = relationships.find(r =>
+                (r.user_id === userId && r.friend_id === targetId) ||
+                (r.friend_id === userId && r.user_id === targetId)
+            );
+
+            if (!rel) {
+                // No relationship
+                result[targetId] = {
+                    status: 'none',
+                    is_friend: false,
+                    can_send_request: true,
+                    can_message: true,
+                    is_blocked: false,
+                    blocked_by_me: false,
+                    blocked_me: false
+                };
+            } else {
+                const isBlockedByMe = rel.status === 'blocked' && rel.user_id === userId;
+                const blockedMe = rel.status === 'blocked' && rel.friend_id === userId;
+                const isPending = rel.status === 'pending';
+                const sentByMe = isPending && rel.user_id === userId;
+
+                result[targetId] = {
+                    status: rel.status,
+                    is_friend: rel.status === 'accepted',
+                    can_send_request: false, // Already have relationship
+                    can_message: rel.status === 'accepted' && !isBlockedByMe && !blockedMe,
+                    is_blocked: rel.status === 'blocked',
+                    blocked_by_me: isBlockedByMe,
+                    blocked_me: blockedMe,
+                    pending_sent_by_me: sentByMe,
+                    pending_received: isPending && !sentByMe
+                };
+            }
+        });
+
+        return result;
     }
 }
 

@@ -331,4 +331,63 @@ router.put('/:userId/unblock', friendController.unblockUser);
  */
 router.get('/status/:userId', friendController.getFriendshipStatus);
 
+/**
+ * @swagger
+ * /api/friends/check-bulk:
+ *   post:
+ *     summary: Check relationships with multiple users (for search/bulk operations)
+ *     tags: [Friends]
+ *     security:
+ *       - apiKeyAuth: []
+ *         bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - user_ids
+ *             properties:
+ *               user_ids:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: Array of user IDs to check (max 100)
+ *                 example: [3, 5, 7, 9]
+ *     responses:
+ *       200:
+ *         description: Relationships checked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   additionalProperties:
+ *                     type: object
+ *                     properties:
+ *                       status:
+ *                         type: string
+ *                         enum: [none, pending, accepted, blocked]
+ *                       is_friend:
+ *                         type: boolean
+ *                       can_send_request:
+ *                         type: boolean
+ *                       can_message:
+ *                         type: boolean
+ *                       is_blocked:
+ *                         type: boolean
+ *                       blocked_by_me:
+ *                         type: boolean
+ *                       blocked_me:
+ *                         type: boolean
+ *       400:
+ *         description: Invalid request (not array or too many users)
+ */
+router.post('/check-bulk', friendController.checkBulkRelationships);
+
 module.exports = router;

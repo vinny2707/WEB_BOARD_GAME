@@ -306,6 +306,35 @@ const getFriendshipStatus = async (req, res, next) => {
     }
 };
 
+/**
+ * Check relationships with multiple users (for search/bulk operations)
+ */
+const checkBulkRelationships = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { user_ids } = req.body;
+
+        // Validation
+        if (!user_ids || !Array.isArray(user_ids)) {
+            return error(res, 'user_ids must be an array', 400);
+        }
+
+        if (user_ids.length === 0) {
+            return success(res, {}, 'No users to check');
+        }
+
+        if (user_ids.length > 100) {
+            return error(res, 'Maximum 100 users per request', 400);
+        }
+
+        const relationships = await Friend.checkBulkRelationships(userId, user_ids);
+
+        return success(res, relationships, 'Relationships checked successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     getFriends,
     getPendingRequests,
@@ -317,5 +346,6 @@ module.exports = {
     unfriend,
     blockUser,
     unblockUser,
-    getFriendshipStatus
+    getFriendshipStatus,
+    checkBulkRelationships
 };
