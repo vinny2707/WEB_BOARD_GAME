@@ -18,6 +18,8 @@ export const UserProvider = ({ children }) => {
       dob: userData.dob
         ? userData.dob.split("T")[0]
         : null,
+      avatar_id: userData.avatar_id || null,
+      avatar_url: userData.avatar_url || null,
     });
   };
 
@@ -72,6 +74,8 @@ export const UserProvider = ({ children }) => {
           status: userData.status,
           created_at: userData.created_at,
           last_login: userData.last_login,
+          avatar_id: userData.avatar_id || null,
+          avatar_url: userData.avatar_url || null,
         };
 
         setUser(processedUser);
@@ -92,10 +96,36 @@ export const UserProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  // Update user data (e.g., after profile update)
+  const updateUser = async () => {
+    try {
+      const response = await api.get("/api/auth/profile", { timeout: 10000 });
+      const userData = response.data?.data;
+      if (userData) {
+        setUser({
+          id: userData.id,
+          username: userData.username,
+          email: userData.email,
+          full_name: userData.full_name,
+          dob: userData.dob ? userData.dob.split("T")[0] : null,
+          role: userData.role,
+          status: userData.status,
+          created_at: userData.created_at,
+          last_login: userData.last_login,
+          avatar_id: userData.avatar_id || null,
+          avatar_url: userData.avatar_url || null,
+        });
+      }
+    } catch (error) {
+      console.error("[UserProvider] Error updating user:", error);
+    }
+  };
+
   const value = useMemo(
     () => ({
       user,
       setUser,
+      updateUser,
       login,
       logout,
       loading,
