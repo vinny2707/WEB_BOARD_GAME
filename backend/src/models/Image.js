@@ -34,6 +34,34 @@ class Image {
     }
 
     /**
+     * Get all images with pagination
+     * @param {Object} options - { page, limit }
+     * @returns {Promise<Object>}
+     */
+    static async findAll(options = {}) {
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 20;
+        const offset = (page - 1) * limit;
+
+        const [{ count: total }] = await db('images').count('id as count');
+
+        const images = await db('images')
+            .orderBy('created_at', 'desc')
+            .limit(limit)
+            .offset(offset);
+
+        return {
+            images,
+            pagination: {
+                page,
+                limit,
+                total: parseInt(total),
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    /**
      * Find all images uploaded by a user
      * @param {number} userId 
      * @param {Object} options - { page, limit }
