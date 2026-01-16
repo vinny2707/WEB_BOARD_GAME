@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Users, UserPlus, Send, Search, UserX } from "lucide-react";
+import { Users, UserPlus, Send, Search, UserX, Shield } from "lucide-react";
 import api from "@/api/axios";
 import { toast } from "sonner";
 import FriendCard from "../components/FriendCard";
 import PendingRequestCard from "../components/PendingRequestCard";
 import SentRequestCard from "../components/SentRequestCard";
+import BlockedUserCard from "../components/BlockedUserCard";
 import AddFriendDialog from "../components/AddFriendDialog";
 import {
   Pagination,
@@ -16,7 +17,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-
 const Friends = () => {
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,12 +24,14 @@ const Friends = () => {
   const [friends, setFriends] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
 
   // Pagination state
   const [pagination, setPagination] = useState({
     friends: { page: 1, totalPages: 1, total: 0 },
     pending: { page: 1, totalPages: 1, total: 0 },
     sent: { page: 1, totalPages: 1, total: 0 },
+    blocked: { page: 1, totalPages: 1, total: 0 },
   });
   const itemsPerPage = 10;
 
@@ -96,6 +98,27 @@ const Friends = () => {
     }
   };
 
+  // Fetch blocked users
+  const fetchBlockedUsers = async (page = 1) => {
+    try {
+      const response = await api.get("/api/friends", {
+        params: { status: "blocked", page, limit: itemsPerPage },
+      });
+      setBlockedUsers(response.data.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        blocked: {
+          page: response.data.pagination?.page || 1,
+          totalPages: response.data.pagination?.totalPages || 1,
+          total: response.data.pagination?.total || 0,
+        },
+      }));
+    } catch (error) {
+      console.error("Error fetching blocked users:", error);
+      toast.error("Failed to load blocked users");
+    }
+  };
+
   // Initial data load
   useEffect(() => {
     const fetchData = async () => {
@@ -104,6 +127,7 @@ const Friends = () => {
         fetchFriends(),
         fetchPendingRequests(),
         fetchSentRequests(),
+        fetchBlockedUsers(),
       ]);
       setLoading(false);
     };
@@ -128,9 +152,22 @@ const Friends = () => {
       await api.put(`/api/friends/${userId}/block`);
       toast.success("User blocked successfully");
       fetchFriends();
+      fetchBlockedUsers();
     } catch (error) {
       console.error("Error blocking user:", error);
       toast.error("Failed to block user");
+    }
+  };
+
+  // Handle unblock user
+  const handleUnblock = async (userId) => {
+    try {
+      await api.put(`/api/friends/${userId}/unblock`);
+      toast.success("User unblocked successfully");
+      fetchBlockedUsers();
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      toast.error("Failed to unblock user");
     }
   };
 
@@ -196,6 +233,9 @@ const Friends = () => {
         break;
       case "sent":
         fetchSentRequests(newPage);
+        break;
+      case "blocked":
+        fetchBlockedUsers(newPage);
         break;
     }
   };
@@ -323,6 +363,13 @@ const Friends = () => {
             request.recipient?.full_name?.toLowerCase().includes(query) ||
             request.recipient?.email?.toLowerCase().includes(query)
         );
+      case "blocked":
+        return blockedUsers.filter(
+          (user) =>
+            user.friend?.username?.toLowerCase().includes(query) ||
+            user.friend?.full_name?.toLowerCase().includes(query) ||
+            user.friend?.email?.toLowerCase().includes(query)
+        );
       default:
         return [];
     }
@@ -346,6 +393,12 @@ const Friends = () => {
       label: "Sent",
       icon: Send,
       count: sentRequests.length,
+    },
+    {
+      id: "blocked",
+      label: "Blocked",
+      icon: Shield,
+      count: blockedUsers.length,
     },
   ];
 
@@ -495,6 +548,30 @@ const Friends = () => {
                       {searchQuery
                         ? "No sent requests matching your search"
                         : "No pending sent requests"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Blocked Users */}
+            {activeTab === "blocked" && (
+              <div className="space-y-4">
+                {getFilteredData().length > 0 ? (
+                  getFilteredData().map((user) => (
+                    <BlockedUserCard
+                      key={user.friendship_id}
+                      user={user}
+                      onUnblock={handleUnblock}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <Shield className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+                    <p className="text-zinc-500 dark:text-zinc-400">
+                      {searchQuery
+                        ? "No blocked users matching your search"
+                        : "No blocked users"}
                     </p>
                   </div>
                 )}
