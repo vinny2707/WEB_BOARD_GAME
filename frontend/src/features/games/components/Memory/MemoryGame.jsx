@@ -12,24 +12,72 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-// Theme card symbols
+// Theme card symbols - fruits use Icons8 images, others use emoji
 const THEMES = {
     fruits: [
-        "🍎", "🍊", "🍋", "🍇", "🍓", "🫐", "🍌", "🥝",
-        "🍑", "🍒", "🥭", "🍍", "🥥", "🍐", "🍈", "🫒",
-        "🍆", "🥕",
+        "/Icons8/icons8-strawberry-50.png",
+        "/Icons8/icons8-orange-50.png",
+        "/Icons8/icons8-banana-50.png",
+        "/Icons8/icons8-grapes-50.png",
+        "/Icons8/icons8-cherry-50.png",
+        "/Icons8/icons8-blueberry-50.png",
+        "/Icons8/icons8-watermelon-50.png",
+        "/Icons8/icons8-apple-fruit-50.png",
+        "/Icons8/icons8-avocado-50.png",
+        "/Icons8/icons8-raspberry-50.png",
+        "/Icons8/icons8-tomato-50.png",
+        "/Icons8/icons8-natural-food-50.png",
+        "/Icons8/icons8-hamburger-50.png",
+        "/Icons8/icons8-ice-cream-cone-50.png",
+        "/Icons8/icons8-birthday-cake-50.png",
+        "/Icons8/icons8-salami-pizza-50.png",
+        "/Icons8/icons8-french-fries-50.png",
+        "/Icons8/icons8-cola-50.png",
     ],
-    animals: [
-        "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼",
-        "🐨", "🦁", "🐯", "🐷", "🐸", "🐵", "🐔", "🐧",
-        "🦆", "🦉",
+    food: [
+        "/Icons8/icons8-hamburger-50.png",
+        "/Icons8/icons8-salami-pizza-50.png",
+        "/Icons8/icons8-birthday-cake-50.png",
+        "/Icons8/icons8-ice-cream-cone-50.png",
+        "/Icons8/icons8-french-fries-50.png",
+        "/Icons8/icons8-cola-50.png",
+        "/Icons8/icons8-dessert-50.png",
+        "/Icons8/icons8-cherry-cheesecake-50.png",
+        "/Icons8/icons8-greek-salad-50.png",
+        "/Icons8/icons8-salad-50.png",
+        "/Icons8/icons8-ingredients-50.png",
+        "/Icons8/icons8-cheese-50.png",
+        "/Icons8/icons8-croissant-50.png",
+        "/Icons8/icons8-baguette-50.png",
+        "/Icons8/icons8-thanksgiving-50.png",
+        "/Icons8/icons8-mcdonald`s-french-fries-50.png",
+        "/Icons8/icons8-natural-food-50.png",
+        "/Icons8/icons8-tomato-50.png",
     ],
-    symbols: [
-        "⭐", "🌙", "☀️", "✨", "💎", "🔥", "❤️", "💥",
-        "🌈", "⚡", "🌟", "💧", "🌸", "🌻", "🌺", "🌷",
-        "🍁", "🌿",
+    flags: [
+        "/contries/icons8-vietnam-50.png",
+        "/contries/icons8-japan-50.png",
+        "/contries/icons8-south-korea-50.png",
+        "/contries/icons8-china-50.png",
+        "/contries/icons8-great-britain-50.png",
+        "/contries/icons8-france-50.png",
+        "/contries/icons8-germany-50.png",
+        "/contries/icons8-italy-50.png",
+        "/contries/icons8-spain-50.png",
+        "/contries/icons8-brazil-50.png",
+        "/contries/icons8-australia-50.png",
+        "/contries/icons8-canada-50.png",
+        "/contries/icons8-india-50.png",
+        "/contries/icons8-mexico-50.png",
+        "/contries/icons8-russian-federation-50.png",
+        "/contries/icons8-singapore-50.png",
+        "/contries/icons8-south-africa-50.png",
+        "/contries/icons8-thailand-50.png",
     ],
 };
+
+// Helper to check if symbol is an image path
+const isImageSymbol = (symbol) => symbol && symbol.startsWith('/');
 
 const DIFFICULTY_SETTINGS = {
     easy: { previewTime: 3000, label: 'Dễ' },
@@ -510,12 +558,20 @@ const MemoryGame = () => {
                             transform: "rotateY(180deg)",
                         }}
                     >
-                        <span
-                            className={`text-2xl sm:text-4xl transition-transform duration-200 ${card.isMatched ? "scale-110" : ""
-                                }`}
-                        >
-                            {card.symbol}
-                        </span>
+                        {isImageSymbol(card.symbol) ? (
+                            <img
+                                src={card.symbol}
+                                alt="card"
+                                className={`w-8 h-8 sm:w-10 sm:h-10 object-contain transition-transform duration-200 ${card.isMatched ? "scale-110" : ""}`}
+                                draggable={false}
+                            />
+                        ) : (
+                            <span
+                                className={`text-2xl sm:text-4xl transition-transform duration-200 ${card.isMatched ? "scale-110" : ""}`}
+                            >
+                                {card.symbol}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -541,7 +597,7 @@ const MemoryGame = () => {
                     {gameStatus !== "tutorial" && gameStatus !== "idle" && (
                         <>
                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
-                                    difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                                difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
                                 }`}>
                                 {DIFFICULTY_SETTINGS[difficulty]?.label}
                             </span>

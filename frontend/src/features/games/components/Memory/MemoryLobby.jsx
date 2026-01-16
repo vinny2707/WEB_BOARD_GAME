@@ -11,8 +11,8 @@ const DEFAULT_SETTINGS = {
 
 const THEME_OPTIONS = {
     fruits: { label: 'Trái cây', icon: '🍎' },
-    animals: { label: 'Động vật', icon: '🐶' },
-    symbols: { label: 'Biểu tượng', icon: '⭐' },
+    food: { label: 'Thức ăn', icon: '🍔' },
+    flags: { label: 'Cờ các nước', icon: '🇻🇳' },
 };
 
 const DIFFICULTY_OPTIONS = {
