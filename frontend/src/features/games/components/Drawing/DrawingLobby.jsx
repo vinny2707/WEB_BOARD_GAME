@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Palette, Image, Settings, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import GameReviews from '../GameReviews';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -102,10 +103,67 @@ const DrawingLobby = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex gap-8 p-6 overflow-y-auto max-md:flex-col">
-                {/* Left Side - Play Modes */}
-                <div className="flex-1 max-w-[400px] max-md:max-w-full">
+            {/* Main Content - Three Column Layout */}
+            <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
+                {/* Left Side - Gallery */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
+                    <div className="bg-card rounded-2xl p-4 border border-border">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-semibold text-foreground m-0">Bộ sưu tập</h3>
+                            <Image size={18} className="text-muted-foreground" />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                            {galleryItems.map((item, idx) => (
+                                <div
+                                    key={item.id}
+                                    className="aspect-square bg-gradient-to-br from-secondary to-accent rounded-lg flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all"
+                                >
+                                    <span className="text-2xl">{item.preview}</span>
+                                    <span className="text-[10px] text-muted-foreground mt-1">❤️ {item.likes}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Top Artists */}
+                        <h4 className="text-sm font-semibold text-foreground mb-2">Họa sĩ nổi bật</h4>
+                        <div className="flex flex-col gap-2">
+                            {galleryItems.slice(0, 3).map((item, idx) => (
+                                <div
+                                    key={item.id}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
+                                        ${idx === 0 ? 'bg-teal-500/10' : ''}`}
+                                >
+                                    <div className="w-6 text-center">{getRankIcon(idx + 1)}</div>
+                                    <span className="text-xl">{item.preview}</span>
+                                    <span className="flex-1 text-sm font-medium text-foreground">{item.author}</span>
+                                    <div className="flex items-center gap-1">
+                                        <Star size={12} className="text-yellow-500 fill-yellow-500" />
+                                        <span className="text-sm text-muted-foreground">{item.likes}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button className="w-full py-3 mt-2 bg-transparent border-none text-teal-500 text-sm font-medium cursor-pointer hover:text-teal-600 transition-colors">
+                            Xem tất cả
+                        </button>
+
+                        <div className="text-center pt-3 border-t border-border mt-2">
+                            <span className="block text-xs text-muted-foreground mb-2">Cuộc thi vẽ tuần này, kết thúc sau</span>
+                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
+                                <span>{String(countdown.hours).padStart(2, '0')}</span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Center - Play Modes */}
+                <div className="flex-1 max-w-[400px] max-lg:max-w-full max-lg:order-1">
                     <div className="flex flex-col gap-3">
                         {/* Start Drawing Button with Settings */}
                         <div className="flex items-center gap-2">
@@ -176,61 +234,9 @@ const DrawingLobby = () => {
                     </div>
                 </div>
 
-                {/* Right Side - Gallery */}
-                <div className="w-80 flex-shrink-0 max-md:w-full">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-base font-semibold text-foreground m-0">Bộ sưu tập</h3>
-                            <Image size={18} className="text-muted-foreground" />
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                            {galleryItems.map((item, idx) => (
-                                <div
-                                    key={item.id}
-                                    className="aspect-square bg-gradient-to-br from-secondary to-accent rounded-lg flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all"
-                                >
-                                    <span className="text-2xl">{item.preview}</span>
-                                    <span className="text-[10px] text-muted-foreground mt-1">❤️ {item.likes}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Top Artists */}
-                        <h4 className="text-sm font-semibold text-foreground mb-2">Họa sĩ nổi bật</h4>
-                        <div className="flex flex-col gap-2">
-                            {galleryItems.slice(0, 3).map((item, idx) => (
-                                <div
-                                    key={item.id}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${idx === 0 ? 'bg-teal-500/10' : ''}`}
-                                >
-                                    <div className="w-6 text-center">{getRankIcon(idx + 1)}</div>
-                                    <span className="text-xl">{item.preview}</span>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{item.author}</span>
-                                    <div className="flex items-center gap-1">
-                                        <Star size={12} className="text-yellow-500 fill-yellow-500" />
-                                        <span className="text-sm text-muted-foreground">{item.likes}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button className="w-full py-3 mt-2 bg-transparent border-none text-teal-500 text-sm font-medium cursor-pointer hover:text-teal-600 transition-colors">
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Cuộc thi vẽ tuần này, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+                {/* Right Side - Reviews */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-3">
+                    <GameReviews gameId={7} />
                 </div>
             </div>
 

@@ -99,13 +99,16 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
     // Audio
     const gameStartSoundRef = useRef(null);
     const victorySoundRef = useRef(null);
+    const tickSoundRef = useRef(null);
 
     // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
         victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        tickSoundRef.current = new Audio('/sounds/tick.mp3');
         gameStartSoundRef.current.load();
         victorySoundRef.current.load();
+        tickSoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
@@ -287,6 +290,9 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         newBoard[index] = player;
         setBoard(newBoard);
         setMoveHistory(prev => [...prev, { index, player }]);
+        
+        // Play tick sound for each move
+        playSound(tickSoundRef);
 
         const result = checkWinner(newBoard);
         if (result) {
@@ -329,6 +335,9 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 const newBoard = [...board];
                 newBoard[index] = 'X';
                 setBoard(newBoard);
+                
+                // Play tick sound in tutorial
+                playSound(tickSoundRef);
 
                 // Check if this completes win in tutorial
                 const result = checkWinner(newBoard);

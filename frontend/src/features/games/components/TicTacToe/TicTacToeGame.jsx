@@ -180,13 +180,16 @@ const TicTacToeGame = () => {
   // Audio
   const gameStartSoundRef = useRef(null);
   const victorySoundRef = useRef(null);
+  const tickSoundRef = useRef(null);
 
   // Initialize sounds
   useEffect(() => {
     gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
     victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+    tickSoundRef.current = new Audio('/sounds/tick.mp3');
     gameStartSoundRef.current.load();
     victorySoundRef.current.load();
+    tickSoundRef.current.load();
   }, []);
 
   const playSound = useCallback((soundRef) => {
@@ -346,6 +349,9 @@ const TicTacToeGame = () => {
       setBoard(newBoard);
       setMoveHistory((prev) => [...prev, { index, player }]);
 
+      // Play tick sound for each move
+      playSound(tickSoundRef);
+
       const winnerMark = checkWinner(newBoard, boardSize);
       if (winnerMark) {
         setWinner(winnerMark);
@@ -395,6 +401,9 @@ const TicTacToeGame = () => {
           const newBoard = [...board];
           newBoard[index] = "X";
           setBoard(newBoard);
+
+          // Play tick sound in tutorial
+          playSound(tickSoundRef);
 
           // Check if this completes the win condition in tutorial
           const winnerMark = checkWinner(newBoard, 3); // Tutorial is always 3x3

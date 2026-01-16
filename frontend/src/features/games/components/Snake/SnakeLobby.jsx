@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, Gamepad2, X, Minus, Plus, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import GameReviews from '../GameReviews';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -119,10 +120,60 @@ const SnakeLobby = () => {
                 </div>
             </div>
 
-            {/* Main Content - Two Column Layout */}
-            <div className="flex-1 flex gap-8 p-6 overflow-y-auto max-md:flex-col">
-                {/* Left Side - Play Modes */}
-                <div className="flex-1 max-w-[400px] max-md:max-w-full">
+            {/* Main Content - Three Column Layout */}
+            <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
+                {/* Left Side - Leaderboard */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
+                    <div className="bg-card rounded-2xl p-4 border border-border">
+                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
+                        <div className="flex flex-col gap-2">
+                            {sampleLeaderboard.map((player) => (
+                                <div
+                                    key={player.rank}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
+                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''}`}
+                                >
+                                    <div className="w-7 text-center">
+                                        {getRankIcon(player.rank)}
+                                    </div>
+                                    <div className="text-xl">
+                                        {player.flag}
+                                    </div>
+                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
+                                    <span className="text-sm font-semibold text-muted-foreground">{player.score.toLocaleString()}</span>
+                                </div>
+                            ))}
+
+                            {/* Current User */}
+                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-green-500/15 to-transparent border border-green-500/30 mt-2">
+                                <div className="w-7 text-center">
+                                    <span className="text-sm font-semibold text-green-500">{currentUserRank.rank}.</span>
+                                </div>
+                                <div className="text-xl">🎮</div>
+                                <span className="flex-1 text-sm font-medium text-foreground">{currentUserRank.name}</span>
+                                <span className="text-sm font-semibold text-muted-foreground">{currentUserRank.score.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <button className="w-full py-3 mt-2 bg-transparent border-none text-green-500 text-sm font-medium cursor-pointer hover:text-green-600 transition-colors">
+                            Xem tất cả
+                        </button>
+
+                        <div className="text-center pt-3 border-t border-border mt-2">
+                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
+                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
+                                <span>{String(countdown.hours).padStart(2, '0')}</span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
+                                <span className="text-muted-foreground">:</span>
+                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Center - Play Modes */}
+                <div className="flex-1 max-w-[400px] max-lg:max-w-full max-lg:order-1">
                     <div className="flex flex-col gap-3">
                         {/* High Score Display */}
                         {highScore > 0 && (
@@ -196,54 +247,9 @@ const SnakeLobby = () => {
                     </div>
                 </div>
 
-                {/* Right Side - Leaderboard */}
-                <div className="w-80 flex-shrink-0 max-md:w-full">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
-                        <div className="flex flex-col gap-2">
-                            {sampleLeaderboard.map((player) => (
-                                <div
-                                    key={player.rank}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''}`}
-                                >
-                                    <div className="w-7 text-center">
-                                        {getRankIcon(player.rank)}
-                                    </div>
-                                    <div className="text-xl">
-                                        {player.flag}
-                                    </div>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
-                                    <span className="text-sm font-semibold text-muted-foreground">{player.score.toLocaleString()}</span>
-                                </div>
-                            ))}
-
-                            {/* Current User */}
-                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-green-500/15 to-transparent border border-green-500/30 mt-2">
-                                <div className="w-7 text-center">
-                                    <span className="text-sm font-semibold text-green-500">{currentUserRank.rank}.</span>
-                                </div>
-                                <div className="text-xl">🎮</div>
-                                <span className="flex-1 text-sm font-medium text-foreground">{currentUserRank.name}</span>
-                                <span className="text-sm font-semibold text-muted-foreground">{currentUserRank.score.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-3 mt-2 bg-transparent border-none text-green-500 text-sm font-medium cursor-pointer hover:text-green-600 transition-colors">
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+                {/* Right Side - Reviews */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-3">
+                    <GameReviews gameId={4} />
                 </div>
             </div>
 

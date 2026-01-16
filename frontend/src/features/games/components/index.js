@@ -8,6 +8,7 @@ export { default as Caro4Game } from './Caro4/Caro4Game';
 export { default as Caro4Lobby } from './Caro4/Caro4Lobby';
 export { default as GameHeader } from './GameHeader';
 export { default as GameControls } from './GameControls';
+export { default as GameReviews } from './GameReviews';
 export { default as SnakeGame } from './Snake/SnakeGame';
 export { default as SnakeLobby } from './Snake/SnakeLobby';
 export { default as Match3Game } from './Match3/Match3Game';
