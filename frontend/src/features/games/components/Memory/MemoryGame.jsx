@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Home,
     RotateCcw,
@@ -12,26 +12,30 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-const CARD_SYMBOLS = [
-    "🍎",
-    "🍊",
-    "🍋",
-    "🍇",
-    "🍓",
-    "🫐",
-    "🍌",
-    "🥝",
-    "🍑",
-    "🍒",
-    "🥭",
-    "🍍",
-    "🥥",
-    "🍐",
-    "🍈",
-    "🫒",
-    "🍆",
-    "🥕",
-];
+// Theme card symbols
+const THEMES = {
+    fruits: [
+        "🍎", "🍊", "🍋", "🍇", "🍓", "🫐", "🍌", "🥝",
+        "🍑", "🍒", "🥭", "🍍", "🥥", "🍐", "🍈", "🫒",
+        "🍆", "🥕",
+    ],
+    animals: [
+        "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼",
+        "🐨", "🦁", "🐯", "🐷", "🐸", "🐵", "🐔", "🐧",
+        "🦆", "🦉",
+    ],
+    symbols: [
+        "⭐", "🌙", "☀️", "✨", "💎", "🔥", "❤️", "💥",
+        "🌈", "⚡", "🌟", "💧", "🌸", "🌻", "🌺", "🌷",
+        "🍁", "🌿",
+    ],
+};
+
+const DIFFICULTY_SETTINGS = {
+    easy: { previewTime: 3000, label: 'Dễ' },
+    medium: { previewTime: 1000, label: 'Trung Bình' },
+    hard: { previewTime: 0, label: 'Khó' },
+};
 
 // Tutorial board - fixed layout with known pairs
 const createTutorialBoard = () => {
@@ -128,9 +132,10 @@ const TUTORIAL_STEPS = [
     },
 ];
 
-const createBoard = (size) => {
+const createBoard = (size, theme = 'fruits') => {
     const pairCount = (size * size) / 2;
-    const symbols = CARD_SYMBOLS.slice(0, pairCount);
+    const cardSymbols = THEMES[theme] || THEMES.fruits;
+    const symbols = cardSymbols.slice(0, pairCount);
     const cards = [...symbols, ...symbols]
         .sort(() => Math.random() - 0.5)
         .map((symbol, index) => ({
@@ -144,22 +149,31 @@ const createBoard = (size) => {
 
 const MemoryGame = () => {
     const navigate = useNavigate();
-    const [boardSize, setBoardSize] = useState(4);
-    const [cards, setCards] = useState(() => createBoard(4));
+    const location = useLocation();
+
+    // Get settings from lobby navigation state
+    const lobbySettings = location.state?.settings || {};
+    const initialGridSize = lobbySettings.gridSize || 4;
+    const theme = lobbySettings.theme || 'fruits';
+    const difficulty = lobbySettings.difficulty || 'medium';
+    const previewTime = DIFFICULTY_SETTINGS[difficulty]?.previewTime ?? 1000;
+
+    const [boardSize, setBoardSize] = useState(initialGridSize);
+    const [cards, setCards] = useState(() => createBoard(initialGridSize, theme));
     const [flippedCards, setFlippedCards] = useState([]);
     const [moves, setMoves] = useState(0);
     const [matchedPairs, setMatchedPairs] = useState(0);
-    const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'tutorial'
+    const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'tutorial', 'preview'
     const [isChecking, setIsChecking] = useState(false);
     const [timer, setTimer] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [bestTime, setBestTime] = useState(() => {
-        const saved = localStorage.getItem(`memoryBestTime_${4}`);
+        const saved = localStorage.getItem(`memoryBestTime_${initialGridSize}`);
         return saved ? parseInt(saved, 10) : null;
     });
     const [bestMoves, setBestMoves] = useState(() => {
-        const saved = localStorage.getItem(`memoryBestMoves_${4}`);
+        const saved = localStorage.getItem(`memoryBestMoves_${initialGridSize}`);
         return saved ? parseInt(saved, 10) : null;
     });
 
@@ -341,15 +355,26 @@ const MemoryGame = () => {
         [cards, flippedCards, isChecking, gameStatus, isTimerRunning, tutorialStep, isTyping]
     );
 
-    const startGame = () => {
-        setCards(createBoard(boardSize));
+    const startGame = async () => {
+        const newCards = createBoard(boardSize, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
+
+        // Preview mode - show all cards briefly based on difficulty
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            // Flip all cards for preview
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            // Hide all cards
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
     };
 
     const startTutorial = () => {
@@ -370,7 +395,7 @@ const MemoryGame = () => {
     const exitTutorial = () => {
         setGameStatus("idle");
         setTutorialStep(0);
-        setCards(createBoard(boardSize));
+        setCards(createBoard(boardSize, theme));
     };
 
     const nextTutorialStep = () => {
@@ -382,28 +407,46 @@ const MemoryGame = () => {
         }
     };
 
-    const restartGame = () => {
-        setCards(createBoard(boardSize));
+    const restartGame = async () => {
+        const newCards = createBoard(boardSize, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
+
+        // Preview mode
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
     };
 
-    const changeDifficulty = (size) => {
+    const changeDifficulty = async (size) => {
         setBoardSize(size);
-        setCards(createBoard(size));
+        const newCards = createBoard(size, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
         setShowSettings(false);
+
+        // Preview mode
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
 
         // Load best scores for new size
         const savedTime = localStorage.getItem(`memoryBestTime_${size}`);
@@ -491,8 +534,22 @@ const MemoryGame = () => {
                 >
                     <Home size={20} />
                 </button>
-                <div className="text-lg font-bold tracking-wider text-foreground">
-                    {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "CỜ TRÍ NHỚ"}
+                <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold tracking-wider text-foreground">
+                        {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : gameStatus === "preview" ? "👀 XEM TRƯỚC..." : "CỜ TRÍ NHỚ"}
+                    </span>
+                    {gameStatus !== "tutorial" && gameStatus !== "idle" && (
+                        <>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                                    difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                                }`}>
+                                {DIFFICULTY_SETTINGS[difficulty]?.label}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-500/20 text-purple-500">
+                                {boardSize}x{boardSize}
+                            </span>
+                        </>
+                    )}
                 </div>
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
@@ -644,10 +701,10 @@ const MemoryGame = () => {
                                 <div
                                     key={idx}
                                     className={`flex-1 h-1.5 rounded-full transition-colors ${idx < tutorialStep
-                                            ? "bg-indigo-500"
-                                            : idx === tutorialStep
-                                                ? "bg-indigo-400 animate-pulse"
-                                                : "bg-secondary"
+                                        ? "bg-indigo-500"
+                                        : idx === tutorialStep
+                                            ? "bg-indigo-400 animate-pulse"
+                                            : "bg-secondary"
                                         }`}
                                 />
                             ))}
@@ -727,10 +784,10 @@ const MemoryGame = () => {
                                 <div
                                     key={idx}
                                     className={`flex-1 h-1 rounded-full transition-colors ${idx < tutorialStep
-                                            ? "bg-indigo-500"
-                                            : idx === tutorialStep
-                                                ? "bg-indigo-400 animate-pulse"
-                                                : "bg-secondary"
+                                        ? "bg-indigo-500"
+                                        : idx === tutorialStep
+                                            ? "bg-indigo-400 animate-pulse"
+                                            : "bg-secondary"
                                         }`}
                                 />
                             ))}
