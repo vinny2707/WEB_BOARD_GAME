@@ -101,6 +101,7 @@ const Match3Game = () => {
   const swapSoundRef = useRef(null);
   const matchSoundRef = useRef(null);
   const comboSoundRef = useRef(null);
+  const failSoundRef = useRef(null);
 
   // Settings
   const lobbySettings = location.state?.settings || {};
@@ -156,11 +157,13 @@ const Match3Game = () => {
     swapSoundRef.current = new Audio('/sounds/swap.wav');
     matchSoundRef.current = new Audio('/sounds/match.wav');
     comboSoundRef.current = new Audio('/sounds/combo.wav');
+    failSoundRef.current = new Audio('/sounds/fail-game.wav');
 
     // Preload sounds
     swapSoundRef.current.load();
     matchSoundRef.current.load();
     comboSoundRef.current.load();
+    failSoundRef.current.load();
   }, []);
 
   // Play sound helper
@@ -618,9 +621,12 @@ const Match3Game = () => {
   useEffect(() => {
     if (gameStatus === "playing" && !isAnimating && !fallingRef.current) {
       if (score >= targetScore) setGameStatus("win");
-      else if (moves <= 0) setGameStatus("gameover");
+      else if (moves <= 0) {
+        setGameStatus("gameover");
+        playSound(failSoundRef);
+      }
     }
-  }, [gameStatus, isAnimating, score, moves, targetScore]);
+  }, [gameStatus, isAnimating, score, moves, targetScore, playSound]);
 
   // Game controls
   const startGame = () => {

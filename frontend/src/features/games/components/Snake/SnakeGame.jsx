@@ -80,6 +80,12 @@ const SnakeGame = () => {
     const gameStatusRef = useRef(gameStatus);
     const typingRef = useRef(null);
 
+    // Audio refs
+    const eatSoundRef = useRef(null);
+    const failSoundRef = useRef(null);
+    const turnSoundRef = useRef(null);
+    const collisionSoundRef = useRef(null);
+
     // Canvas size
     const canvasSize = boardSize * CELL_SIZE;
 
@@ -88,6 +94,28 @@ const SnakeGame = () => {
     useEffect(() => { snakeRef.current = snake; }, [snake]);
     useEffect(() => { foodRef.current = food; }, [food]);
     useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
+
+    // Initialize sounds
+    useEffect(() => {
+        eatSoundRef.current = new Audio('/sounds/eat.wav');
+        failSoundRef.current = new Audio('/sounds/fail-game.wav');
+        turnSoundRef.current = new Audio('/sounds/re-huong.wav');
+        collisionSoundRef.current = new Audio('/sounds/vatuong-tucan.wav');
+
+        // Preload
+        eatSoundRef.current.load();
+        failSoundRef.current.load();
+        turnSoundRef.current.load();
+        collisionSoundRef.current.load();
+    }, []);
+
+    // Play sound helper
+    const playSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => { });
+        }
+    }, []);
 
     // Initialize smooth positions
     useEffect(() => {
@@ -163,6 +191,8 @@ const SnakeGame = () => {
                 return;
             }
             // Game over with shake animation
+            playSound(collisionSoundRef);
+            playSound(failSoundRef);
             setShakeOffset({ x: 10, y: 0 });
             setTimeout(() => setShakeOffset({ x: -10, y: 5 }), 50);
             setTimeout(() => setShakeOffset({ x: 5, y: -5 }), 100);
@@ -176,6 +206,7 @@ const SnakeGame = () => {
 
         if (newHead.x === currentFood.x && newHead.y === currentFood.y) {
             // Ate food!
+            playSound(eatSoundRef);
             if (gameStatusRef.current === 'tutorial') {
                 setTutorialFoodEaten(prev => prev + 1);
             }
@@ -422,7 +453,8 @@ const SnakeGame = () => {
             // Prevent 180° turn
             const opposite = { UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT' };
             const currentDirName = Object.keys(DIRECTIONS).find(k => DIRECTIONS[k] === directionRef.current);
-            if (pressedDir !== opposite[currentDirName]) {
+            if (pressedDir !== opposite[currentDirName] && pressedDir !== currentDirName) {
+                playSound(turnSoundRef);
                 directionRef.current = DIRECTIONS[pressedDir];
                 setDirection(DIRECTIONS[pressedDir]);
             }
@@ -555,13 +587,13 @@ const SnakeGame = () => {
                     {gameStatus !== 'tutorial' && (
                         <>
                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
-                                    difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' :
-                                        'bg-red-500/20 text-red-500'
+                                difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' :
+                                    'bg-red-500/20 text-red-500'
                                 }`}>
                                 {DIFFICULTY_SETTINGS[difficulty]?.label}
                             </span>
                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${wallMode === 'solid' ? 'bg-orange-500/20 text-orange-500' :
-                                    'bg-purple-500/20 text-purple-500'
+                                'bg-purple-500/20 text-purple-500'
                                 }`}>
                                 {wallMode === 'solid' ? '🧱' : '🌀'}
                             </span>
@@ -702,7 +734,7 @@ const SnakeGame = () => {
                         <div className="flex gap-1 mb-4">
                             {TUTORIAL_STEPS.map((_, idx) => (
                                 <div key={idx} className={`flex-1 h-1.5 rounded-full transition-colors ${idx < tutorialStep ? 'bg-green-500' :
-                                        idx === tutorialStep ? 'bg-green-400 animate-pulse' : 'bg-secondary'
+                                    idx === tutorialStep ? 'bg-green-400 animate-pulse' : 'bg-secondary'
                                     }`} />
                             ))}
                         </div>
