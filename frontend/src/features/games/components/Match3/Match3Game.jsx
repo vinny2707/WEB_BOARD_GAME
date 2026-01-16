@@ -97,6 +97,11 @@ const Match3Game = () => {
   const swapAnimRef = useRef(null);
   const fallingRef = useRef(false);
 
+  // Audio refs
+  const swapSoundRef = useRef(null);
+  const matchSoundRef = useRef(null);
+  const comboSoundRef = useRef(null);
+
   // Settings
   const lobbySettings = location.state?.settings || {};
   const boardSize = lobbySettings.boardSize || DEFAULT_BOARD_SIZE;
@@ -146,6 +151,24 @@ const Match3Game = () => {
       img.onload = resolve;
       img.onerror = resolve;
     }))).then(() => { imagesLoadedRef.current = true; });
+
+    // Initialize sounds
+    swapSoundRef.current = new Audio('/sounds/swap.wav');
+    matchSoundRef.current = new Audio('/sounds/match.wav');
+    comboSoundRef.current = new Audio('/sounds/combo.wav');
+
+    // Preload sounds
+    swapSoundRef.current.load();
+    matchSoundRef.current.load();
+    comboSoundRef.current.load();
+  }, []);
+
+  // Play sound helper
+  const playSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.currentTime = 0;
+      soundRef.current.play().catch(() => { }); // Ignore autoplay errors
+    }
   }, []);
 
   // Find matches
@@ -229,6 +252,9 @@ const Match3Game = () => {
 
     addParticles(matches, currentBoard);
 
+    // Play match sound
+    playSound(matchSoundRef);
+
     const currentCombo = comboRef.current;
     const matchScore = matches.size * 10 * (currentCombo + 1);
     setScore(prev => {
@@ -244,6 +270,8 @@ const Match3Game = () => {
     setCombo(comboRef.current);
 
     if (currentCombo > 0) {
+      // Play combo sound
+      playSound(comboSoundRef);
       const texts = ["Nice!", "Great!", "Amazing!", "Incredible!"];
       floatingTextsRef.current.push({
         text: texts[Math.min(currentCombo, texts.length - 1)],
@@ -336,6 +364,7 @@ const Match3Game = () => {
 
       if (isAdjacent) {
         const savedSelectedCell = selectedCell; // Save before clearing
+        playSound(swapSoundRef); // Play swap sound
         swapAnimRef.current = {
           idx1: savedSelectedCell,
           idx2: idx,
