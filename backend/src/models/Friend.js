@@ -59,10 +59,11 @@ class Friend {
             };
         }
 
-        // Get user details
-        const users = await db('users')
-            .whereIn('id', friendIds)
-            .select('id', 'username', 'full_name', 'email', 'status');
+        // Get user details with avatar
+        const users = await db('users as u')
+            .leftJoin('images as i', 'u.avatar_id', 'i.id')
+            .whereIn('u.id', friendIds)
+            .select('u.id', 'u.username', 'u.full_name', 'u.email', 'u.status', 'i.url as avatar_url');
 
         // Combine with friendship data
         const data = friends.map(f => {
@@ -107,9 +108,10 @@ class Friend {
 
         const total = parseInt(count);
 
-        // Get requests with pagination
+        // Get requests with pagination (including avatar)
         const requests = await db('friends')
             .join('users', 'friends.user_id', 'users.id')
+            .leftJoin('images', 'users.avatar_id', 'images.id')
             .where('friends.friend_id', userId)
             .andWhere('friends.status', 'pending')
             .orderBy('friends.created_at', 'desc')
@@ -121,6 +123,7 @@ class Friend {
                 'users.username',
                 'users.full_name',
                 'users.email',
+                'images.url as avatar_url',
                 'friends.created_at'
             );
 
@@ -130,7 +133,8 @@ class Friend {
                 id: r.requester_id,
                 username: r.username,
                 full_name: r.full_name,
-                email: r.email
+                email: r.email,
+                avatar_url: r.avatar_url || null
             },
             created_at: r.created_at
         }));
@@ -165,9 +169,10 @@ class Friend {
 
         const total = parseInt(count);
 
-        // Get requests with pagination
+        // Get requests with pagination (including avatar)
         const requests = await db('friends')
             .join('users', 'friends.friend_id', 'users.id')
+            .leftJoin('images', 'users.avatar_id', 'images.id')
             .where('friends.user_id', userId)
             .andWhere('friends.status', 'pending')
             .orderBy('friends.created_at', 'desc')
@@ -179,6 +184,7 @@ class Friend {
                 'users.username',
                 'users.full_name',
                 'users.email',
+                'images.url as avatar_url',
                 'friends.created_at'
             );
 
@@ -188,7 +194,8 @@ class Friend {
                 id: r.friend_id,
                 username: r.username,
                 full_name: r.full_name,
-                email: r.email
+                email: r.email,
+                avatar_url: r.avatar_url || null
             },
             created_at: r.created_at
         }));
