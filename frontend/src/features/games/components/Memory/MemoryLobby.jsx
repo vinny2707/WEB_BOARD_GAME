@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, Brain, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -46,6 +55,26 @@ const MemoryLobby = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS });
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // Fetch game settings from API (Memory has gameId = 5)
+    useEffect(() => {
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(5);
+            if (settings) {
+                setApiSettings(settings);
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+        loadSettings();
+    }, []);
 
     useEffect(() => {
         const savedTime = localStorage.getItem('memoryBestTime_4');
@@ -306,33 +335,51 @@ const MemoryLobby = () => {
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Kích thước:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.gridSize}x{gameSettings.gridSize}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Chủ đề:</span>
-                                            <span className="font-semibold text-foreground">
-                                                {THEME_OPTIONS[gameSettings.theme]?.icon} {THEME_OPTIONS[gameSettings.theme]?.label}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Độ khó:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {DIFFICULTY_OPTIONS[gameSettings.difficulty]?.label}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'gridSize') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Kích thước:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.gridSize}x{gameSettings.gridSize}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'theme') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Chủ đề:</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {THEME_OPTIONS[gameSettings.theme]?.icon} {THEME_OPTIONS[gameSettings.theme]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Độ khó:</span>
+                                                <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                    gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                    }`}>
+                                                    {DIFFICULTY_OPTIONS[gameSettings.difficulty]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
-                                    <button
-                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setIsCustomMode(true)}
-                                    >
-                                        Tùy chỉnh cài đặt
-                                    </button>
+                                    {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                        <button
+                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={() => setIsCustomMode(true)}
+                                        >
+                                            Tùy chỉnh cài đặt
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <>

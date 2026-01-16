@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, Gamepad2, X, Minus, Plus, ChevronLeft } from 'lucide-react';
+import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -43,6 +52,26 @@ const SnakeLobby = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS });
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // Fetch game settings from API (Snake has gameId = 4)
+    useEffect(() => {
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(4);
+            if (settings) {
+                setApiSettings(settings);
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+        loadSettings();
+    }, []);
 
     // Countdown timer for daily leaderboard
     useEffect(() => {
@@ -130,8 +159,8 @@ const SnakeLobby = () => {
                             {sampleLeaderboard.map((player) => (
                                 <div
                                     key={player.rank}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''}`}
+                                    className={`flex items - center gap - 3 px - 3 py - 2 rounded - lg transition - colors hover: bg - accent
+                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''} `}
                                 >
                                     <div className="w-7 text-center">
                                         {getRankIcon(player.rank)}
@@ -300,33 +329,51 @@ const SnakeLobby = () => {
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Kích thước bàn chơi:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Độ khó:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {DIFFICULTY_SETTINGS[gameSettings.difficulty]?.label}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Chế độ tường:</span>
-                                            <span className="font-semibold text-foreground">
-                                                {gameSettings.wallMode === 'solid' ? '🧱 Tường cứng' : '🌀 Xuyên tường'}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'boardSize') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Kích thước bàn chơi:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Độ khó:</span>
+                                                <span className={`font - semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                    gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                    } `}>
+                                                    {DIFFICULTY_SETTINGS[gameSettings.difficulty]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'wallMode') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Chế độ tường:</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {gameSettings.wallMode === 'solid' ? '🧱 Tường cứng' : '🌀 Xuyên tường'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
-                                    <button
-                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setIsCustomMode(true)}
-                                    >
-                                        Tùy chỉnh cài đặt
-                                    </button>
+                                    {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                        <button
+                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={() => setIsCustomMode(true)}
+                                        >
+                                            Tùy chỉnh cài đặt
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <>
@@ -341,10 +388,10 @@ const SnakeLobby = () => {
                                                 {[15, 20, 25, 30].map(size => (
                                                     <button
                                                         key={size}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
+                                                        className={`px - 3 py - 1.5 rounded - lg text - sm font - medium transition - all ${gameSettings.boardSize === size
                                                             ? 'bg-green-500 text-white'
                                                             : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
+                                                            } `}
                                                         onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
                                                     >
                                                         {size}x{size}
@@ -367,10 +414,10 @@ const SnakeLobby = () => {
                                                 ].map(diff => (
                                                     <button
                                                         key={diff.key}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
+                                                        className={`px - 3 py - 1.5 rounded - lg text - sm font - medium transition - all ${gameSettings.difficulty === diff.key
                                                             ? `${diff.color} text-white`
                                                             : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
+                                                            } `}
                                                         onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
                                                     >
                                                         {diff.label}
@@ -386,19 +433,19 @@ const SnakeLobby = () => {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.wallMode === 'solid'
+                                                    className={`px - 3 py - 1.5 rounded - lg text - sm font - medium transition - all ${gameSettings.wallMode === 'solid'
                                                         ? 'bg-green-500 text-white'
                                                         : 'bg-secondary text-foreground hover:bg-accent'
-                                                        }`}
+                                                        } `}
                                                     onClick={() => setGameSettings(prev => ({ ...prev, wallMode: 'solid' }))}
                                                 >
                                                     🧱 Tường cứng
                                                 </button>
                                                 <button
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.wallMode === 'wrap'
+                                                    className={`px - 3 py - 1.5 rounded - lg text - sm font - medium transition - all ${gameSettings.wallMode === 'wrap'
                                                         ? 'bg-green-500 text-white'
                                                         : 'bg-secondary text-foreground hover:bg-accent'
-                                                        }`}
+                                                        } `}
                                                     onClick={() => setGameSettings(prev => ({ ...prev, wallMode: 'wrap' }))}
                                                 >
                                                     🌀 Xuyên tường

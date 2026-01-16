@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Sample leaderboard data (replace with real API data later)
 const sampleLeaderboard = [
@@ -36,6 +45,26 @@ const TicTacToeLobby = () => {
     const [settingsMode, setSettingsMode] = useState('robot');
     const [gameSettings, setGameSettings] = useState(DEFAULT_SETTINGS);
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // Fetch game settings from API (TicTacToe has gameId = 3)
+    useEffect(() => {
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(3);
+            if (settings) {
+                setApiSettings(settings);
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+        loadSettings();
+    }, []);
 
     // Countdown timer for daily leaderboard
     useEffect(() => {
@@ -343,50 +372,74 @@ const TicTacToeLobby = () => {
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Board size:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Time per turn:</span>
-                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Minutes per player:</span>
-                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Who plays first?</span>
-                                            <span className="font-semibold text-foreground">
-                                                {gameSettings.firstPlayer === 'random' ? 'Random' :
-                                                    gameSettings.firstPlayer === 'player' ? 'Bạn' : 'Máy'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Difficulty:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {gameSettings.difficulty === 'easy' ? 'Dễ' :
-                                                    gameSettings.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'boardSize') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Board size:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'timePerTurn') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Time per turn:</span>
+                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'timePerPlayer') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Minutes per player:</span>
+                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'firstPlayer') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Who plays first?</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {gameSettings.firstPlayer === 'random' ? 'Random' :
+                                                        gameSettings.firstPlayer === 'player' ? 'Bạn' : 'Máy'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Difficulty:</span>
+                                                <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                    gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                    }`}>
+                                                    {gameSettings.difficulty === 'easy' ? 'Dễ' :
+                                                        gameSettings.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
                                     <div className="flex gap-2">
-                                        <button
-                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                            onClick={handleSetUnlimitedTime}
-                                        >
-                                            Set unlimited time
-                                        </button>
-                                        <button
-                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                            onClick={() => setIsCustomMode(true)}
-                                        >
-                                            Custom options
-                                        </button>
+                                        {(hasApiSetting(apiSettings, 'timePerTurn') || hasApiSetting(apiSettings, 'timePerPlayer')) && (
+                                            <button
+                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                onClick={handleSetUnlimitedTime}
+                                            >
+                                                Set unlimited time
+                                            </button>
+                                        )}
+                                        {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                            <button
+                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                onClick={() => setIsCustomMode(true)}
+                                            >
+                                                Custom options
+                                            </button>
+                                        )}
                                     </div>
                                 </>
                             ) : (

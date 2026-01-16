@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -44,6 +53,26 @@ const Match3Lobby = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS });
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // Fetch game settings from API (Match3 has gameId = 6)
+    useEffect(() => {
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(6);
+            if (settings) {
+                setApiSettings(settings);
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+        loadSettings();
+    }, []);
 
     // Countdown timer for daily leaderboard
     useEffect(() => {
@@ -307,35 +336,55 @@ const Match3Lobby = () => {
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Kích thước bàn:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Số lượt chơi:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.moves} lượt</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Mục tiêu điểm:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.targetScore.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Độ khó:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {DIFFICULTY_SETTINGS[gameSettings.difficulty]?.label}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'boardSize') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Kích thước bàn:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'moves') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Số lượt chơi:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.moves} lượt</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'targetScore') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Mục tiêu điểm:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.targetScore?.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Độ khó:</span>
+                                                <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                    gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                    }`}>
+                                                    {DIFFICULTY_SETTINGS[gameSettings.difficulty]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
-                                    <button
-                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setIsCustomMode(true)}
-                                    >
-                                        Tùy chỉnh cài đặt
-                                    </button>
+                                    {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                        <button
+                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={() => setIsCustomMode(true)}
+                                        >
+                                            Tùy chỉnh cài đặt
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <>
