@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Button} from '@/components/ui/Button';
+import {Button} from '@/components/ui/button';
 import { useState } from 'react';
 import { getInitials } from '@/utils/Username';
 
