@@ -85,6 +85,7 @@ const SnakeGame = () => {
     const failSoundRef = useRef(null);
     const turnSoundRef = useRef(null);
     const collisionSoundRef = useRef(null);
+    const gameStartSoundRef = useRef(null);
 
     // Canvas size
     const canvasSize = boardSize * CELL_SIZE;
@@ -101,12 +102,14 @@ const SnakeGame = () => {
         failSoundRef.current = new Audio('/sounds/fail-game.wav');
         turnSoundRef.current = new Audio('/sounds/re-huong.wav');
         collisionSoundRef.current = new Audio('/sounds/vatuong-tucan.wav');
+        gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
 
         // Preload
         eatSoundRef.current.load();
         failSoundRef.current.load();
         turnSoundRef.current.load();
         collisionSoundRef.current.load();
+        gameStartSoundRef.current.load();
     }, []);
 
     // Play sound helper
@@ -509,6 +512,7 @@ const SnakeGame = () => {
 
     // Game controls
     const startGame = () => {
+        playSound(gameStartSoundRef);
         const center = Math.floor(boardSize / 2);
         const initialSnake = [{ x: center, y: center }];
         setSnake(initialSnake);

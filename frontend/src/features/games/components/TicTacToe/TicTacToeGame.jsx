@@ -177,6 +177,22 @@ const TicTacToeGame = () => {
   const typingRef = useRef(null);
   const turnTimerRef = useRef(null);
 
+  // Audio
+  const gameStartSoundRef = useRef(null);
+
+  // Initialize sounds
+  useEffect(() => {
+    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+    gameStartSoundRef.current.load();
+  }, []);
+
+  const playSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.currentTime = 0;
+      soundRef.current.play().catch(() => { });
+    }
+  }, []);
+
   // Typewriter effect for tutorial
   useEffect(() => {
     if (gameStatus !== "tutorial") return;
@@ -413,6 +429,7 @@ const TicTacToeGame = () => {
   }, [initialBoard, timePerPlayer, timePerTurn]);
 
   const startGame = () => {
+    playSound(gameStartSoundRef);
     setBoard(initialBoard);
     // Determine who starts based on firstPlayer setting
     if (firstPlayer === 'ai') {

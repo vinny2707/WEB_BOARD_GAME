@@ -102,6 +102,7 @@ const Match3Game = () => {
   const matchSoundRef = useRef(null);
   const comboSoundRef = useRef(null);
   const failSoundRef = useRef(null);
+  const gameStartSoundRef = useRef(null);
 
   // Settings
   const lobbySettings = location.state?.settings || {};
@@ -158,12 +159,14 @@ const Match3Game = () => {
     matchSoundRef.current = new Audio('/sounds/match.wav');
     comboSoundRef.current = new Audio('/sounds/combo.wav');
     failSoundRef.current = new Audio('/sounds/fail-game.wav');
+    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
 
     // Preload sounds
     swapSoundRef.current.load();
     matchSoundRef.current.load();
     comboSoundRef.current.load();
     failSoundRef.current.load();
+    gameStartSoundRef.current.load();
   }, []);
 
   // Play sound helper
@@ -630,6 +633,7 @@ const Match3Game = () => {
 
   // Game controls
   const startGame = () => {
+    playSound(gameStartSoundRef);
     const newBoard = createBoard(boardSize, candyCount);
     boardRef.current = newBoard;
     setBoard(newBoard);

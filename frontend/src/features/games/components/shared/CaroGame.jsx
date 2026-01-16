@@ -96,6 +96,22 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
     const [displayedTitle, setDisplayedTitle] = useState('');
     const typingRef = useRef(null);
 
+    // Audio
+    const gameStartSoundRef = useRef(null);
+
+    // Initialize sounds
+    useEffect(() => {
+        gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        gameStartSoundRef.current.load();
+    }, []);
+
+    const playSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => { });
+        }
+    }, []);
+
     const themeColors = {
         emerald: {
             primary: 'bg-emerald-500',
@@ -368,6 +384,7 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
     };
 
     const startGame = () => {
+        playSound(gameStartSoundRef);
         setBoard(Array(boardSize * boardSize).fill(null));
         // Determine who starts based on firstPlayer setting
         if (firstPlayer === 'ai') {
