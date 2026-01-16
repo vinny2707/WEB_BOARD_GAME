@@ -7,24 +7,28 @@ const db = require('../config/database');
 
 class User {
     /**
-     * Find user by email
+     * Find user by email (with avatar)
      * @param {string} email 
      * @returns {Promise<Object|null>}
      */
     static async findByEmail(email) {
-        return db('users')
-            .where({ email })
+        return db('users as u')
+            .leftJoin('images as i', 'u.avatar_id', 'i.id')
+            .where('u.email', email)
+            .select('u.*', 'i.url as avatar_url')
             .first();
     }
 
     /**
-     * Find user by username
+     * Find user by username (with avatar)
      * @param {string} username 
      * @returns {Promise<Object|null>}
      */
     static async findByUsername(username) {
-        return db('users')
-            .where({ username })
+        return db('users as u')
+            .leftJoin('images as i', 'u.avatar_id', 'i.id')
+            .where('u.username', username)
+            .select('u.*', 'i.url as avatar_url')
             .first();
     }
 
