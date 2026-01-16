@@ -6,6 +6,16 @@ import FriendCard from "../components/FriendCard";
 import PendingRequestCard from "../components/PendingRequestCard";
 import SentRequestCard from "../components/SentRequestCard";
 import AddFriendDialog from "../components/AddFriendDialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
 
 const Friends = () => {
   const [activeTab, setActiveTab] = useState("friends");
@@ -15,11 +25,29 @@ const Friends = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [sentRequests, setSentRequests] = useState([]);
 
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    friends: { page: 1, totalPages: 1, total: 0 },
+    pending: { page: 1, totalPages: 1, total: 0 },
+    sent: { page: 1, totalPages: 1, total: 0 },
+  });
+  const itemsPerPage = 10;
+
   // Fetch friends list
-  const fetchFriends = async () => {
+  const fetchFriends = async (page = 1) => {
     try {
-      const response = await api.get("/api/friends");
+      const response = await api.get("/api/friends", {
+        params: { page, limit: itemsPerPage },
+      });
       setFriends(response.data.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        friends: {
+          page: response.data.pagination?.page || 1,
+          totalPages: response.data.pagination?.totalPages || 1,
+          total: response.data.pagination?.total || 0,
+        },
+      }));
     } catch (error) {
       console.error("Error fetching friends:", error);
       toast.error("Failed to load friends");
@@ -27,10 +55,20 @@ const Friends = () => {
   };
 
   // Fetch pending requests
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = async (page = 1) => {
     try {
-      const response = await api.get("/api/friends/requests/pending");
+      const response = await api.get("/api/friends/requests/pending", {
+        params: { page, limit: itemsPerPage },
+      });
       setPendingRequests(response.data.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        pending: {
+          page: response.data.pagination?.page || 1,
+          totalPages: response.data.pagination?.totalPages || 1,
+          total: response.data.pagination?.total || 0,
+        },
+      }));
     } catch (error) {
       console.error("Error fetching pending requests:", error);
       toast.error("Failed to load pending requests");
@@ -38,10 +76,20 @@ const Friends = () => {
   };
 
   // Fetch sent requests
-  const fetchSentRequests = async () => {
+  const fetchSentRequests = async (page = 1) => {
     try {
-      const response = await api.get("/api/friends/requests/sent");
+      const response = await api.get("/api/friends/requests/sent", {
+        params: { page, limit: itemsPerPage },
+      });
       setSentRequests(response.data.data || []);
+      setPagination((prev) => ({
+        ...prev,
+        sent: {
+          page: response.data.pagination?.page || 1,
+          totalPages: response.data.pagination?.totalPages || 1,
+          total: response.data.pagination?.total || 0,
+        },
+      }));
     } catch (error) {
       console.error("Error fetching sent requests:", error);
       toast.error("Failed to load sent requests");
@@ -134,6 +182,121 @@ const Friends = () => {
     }
   };
 
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    const currentPagination = pagination[activeTab];
+    if (newPage < 1 || newPage > currentPagination.totalPages) return;
+
+    switch (activeTab) {
+      case "friends":
+        fetchFriends(newPage);
+        break;
+      case "pending":
+        fetchPendingRequests(newPage);
+        break;
+      case "sent":
+        fetchSentRequests(newPage);
+        break;
+    }
+  };
+
+  // Render pagination component
+  const renderPagination = () => {
+    const currentPagination = pagination[activeTab];
+    const { page, totalPages, total } = currentPagination;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => handlePageChange(page - 1)}
+                className={
+                  page === 1
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+
+            {startPage > 1 && (
+              <>
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => handlePageChange(1)}
+                    className="cursor-pointer"
+                  >
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                {startPage > 2 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+              </>
+            )}
+
+            {pages.map((pageNum) => (
+              <PaginationItem key={pageNum}>
+                <PaginationLink
+                  onClick={() => handlePageChange(pageNum)}
+                  isActive={pageNum === page}
+                  className="cursor-pointer"
+                >
+                  {pageNum}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            {endPage < totalPages && (
+              <>
+                {endPage < totalPages - 1 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => handlePageChange(totalPages)}
+                    className="cursor-pointer"
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => handlePageChange(page + 1)}
+                className={
+                  page === totalPages
+                    ? "pointer-events-none opacity-50"
+                    : "cursor-pointer"
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </div>
+    );
+  };
+
   // Filter data based on search
   const getFilteredData = () => {
     const query = searchQuery.toLowerCase();
@@ -196,14 +359,20 @@ const Friends = () => {
               <Users className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold dark:text-white">Friends</h1>
+              <h1 className="text-2xl font-semibold dark:text-white">
+                Friends
+              </h1>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Manage your connections
               </p>
             </div>
           </div>
 
-          <AddFriendDialog onSuccess={handleSendRequest} />
+          <AddFriendDialog
+            onSendRequest={handleSendRequest}
+            onAccept={handleAccept}
+            onReject={handleReject}
+          />
         </div>
 
         {/* Search Bar */}
@@ -331,6 +500,9 @@ const Friends = () => {
                 )}
               </div>
             )}
+
+            {/* Pagination */}
+            {!searchQuery && getFilteredData().length > 0 && renderPagination()}
           </>
         )}
       </div>

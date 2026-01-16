@@ -291,7 +291,7 @@ const OtpVerification = ({
                     <input
                       type={showPassword ? "text" : "password"}
                       {...registerPassword("newPassword")}
-                      className="w-full pl-12 pr-12 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-12 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                       placeholder="Enter new password"
                       disabled={isLoading}
                     />
@@ -324,7 +324,7 @@ const OtpVerification = ({
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       {...registerPassword("confirmPassword")}
-                      className="w-full pl-12 pr-12 py-3 bg-zinc-800/50 border-2 border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-12 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                       placeholder="Confirm new password"
                       disabled={isLoading}
                     />

@@ -63,7 +63,7 @@ const SentRequestCard = ({ recipient, createdAt, onCancel }) => {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button
-                className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-600 transition-colors"
+                className="p-2 cursor-pointer rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-600 transition-colors"
                 title="Cancel request"
               >
                 <X className="w-5 h-5" />

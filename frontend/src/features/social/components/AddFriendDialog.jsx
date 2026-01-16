@@ -14,7 +14,7 @@ import api from "@/api/axios";
 import { toast } from "sonner";
 import { getInitials } from "@/utils/Username";
 
-const AddFriendDialog = ({ onSuccess }) => {
+const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -71,7 +71,7 @@ const AddFriendDialog = ({ onSuccess }) => {
   const handleSendRequest = async (userId) => {
     setLoading(true);
     try {
-      await onSuccess(userId);
+      await onSendRequest(userId);
       // Refresh friendship status after sending request
       const response = await api.get(`/api/friends/status/${userId}`);
       setFriendshipStatuses((prev) => ({
@@ -80,6 +80,40 @@ const AddFriendDialog = ({ onSuccess }) => {
       }));
     } catch (error) {
       console.error("Error in handleSendRequest:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async (userId) => {
+    setLoading(true);
+    try {
+      await onAccept(userId);
+      // Refresh friendship status
+      const response = await api.get(`/api/friends/status/${userId}`);
+      setFriendshipStatuses((prev) => ({
+        ...prev,
+        [userId]: response.data.data,
+      }));
+    } catch (error) {
+      console.error("Error accepting request:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async (userId) => {
+    setLoading(true);
+    try {
+      await onReject(userId);
+      // Refresh friendship status
+      const response = await api.get(`/api/friends/status/${userId}`);
+      setFriendshipStatuses((prev) => ({
+        ...prev,
+        [userId]: response.data.data,
+      }));
+    } catch (error) {
+      console.error("Error rejecting request:", error);
     } finally {
       setLoading(false);
     }
@@ -118,15 +152,26 @@ const AddFriendDialog = ({ onSuccess }) => {
     // Request pending - incoming (they sent you a request)
     if (status.status === "pending" && status.direction === "incoming") {
       return (
-        <Button
-          onClick={() => handleSendRequest(user.id)}
-          disabled={loading}
-          size="sm"
-          className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-medium"
-        >
-          <Check className="w-4 h-4 mr-1" />
-          Accept
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => handleAcceptRequest(user.id)}
+            disabled={loading}
+            size="sm"
+            className="cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold"
+          >
+            <Check className="w-4 h-4 mr-1" />
+            Accept
+          </Button>
+          <Button
+            onClick={() => handleRejectRequest(user.id)}
+            disabled={loading}
+            size="sm"
+            variant="destructive"
+            className="cursor-pointer bg-red-500 hover:bg-red-600 text-white font-semibold"
+          >
+            Reject
+          </Button>
+        </div>
       );
     }
 
@@ -146,7 +191,7 @@ const AddFriendDialog = ({ onSuccess }) => {
         onClick={() => handleSendRequest(user.id)}
         disabled={loading}
         size="sm"
-        className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium"
+        className="cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold"
       >
         <UserPlus className="w-4 h-4 mr-1" />
         Add
@@ -193,7 +238,7 @@ const AddFriendDialog = ({ onSuccess }) => {
             <Button
               onClick={handleSearch}
               disabled={searching}
-              className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold dark:text-white"
+              className="cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold dark:text-white"
             >
               {searching ? "Searching..." : "Search"}
             </Button>
@@ -244,6 +289,7 @@ const AddFriendDialog = ({ onSuccess }) => {
         <DialogFooter>
           <Button
             variant="outline"
+            className="cursor-pointer"
             onClick={() => {
               setOpen(false);
               setSearchResults([]);
