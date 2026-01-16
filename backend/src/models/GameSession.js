@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const eloService = require('../services/eloService');
 
 /**
  * GameSession Model
@@ -7,16 +8,27 @@ const db = require('../config/database');
 
 class GameSession {
     /**
-     * Complete a game session and update rankings
+     * Complete a game session and update rankings with Elo
      * @param {number} userId 
      * @param {Object} data - { game_id, result, score, moves_count, time_elapsed, game_state, settings }
-     * @returns {Promise<Object>} - Created session
+     *   - settings.difficulty: 'EASY' | 'NORMAL' | 'HARD' (for Elo calculation)
+     *   - For memory_cards: score = wrong_flips count
+     * @returns {Promise<Object>} - Created session with elo_change
      */
     static async complete(userId, data) {
         const trx = await db.transaction();
 
         try {
-            // 1. Insert completed session
+            // 1. Get game type for Elo calculation
+            const game = await trx('games')
+                .where({ id: data.game_id })
+                .select('type')
+                .first();
+            
+            const gameType = game?.type;
+            const difficulty = data.settings?.difficulty || 'NORMAL';
+
+            // 2. Insert completed session
             const [session] = await trx('game_sessions')
                 .insert({
                     user_id: userId,
@@ -33,10 +45,26 @@ class GameSession {
                 })
                 .returning('*');
 
-            // 2. Update or create ranking record
-            const existingRanking = await trx('rankings')
+            // 3. Get or create ranking record
+            let existingRanking = await trx('rankings')
                 .where({ user_id: userId, game_id: data.game_id })
                 .first();
+
+            // Current Elo (total_score is used as Elo, default 1000)
+            const currentElo = existingRanking?.total_score || 1000;
+
+            // 4. Calculate Elo change
+            const eloResult = eloService.calculateGameElo({
+                playerElo: currentElo,
+                gameType: gameType,
+                difficulty: difficulty,
+                result: data.result,
+                score: data.score || 0,
+                wrongFlips: data.score || 0  // For memory_cards, score = wrong_flips
+            });
+
+            // Elo change info to return
+            let eloChange = null;
 
             if (existingRanking) {
                 // Update existing ranking
@@ -44,9 +72,26 @@ class GameSession {
                 const newTotalWins = existingRanking.total_wins + (data.result === 'win' ? 1 : 0);
                 const newTotalLosses = existingRanking.total_losses + (data.result === 'loss' ? 1 : 0);
                 const newTotalDraws = existingRanking.total_draws + (data.result === 'draw' ? 1 : 0);
-                const newTotalScore = existingRanking.total_score + (data.score || 0);
-                const newBestScore = Math.max(existingRanking.best_score, data.score || 0);
                 const newWinRate = (newTotalWins / newTotalGames * 100).toFixed(2);
+                
+                // Use Elo-based scoring if available, otherwise keep old score
+                let newTotalScore = existingRanking.total_score;
+                let newBestScore = existingRanking.best_score;
+                
+                if (eloResult) {
+                    // Elo-based: total_score = new Elo rating
+                    newTotalScore = eloResult.newElo;
+                    newBestScore = Math.max(existingRanking.best_score, eloResult.newElo);
+                    eloChange = {
+                        previous: currentElo,
+                        change: eloResult.change,
+                        current: eloResult.newElo
+                    };
+                } else {
+                    // Non-Elo game: add score directly (e.g., drawing_board)
+                    newTotalScore = existingRanking.total_score + (data.score || 0);
+                    newBestScore = Math.max(existingRanking.best_score, data.score || 0);
+                }
 
                 await trx('rankings')
                     .where({ user_id: userId, game_id: data.game_id })
@@ -61,7 +106,20 @@ class GameSession {
                         updated_at: trx.fn.now()
                     });
             } else {
-                // Create new ranking
+                // Create new ranking with starting Elo
+                let initialScore = 1000;  // Starting Elo
+                
+                if (eloResult) {
+                    initialScore = eloResult.newElo;
+                    eloChange = {
+                        previous: 1000,
+                        change: eloResult.change,
+                        current: eloResult.newElo
+                    };
+                } else {
+                    initialScore = data.score || 0;
+                }
+
                 await trx('rankings')
                     .insert({
                         user_id: userId,
@@ -70,15 +128,15 @@ class GameSession {
                         total_wins: data.result === 'win' ? 1 : 0,
                         total_losses: data.result === 'loss' ? 1 : 0,
                         total_draws: data.result === 'draw' ? 1 : 0,
-                        total_score: data.score || 0,
-                        best_score: data.score || 0,
+                        total_score: initialScore,
+                        best_score: initialScore,
                         win_rate: data.result === 'win' ? 100.00 : 0.00,
                         created_at: trx.fn.now(),
                         updated_at: trx.fn.now()
                     });
             }
 
-            // 3. Recalculate global rank for this game
+            // 5. Recalculate global rank for this game
             await this.recalculateRanks(trx, data.game_id);
 
             await trx.commit();
@@ -90,6 +148,9 @@ class GameSession {
             if (session.settings && typeof session.settings === 'string') {
                 session.settings = JSON.parse(session.settings);
             }
+
+            // Add elo_change to response
+            session.elo_change = eloChange;
 
             return session;
         } catch (error) {

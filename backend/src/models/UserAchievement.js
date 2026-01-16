@@ -7,12 +7,20 @@ const db = require('../config/database');
 
 class UserAchievement {
     /**
-     * Get all achievements for a user with progress info
+     * Get all achievements for a user with progress info (with pagination)
      * @param {number} userId 
-     * @returns {Promise<Array>}
+     * @param {Object} options - { page, limit }
+     * @returns {Promise<Object>} - { achievements, pagination, summary }
      */
-    static async findByUser(userId) {
-        // Get all achievements with user's progress (left join)
+    static async findByUser(userId, options = {}) {
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count of achievements
+        const [{ count: total }] = await db('achievements').count('id as count');
+
+        // Get all achievements with user's progress (left join) WITH pagination
         // Note: unlock_criteria NOT included - use findById for details
         const results = await db('achievements as a')
             .leftJoin('user_achievements as ua', function() {
@@ -30,10 +38,14 @@ class UserAchievement {
                 'ua.unlocked_at'
             )
             .orderBy('a.category', 'asc')
-            .orderBy('a.points', 'asc');
+            .orderBy('a.points', 'asc')
+            .limit(limit)
+            .offset(offset);
+
+        const totalPages = Math.ceil(total / limit);
 
         // Parse JSON fields and compute status
-        return results.map(r => ({
+        const achievements = results.map(r => ({
             id: r.id,
             name: r.name,
             description: r.description,
@@ -46,6 +58,16 @@ class UserAchievement {
             unlocked_at: r.unlocked_at,
             is_unlocked: r.unlocked_at !== null
         }));
+
+        return {
+            achievements,
+            pagination: {
+                page,
+                limit,
+                total: parseInt(total),
+                totalPages
+            }
+        };
     }
 
     /**
