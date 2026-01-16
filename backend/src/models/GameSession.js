@@ -73,6 +73,7 @@ class GameSession {
                         total_score: data.score || 0,
                         best_score: data.score || 0,
                         win_rate: data.result === 'win' ? 100.00 : 0.00,
+                        created_at: trx.fn.now(),
                         updated_at: trx.fn.now()
                     });
             }
