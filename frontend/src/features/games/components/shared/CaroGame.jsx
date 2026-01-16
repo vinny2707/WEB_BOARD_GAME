@@ -98,11 +98,14 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
 
     // Audio
     const gameStartSoundRef = useRef(null);
+    const victorySoundRef = useRef(null);
 
     // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        victorySoundRef.current = new Audio('/sounds/Victory.mp3');
         gameStartSoundRef.current.load();
+        victorySoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
@@ -295,6 +298,7 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 ...prev,
                 [result.winner === 'X' ? 'player' : 'ai']: prev[result.winner === 'X' ? 'player' : 'ai'] + 1
             }));
+            if (result.winner === 'X') playSound(victorySoundRef);
         } else if (isDraw(newBoard)) {
             // Check if time-based win should apply
             if (timePerPlayer > 0 && playerTime !== aiTime) {

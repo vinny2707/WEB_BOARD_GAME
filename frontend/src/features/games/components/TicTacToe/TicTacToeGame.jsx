@@ -179,11 +179,14 @@ const TicTacToeGame = () => {
 
   // Audio
   const gameStartSoundRef = useRef(null);
+  const victorySoundRef = useRef(null);
 
   // Initialize sounds
   useEffect(() => {
     gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+    victorySoundRef.current = new Audio('/sounds/Victory.mp3');
     gameStartSoundRef.current.load();
+    victorySoundRef.current.load();
   }, []);
 
   const playSound = useCallback((soundRef) => {
@@ -353,6 +356,7 @@ const TicTacToeGame = () => {
           [winnerMark === "X" ? "player" : "ai"]:
             prev[winnerMark === "X" ? "player" : "ai"] + 1,
         }));
+        if (winnerMark === "X") playSound(victorySoundRef);
       } else if (isDraw(newBoard, boardSize)) {
         // Check if time-based win should apply (when there's a time limit)
         if (timePerPlayer > 0 && playerTime !== aiTime) {

@@ -234,11 +234,14 @@ const MemoryGame = () => {
 
     // Audio
     const gameStartSoundRef = useRef(null);
+    const victorySoundRef = useRef(null);
 
     // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        victorySoundRef.current = new Audio('/sounds/Victory.mp3');
         gameStartSoundRef.current.load();
+        victorySoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
@@ -307,6 +310,7 @@ const MemoryGame = () => {
         if (matchedPairs === totalPairs && matchedPairs > 0 && gameStatus === "playing") {
             setGameStatus("win");
             setIsTimerRunning(false);
+            playSound(victorySoundRef);
 
             // Save best scores
             const currentBestTime = localStorage.getItem(
