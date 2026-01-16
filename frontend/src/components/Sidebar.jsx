@@ -56,6 +56,7 @@ const Sidebar = () => {
   // Handle background music
   useEffect(() => {
     if (audioRef.current) {
+      audioRef.current.volume = 0.05; // Set volume to 15%
       if (isMusicEnabled) {
         audioRef.current.play().catch((err) => {
           console.log("Audio play failed:", err);
@@ -120,11 +121,9 @@ const Sidebar = () => {
   if (loading) {
     return (
       <aside
-        className={`border-r transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-20" : "max-w-1/4"
-        } ${
-          isDarkMode ? "border-zinc-800" : "border-gray-200"
-        } relative overflow-hidden flex flex-col`}
+        className={`border-r transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "max-w-1/4"
+          } ${isDarkMode ? "border-zinc-800" : "border-gray-200"
+          } relative overflow-hidden flex flex-col`}
         style={{
           background: isDarkMode
             ? "rgba(24, 24, 27, 0.6)"
@@ -142,11 +141,9 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`border-r transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-20" : "w-64 md:max-w-1/4"
-      } ${
-        isDarkMode ? "border-zinc-800" : "border-gray-200"
-      } relative overflow-visible flex flex-col hidden md:flex z-40`}
+      className={`border-r transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64 md:max-w-1/4"
+        } ${isDarkMode ? "border-zinc-800" : "border-gray-200"
+        } relative overflow-visible flex flex-col hidden md:flex z-40`}
       style={{
         background: isDarkMode
           ? "rgba(24, 24, 27, 0.6)"
@@ -168,18 +165,16 @@ const Sidebar = () => {
       <div className="relative h-full flex flex-col p-4">
         {/* Top Section: Toggle, Notification & Settings */}
         <div
-          className={`mb-6 pb-6 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between ${
-            isCollapsed ? "flex-col gap-3" : ""
-          }`}
+          className={`mb-6 pb-6 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between ${isCollapsed ? "flex-col gap-3" : ""
+            }`}
         >
           {/* Toggle Collapse Button */}
           <button
             onClick={toggleSidebar}
-            className={`p-2 rounded-lg transition-all flex-shrink-0 ${
-              isDarkMode
-                ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
-                : "hover:bg-gray-200/50 text-gray-600 hover:text-gray-900"
-            }`}
+            className={`p-2 rounded-lg transition-all flex-shrink-0 ${isDarkMode
+              ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
+              : "hover:bg-gray-200/50 text-gray-600 hover:text-gray-900"
+              }`}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
@@ -207,15 +202,14 @@ const Sidebar = () => {
             <div className="relative" ref={settingsRef}>
               <button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                className={`p-2 rounded-lg transition-all cursor-pointer ${
-                  showSettingsMenu
-                    ? isDarkMode
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-blue-500/20 text-blue-600"
-                    : isDarkMode
+                className={`p-2 rounded-lg transition-all cursor-pointer ${showSettingsMenu
+                  ? isDarkMode
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-blue-500/20 text-blue-600"
+                  : isDarkMode
                     ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
                     : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"
-                }`}
+                  }`}
                 title="Settings"
               >
                 <Settings className="w-5 h-5" />
@@ -224,11 +218,10 @@ const Sidebar = () => {
               {/* Settings Dropdown Menu */}
               {showSettingsMenu && (
                 <div
-                  className={`absolute right-0 top-full mt-2 w-60 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl ${
-                    isDarkMode
-                      ? "bg-zinc-800/95 border border-zinc-700/50"
-                      : "bg-white/95 border border-gray-200/50"
-                  }`}
+                  className={`absolute right-0 top-full mt-2 w-60 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl ${isDarkMode
+                    ? "bg-zinc-800/95 border border-zinc-700/50"
+                    : "bg-white/95 border border-gray-200/50"
+                    }`}
                   style={{
                     boxShadow: isDarkMode
                       ? "0 20px 60px rgba(0, 0, 0, 0.5)"
@@ -238,9 +231,8 @@ const Sidebar = () => {
                 >
                   {/* Dark Mode Toggle */}
                   <div
-                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${
-                      isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
-                    }`}
+                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
+                      }`}
                     onClick={onToggleTheme}
                   >
                     <div className="flex items-center gap-3">
@@ -255,9 +247,8 @@ const Sidebar = () => {
                       )}
                       <div>
                         <span
-                          className={`text-sm font-medium block ${
-                            isDarkMode ? "text-zinc-100" : "text-gray-900"
-                          }`}
+                          className={`text-sm font-medium block ${isDarkMode ? "text-zinc-100" : "text-gray-900"
+                            }`}
                         >
                           {isDarkMode ? "Dark Mode" : "Light Mode"}
                         </span>
@@ -267,59 +258,52 @@ const Sidebar = () => {
                       </div>
                     </div>
                     <div
-                      className={`relative w-11 h-6 rounded-full transition-all ${
-                        isDarkMode ? "bg-emerald-500" : "bg-gray-300"
-                      }`}
+                      className={`relative w-11 h-6 rounded-full transition-all ${isDarkMode ? "bg-emerald-500" : "bg-gray-300"
+                        }`}
                     >
                       <div
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-lg transition-transform ${
-                          isDarkMode ? "translate-x-5" : "translate-x-0.5"
-                        }`}
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-lg transition-transform ${isDarkMode ? "translate-x-5" : "translate-x-0.5"
+                          }`}
                       ></div>
                     </div>
                   </div>
 
                   {/* Divider */}
                   <div
-                    className={`h-px mx-3 ${
-                      isDarkMode ? "bg-zinc-700/50" : "bg-gray-200/50"
-                    }`}
+                    className={`h-px mx-3 ${isDarkMode ? "bg-zinc-700/50" : "bg-gray-200/50"
+                      }`}
                   ></div>
 
                   {/* Background Music Toggle */}
                   <div
-                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${
-                      isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
-                    }`}
+                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
+                      }`}
                     onClick={() => setIsMusicEnabled(!isMusicEnabled)}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                          isMusicEnabled
-                            ? isDarkMode
-                              ? "bg-emerald-500/20"
-                              : "bg-emerald-50"
-                            : isDarkMode
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center ${isMusicEnabled
+                          ? isDarkMode
+                            ? "bg-emerald-500/20"
+                            : "bg-emerald-50"
+                          : isDarkMode
                             ? "bg-zinc-700/50"
                             : "bg-gray-100"
-                        }`}
+                          }`}
                       >
                         <Music
-                          className={`w-5 h-5 ${
-                            isMusicEnabled
-                              ? "text-emerald-500"
-                              : isDarkMode
+                          className={`w-5 h-5 ${isMusicEnabled
+                            ? "text-emerald-500"
+                            : isDarkMode
                               ? "text-zinc-400"
                               : "text-gray-500"
-                          }`}
+                            }`}
                         />
                       </div>
                       <div>
                         <span
-                          className={`text-sm font-medium block ${
-                            isDarkMode ? "text-zinc-100" : "text-gray-900"
-                          }`}
+                          className={`text-sm font-medium block ${isDarkMode ? "text-zinc-100" : "text-gray-900"
+                            }`}
                         >
                           Music
                         </span>
@@ -329,18 +313,16 @@ const Sidebar = () => {
                       </div>
                     </div>
                     <div
-                      className={`relative w-11 h-6 rounded-full transition-all ${
-                        isMusicEnabled
-                          ? "bg-emerald-500"
-                          : isDarkMode
+                      className={`relative w-11 h-6 rounded-full transition-all ${isMusicEnabled
+                        ? "bg-emerald-500"
+                        : isDarkMode
                           ? "bg-zinc-600"
                           : "bg-gray-300"
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-lg transition-transform ${
-                          isMusicEnabled ? "translate-x-5" : "translate-x-0.5"
-                        }`}
+                        className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-lg transition-transform ${isMusicEnabled ? "translate-x-5" : "translate-x-0.5"
+                          }`}
                       ></div>
                     </div>
                   </div>
@@ -358,11 +340,10 @@ const Sidebar = () => {
               background: isDarkMode
                 ? "linear-gradient(135deg, rgba(39, 39, 42, 0.8) 0%, rgba(24, 24, 27, 0.9) 100%)"
                 : "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.95) 100%)",
-              border: `1px solid ${
-                isDarkMode
-                  ? "rgba(82, 82, 91, 0.4)"
-                  : "rgba(229, 231, 235, 0.6)"
-              }`,
+              border: `1px solid ${isDarkMode
+                ? "rgba(82, 82, 91, 0.4)"
+                : "rgba(229, 231, 235, 0.6)"
+                }`,
               boxShadow: isDarkMode
                 ? "0 8px 32px rgba(0, 0, 0, 0.3)"
                 : "0 8px 32px rgba(0, 0, 0, 0.08)",
@@ -442,15 +423,14 @@ const Sidebar = () => {
               <button
                 key={item.label}
                 onClick={() => onClickItem(item.page)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${
-                  item.active
-                    ? isDarkMode
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
-                    : isDarkMode
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${item.active
+                  ? isDarkMode
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
+                  : isDarkMode
                     ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                     : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
-                } ${isCollapsed ? "justify-center" : "justify-start"}`}
+                  } ${isCollapsed ? "justify-center" : "justify-start"}`}
                 title={isCollapsed ? item.label : ""}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />
@@ -467,9 +447,8 @@ const Sidebar = () => {
 
                 {item.active && (
                   <div
-                    className={`absolute left-0 w-1 h-8 rounded-r-full top-1/2 -translate-y-1/2 ${
-                      isDarkMode ? "bg-emerald-500" : "bg-blue-500"
-                    }`}
+                    className={`absolute left-0 w-1 h-8 rounded-r-full top-1/2 -translate-y-1/2 ${isDarkMode ? "bg-emerald-500" : "bg-blue-500"
+                      }`}
                   ></div>
                 )}
               </button>
@@ -480,15 +459,14 @@ const Sidebar = () => {
           {isAdmin && (
             <button
               onClick={() => navigate("/admin")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${
-                location.pathname.startsWith("/admin")
-                  ? isDarkMode
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                    : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
-                  : isDarkMode
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${location.pathname.startsWith("/admin")
+                ? isDarkMode
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
+                : isDarkMode
                   ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
                   : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
-              } ${isCollapsed ? "justify-center" : "justify-start"} mt-8`}
+                } ${isCollapsed ? "justify-center" : "justify-start"} mt-8`}
               title={isCollapsed ? "Management" : ""}
             >
               <ShieldCheck className="w-5 h-5 flex-shrink-0" />
@@ -497,9 +475,8 @@ const Sidebar = () => {
               )}
               {location.pathname.startsWith("/admin") && (
                 <div
-                  className={`absolute left-0 w-1 h-8 rounded-r-full top-1/2 -translate-y-1/2 ${
-                    isDarkMode ? "bg-emerald-500" : "bg-blue-500"
-                  }`}
+                  className={`absolute left-0 w-1 h-8 rounded-r-full top-1/2 -translate-y-1/2 ${isDarkMode ? "bg-emerald-500" : "bg-blue-500"
+                    }`}
                 ></div>
               )}
             </button>
@@ -508,9 +485,8 @@ const Sidebar = () => {
           {/* Logout Button */}
           <button
             onClick={() => logout()}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all cursor-pointer ${
-              isCollapsed ? "justify-center" : "justify-start"
-            } ${isAdmin ? "mt-2" : "mt-8"}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all cursor-pointer ${isCollapsed ? "justify-center" : "justify-start"
+              } ${isAdmin ? "mt-2" : "mt-8"}`}
             title={isCollapsed ? "Logout" : ""}
           >
             <LogOut className="w-5 h-5 flex-shrink-0" />
@@ -520,9 +496,8 @@ const Sidebar = () => {
 
         {/* Footer */}
         <div
-          className={`mt-auto pt-6 border-t border-gray-200 dark:border-zinc-800 ${
-            isCollapsed ? "hidden" : ""
-          }`}
+          className={`mt-auto pt-6 border-t border-gray-200 dark:border-zinc-800 ${isCollapsed ? "hidden" : ""
+            }`}
         >
           <div className="text-xs text-gray-400 dark:text-zinc-500 text-center space-y-2">
             <p>Gaming Platform v1.0</p>
