@@ -1,10 +1,13 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Build arguments for Vite env vars (passed from Railway)
+ARG VITE_API_BASE_URL
+ARG VITE_APP_API_KEY
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-COPY .env.production* ./
 COPY . .
 RUN npm run build
 
