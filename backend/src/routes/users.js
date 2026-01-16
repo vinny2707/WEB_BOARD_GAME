@@ -7,15 +7,15 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  * @swagger
  * tags:
  *   name: Users
- *   description: User management (Admin only)
+ *   description: User management (Public search + Admin operations)
  */
 
 /**
  * @swagger
  * /api/users:
  *   get:
- *     summary: Get all users (Public - for friend search)
- *     description: Returns basic user info for friend search. No login required. Only returns active users.
+ *     summary: Search users (Public)
+ *     description: Search active users for friend functionality. Returns only public fields.
  *     tags: [Users]
  *     security:
  *       - apiKeyAuth: []
@@ -39,9 +39,59 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *         description: Items per page
  *     responses:
  *       200:
- *         description: Users list retrieved (only public fields - id, username, full_name, email)
+ *         description: Users list (public fields only - id, username, full_name, email)
  */
-router.get('/', userController.getAllUsers);
+router.get('/', userController.searchUsers);
+
+/**
+ * @swagger
+ * /api/users/admin:
+ *   get:
+ *     summary: Get all users (Admin only)
+ *     description: Returns all users with full details including role, status, created_at. Supports filtering.
+ *     tags: [Users]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, banned]
+ *         description: Filter by status
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [admin, user]
+ *         description: Filter by role
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by username, email, or full_name
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Users list (all fields - id, username, email, role, status, created_at...)
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin only
+ */
+router.get('/admin', authenticateJWT, authorize('admin'), userController.getAllUsersAdmin);
 
 /**
  * @swagger

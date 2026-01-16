@@ -5,22 +5,67 @@ const { success, error } = require('../utils/response');
  * User Controller - Admin only operations
  */
 
-// Get all users with filters
-const getAllUsers = async (req, res, next) => {
+/**
+ * Public: Search users for friend functionality
+ * GET /api/users
+ * Returns only public fields, only active users
+ */
+const searchUsers = async (req, res, next) => {
+    try {
+        const { search, page = 1, limit = 10 } = req.query;
+
+        // Only get active users
+        let users = await User.findAll({ status: 'active' });
+
+        // Search by username, email, or full_name
+        if (search) {
+            const searchLower = search.toLowerCase();
+            users = users.filter(u => 
+                u.username.toLowerCase().includes(searchLower) ||
+                u.email.toLowerCase().includes(searchLower) ||
+                (u.full_name && u.full_name.toLowerCase().includes(searchLower))
+            );
+        }
+
+        // Return only public fields
+        users = users.map(user => ({
+            id: user.id,
+            username: user.username,
+            full_name: user.full_name,
+            email: user.email
+        }));
+
+        // Pagination
+        const total = users.length;
+        const offset = (page - 1) * limit;
+        const paginatedUsers = users.slice(offset, offset + parseInt(limit));
+
+        return success(res, {
+            users: paginatedUsers,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        }, 'Users retrieved successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Admin: Get all users with full details
+ * GET /api/admin/users
+ * Returns ALL fields including role, status, created_at, last_login
+ */
+const getAllUsersAdmin = async (req, res, next) => {
     try {
         const { status, role, search, page = 1, limit = 10 } = req.query;
-        const isAdmin = req.user && req.user.role === 'admin';
 
         const filters = {};
-        
-        // Only admin can filter by status and role
-        if (isAdmin) {
-            if (status) filters.status = status;
-            if (role) filters.role = role;
-        } else {
-            // Guest and regular users can only see active users
-            filters.status = 'active';
-        }
+        if (status) filters.status = status;
+        if (role) filters.role = role;
 
         let users = await User.findAll(filters);
 
@@ -34,16 +79,7 @@ const getAllUsers = async (req, res, next) => {
             );
         }
 
-        // Filter fields based on role
-        if (!isAdmin) {
-            // Guest and regular users only see public info (for friend search)
-            users = users.map(user => ({
-                id: user.id,
-                username: user.username,
-                full_name: user.full_name,
-                email: user.email
-            }));
-        }
+        // Admin gets ALL fields - no filtering
 
         // Pagination
         const total = users.length;
@@ -166,7 +202,8 @@ const deleteUser = async (req, res, next) => {
 };
 
 module.exports = {
-    getAllUsers,
+    searchUsers,
+    getAllUsersAdmin,
     getUserById,
     changeRole,
     changeStatus,
