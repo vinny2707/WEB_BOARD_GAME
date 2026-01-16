@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -30,6 +31,7 @@ const sampleLeaderboard = [
 
 const Match3Lobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
     const [currentUserRank, setCurrentUserRank] = useState({ rank: 324, name: 'You', score: 45680 });
     const [highScore, setHighScore] = useState(() => {
@@ -59,28 +61,34 @@ const Match3Lobby = () => {
 
     const openSettings = (e) => {
         e?.stopPropagation();
+        playClick();
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
     };
 
     const handlePlayNow = () => {
+        playClick();
         navigate('/games/match3/play', { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
+        playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
+        playClick();
         alert('Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
+        playClick();
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 

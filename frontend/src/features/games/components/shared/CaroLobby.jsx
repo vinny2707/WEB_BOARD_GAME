@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -27,6 +28,7 @@ const CaroLobby = ({
     showBoardSizeSelector = false, // true for Caro4, false for Gomoku
 }) => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
 
     // Settings modal state
@@ -91,17 +93,20 @@ const CaroLobby = ({
 
     const openSettings = (e) => {
         e.stopPropagation();
+        playClick();
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
         // Settings are saved in state, game starts when clicking "Chơi với máy"
     };
 
     const handleSetUnlimitedTime = () => {
+        playClick();
         setGameSettings(prev => ({
             ...prev,
             timePerTurn: 0,
@@ -110,6 +115,7 @@ const CaroLobby = ({
     };
 
     const adjustTimePerTurn = (delta) => {
+        playClick();
         setGameSettings(prev => ({
             ...prev,
             timePerTurn: Math.max(0, prev.timePerTurn + delta)
@@ -117,6 +123,7 @@ const CaroLobby = ({
     };
 
     const adjustTimePerPlayer = (delta) => {
+        playClick();
         setGameSettings(prev => ({
             ...prev,
             timePerPlayer: Math.max(0, prev.timePerPlayer + delta)
@@ -124,18 +131,22 @@ const CaroLobby = ({
     };
 
     const handlePlayVsRobot = () => {
+        playClick();
         navigate(playPath, { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
+        playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
+        playClick();
         alert('Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
+        playClick();
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 

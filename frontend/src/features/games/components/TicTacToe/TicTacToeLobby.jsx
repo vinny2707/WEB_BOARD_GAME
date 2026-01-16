@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Sample leaderboard data (replace with real API data later)
 const sampleLeaderboard = [
@@ -25,6 +26,7 @@ const DEFAULT_SETTINGS = {
 
 const TicTacToeLobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 1, minutes: 48, seconds: 32 });
     const [currentUserRank, setCurrentUserRank] = useState({ rank: 1385, name: 'You', score: 1002 });
 
@@ -51,18 +53,21 @@ const TicTacToeLobby = () => {
 
     const openSettings = (mode, e) => {
         e.stopPropagation();
+        playClick();
         setSettingsMode(mode);
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
         // Settings are saved in state, game starts when clicking "Chơi với máy"
     };
 
     const handleSetUnlimitedTime = () => {
+        playClick();
         setGameSettings(prev => ({
             ...prev,
             timePerTurn: 0,
@@ -71,18 +76,22 @@ const TicTacToeLobby = () => {
     };
 
     const handlePlayVsRobot = () => {
+        playClick();
         navigate('/games/tic-tac-toe/play', { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
+        playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
+        playClick();
         alert('Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
+        playClick();
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, Brain, X, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -34,6 +35,7 @@ const sampleLeaderboard = [
 
 const MemoryLobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 3, minutes: 42, seconds: 18 });
     const [currentUserRank] = useState({ rank: 156, name: 'You', time: 95, moves: 24 });
     const [bestTime, setBestTime] = useState(null);
@@ -73,16 +75,19 @@ const MemoryLobby = () => {
 
     const openSettings = (e) => {
         e?.stopPropagation();
+        playClick();
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
     };
 
     const handlePlayNow = () => {
+        playClick();
         navigate('/games/memory/play', { state: { settings: gameSettings } });
     };
 

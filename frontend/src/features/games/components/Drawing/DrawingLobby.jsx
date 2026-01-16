@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Palette, Image, Settings, X, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -33,6 +34,7 @@ const galleryItems = [
 
 const DrawingLobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 5, minutes: 23, seconds: 41 });
 
     // Settings modal state
@@ -56,16 +58,19 @@ const DrawingLobby = () => {
 
     const openSettings = (e) => {
         e?.stopPropagation();
+        playClick();
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
     };
 
     const handleStartDrawing = () => {
+        playClick();
         navigate('/games/drawing/play', { state: { settings: gameSettings } });
     };
 

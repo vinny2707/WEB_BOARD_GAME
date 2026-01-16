@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getGames } from '../../../api/gamesApi'
 import { Loader2 } from 'lucide-react'
+import useClickSound from '../hooks/useClickSound'
 
 // Game board preview components - map by game type
 const TicTacToePreview = () => (
@@ -182,6 +183,7 @@ const GameCard = ({ game, onClick }) => {
 
 const Games = () => {
   const navigate = useNavigate()
+  const playClick = useClickSound()
   const [games, setGames] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -210,6 +212,7 @@ const Games = () => {
 
   const handleGameClick = (path) => {
     if (path) {
+      playClick()
       navigate(path)
     }
   }

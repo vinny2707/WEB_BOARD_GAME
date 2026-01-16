@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, Gamepad2, X, Minus, Plus, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -29,6 +30,7 @@ const sampleLeaderboard = [
 
 const SnakeLobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
     const [currentUserRank, setCurrentUserRank] = useState({ rank: 456, name: 'You', score: 980 });
     const [highScore, setHighScore] = useState(() => {
@@ -58,28 +60,34 @@ const SnakeLobby = () => {
 
     const openSettings = (e) => {
         e?.stopPropagation();
+        playClick();
         setIsCustomMode(false);
         setShowSettingsModal(true);
     };
 
     const handleSaveSettings = () => {
+        playClick();
         setShowSettingsModal(false);
         setIsCustomMode(false);
     };
 
     const handlePlayNow = () => {
+        playClick();
         navigate('/games/snake/play', { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
+        playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
+        playClick();
         alert('Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
+        playClick();
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 
