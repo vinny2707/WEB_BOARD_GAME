@@ -364,9 +364,9 @@ const Profile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+                  className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
-                      ? "bg-emerald-500 text-white shadow-lg"
+                      ? "bg-emerald-500 text-white"
                       : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
                   }`}
                 >

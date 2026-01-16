@@ -1,8 +1,12 @@
-import React from 'react'
+import React from "react";
+import { MoreVertical, MessageCircle, UserX, Shield } from "lucide-react";
+import { getInitials } from "@/utils/Username";
 import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,102 +18,119 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Button} from '@/components/ui/button';
-import { useState } from 'react';
-import { getInitials } from '@/utils/Username';
 
-const FriendCard = ({ id, username, fullName, isFriend = true }) => {
-  const [loading, setLoading] = useState(false);
-
-  const handleRemoveFriend = () => {
-    console.log(`Removing friend: ${username}`);
-  }
-
-  const handleApproveRequest = (friendId) => {
-
-  }
-
-  const handleRejectRequest = (friendId) => {
-
-  }
-
+const FriendCard = ({ friend, onUnfriend, onBlock }) => {
   return (
-    <Card className="transition-all hover:scale-[1.03] dark:border-emerald-500/30">
-      <CardContent>
-        <div className="flex flex-col items-stretch justify-between gap-4">
-          {/* Avatar with status */}
-          <div className="relative flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white">
-              {getInitials(username)}
-            </div>
-            {/* <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-gray-50 dark:border-zinc-800 bg-emerald-500"></div> */}
+    <div className="bg-white dark:!bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
+      <div className="flex items-center gap-4">
+        {/* Avatar */}
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0">
+          {getInitials(friend.username)}
+        </div>
 
-            <div className="flex flex-col">
-              <span className="font-medium text-gray-900 dark:text-gray-100">
-                {username}
-              </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                {fullName}
-              </span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          {isFriend ? (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="desctructive"
-                  className="w-full cursor-pointer bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-600 hover:outline-0"
-                >
-                  Remove Friend
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your friend connection with {username}.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction asChild>
-                    <Button
-                      variant="destructive"
-                      onClick={handleRemoveFriend}
-                      disabled={loading}
-                    >
-                      {loading ? "Removing..." : "Yes, Remove Friend"}
-                    </Button>
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          ) : (
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                variant="destructive"
-                className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600"
-                onClick={() => handleApproveRequest(id)}
-              >
-                Approve
-              </Button>
-
-              <Button
-                variant="desctructive"
-                className="w-full cursor-pointer bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-600 hover:outline-0"
-                onClick={() => handleRejectRequest(id)}
-              >
-                Reject
-              </Button>
-            </div>
+        {/* User Info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold dark:text-white truncate">
+            {friend.username}
+          </h3>
+          {friend.full_name && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+              {friend.full_name}
+            </p>
+          )}
+          {friend.status && (
+            <span
+              className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                friend.status === "active"
+                  ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                  : "bg-zinc-500/20 text-zinc-600 dark:text-zinc-400"
+              }`}
+            >
+              {friend.status}
+            </span>
           )}
         </div>
-      </CardContent>
-    </Card>
-  );
-}
 
-export default FriendCard
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          {/* Message Button */}
+          <button className="p-2 cursor-pointer rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors">
+            <MessageCircle className="w-5 h-5" />
+          </button>
+
+          {/* More Options */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 cursor-pointer rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 transition-colors">
+                <MoreVertical className="w-5 h-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-red-600 dark:text-red-400 cursor-pointer"
+                  >
+                    <UserX className="w-4 h-4 mr-2" />
+                    Unfriend
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove Friend</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to remove {friend.username} from
+                      your friends list? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onUnfriend}
+                      className="bg-red-500 hover:bg-red-600"
+                    >
+                      Remove
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-orange-600 dark:text-orange-400 cursor-pointer"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Block User
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Block User</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to block {friend.username}? They
+                      will not be able to send you friend requests or messages.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={onBlock}
+                      className="bg-orange-500 hover:bg-orange-600"
+                    >
+                      Block
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FriendCard;
