@@ -29,15 +29,21 @@ class User {
     }
 
     /**
-     * Find user by ID
+     * Find user by ID (with avatar)
      * @param {number} id 
      * @returns {Promise<Object|null>}
      */
     static async findById(id) {
-        return db('users')
-            .where({ id })
-            .select('id', 'username', 'email', 'full_name', 'dob', 'role', 'status', 'created_at', 'last_login')
+        const user = await db('users as u')
+            .leftJoin('images as i', 'u.avatar_id', 'i.id')
+            .where('u.id', id)
+            .select(
+                'u.id', 'u.username', 'u.email', 'u.full_name', 'u.dob', 
+                'u.role', 'u.status', 'u.avatar_id', 'u.created_at', 'u.last_login',
+                'i.url as avatar_url'
+            )
             .first();
+        return user;
     }
 
     /**
@@ -48,7 +54,7 @@ class User {
     static async create(userData) {
         const [user] = await db('users')
             .insert(userData)
-            .returning(['id', 'username', 'email', 'full_name', 'dob', 'role', 'status', 'created_at']);
+            .returning(['id', 'username', 'email', 'full_name', 'dob', 'role', 'status', 'avatar_id', 'created_at']);
 
         return user;
     }
@@ -66,7 +72,7 @@ class User {
                 ...updateData,
                 updated_at: db.fn.now()
             })
-            .returning(['id', 'username', 'email', 'full_name', 'dob', 'role', 'status', 'updated_at']);
+            .returning(['id', 'username', 'email', 'full_name', 'dob', 'role', 'status', 'avatar_id', 'updated_at']);
 
         return user;
     }
@@ -105,20 +111,25 @@ class User {
     }
 
     /**
-     * Get all users (admin only)
+     * Get all users with avatar (admin only)
      * @param {Object} filters 
      * @returns {Promise<Array>}
      */
     static async findAll(filters = {}) {
-        let query = db('users')
-            .select('id', 'username', 'email', 'full_name', 'role', 'status', 'created_at', 'last_login');
+        let query = db('users as u')
+            .leftJoin('images as i', 'u.avatar_id', 'i.id')
+            .select(
+                'u.id', 'u.username', 'u.email', 'u.full_name', 
+                'u.role', 'u.status', 'u.avatar_id', 'u.created_at', 'u.last_login',
+                'i.url as avatar_url'
+            );
 
         if (filters.status) {
-            query = query.where({ status: filters.status });
+            query = query.where('u.status', filters.status);
         }
 
         if (filters.role) {
-            query = query.where({ role: filters.role });
+            query = query.where('u.role', filters.role);
         }
 
         return query;
