@@ -5,16 +5,21 @@ import { Home, RotateCcw, Settings, Trophy, Zap, BookOpen, X, ChevronRight } fro
 // Game Constants
 const CELL_SIZE = 50;
 const DEFAULT_BOARD_SIZE = 8;
-const SWAP_DURATION = 200; // ms
+const SWAP_DURATION = 200;
+const GRAVITY = 0.8;
+const BOUNCE_FACTOR = 0.3;
+const FALL_SPEED_LIMIT = 18;
 
-// Easing function for smooth animation
-const easeOutBack = (t) => {
-  const c1 = 1.70158;
-  const c3 = c1 + 1;
-  return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+// Easing functions
+const easeOutBounce = (t) => {
+  if (t < 1 / 2.75) return 7.5625 * t * t;
+  if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+  if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+  return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
 };
 
 const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutBack = (t) => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2);
 
 // Candy icons
 const ALL_CANDY_ICONS = [
@@ -43,11 +48,20 @@ const TUTORIAL_STEPS = [
   { id: 3, title: "Hoàn thành! 🚀", message: "Đạt điểm mục tiêu để thắng. Chúc may mắn!", action: "finish" }
 ];
 
-// Create board without initial matches
+// Create board with positions
 const createBoard = (size, candyCount) => {
   const board = [];
   for (let i = 0; i < size * size; i++) {
-    board.push({ type: Math.floor(Math.random() * candyCount), key: Date.now() + i });
+    const col = i % size;
+    const row = Math.floor(i / size);
+    board.push({
+      type: Math.floor(Math.random() * candyCount),
+      key: Date.now() + i,
+      y: row * CELL_SIZE + CELL_SIZE / 2,
+      targetY: row * CELL_SIZE + CELL_SIZE / 2,
+      vy: 0,
+      scale: 1,
+    });
   }
   return removeInitialMatches(board, size, candyCount);
 };
@@ -80,7 +94,8 @@ const Match3Game = () => {
   const imagesLoadedRef = useRef(false);
   const particlesRef = useRef([]);
   const floatingTextsRef = useRef([]);
-  const swapAnimRef = useRef(null); // { idx1, idx2, startTime, duration }
+  const swapAnimRef = useRef(null);
+  const fallingRef = useRef(false);
 
   // Settings
   const lobbySettings = location.state?.settings || {};
@@ -114,6 +129,7 @@ const Match3Game = () => {
   const canvasSize = boardSize * CELL_SIZE;
   const boardRef = useRef(board);
   const selectedCellRef = useRef(selectedCell);
+  const comboRef = useRef(0);
 
   useEffect(() => { boardRef.current = board; }, [board]);
   useEffect(() => { selectedCellRef.current = selectedCell; }, [selectedCell]);
@@ -158,42 +174,62 @@ const Match3Game = () => {
     return matches;
   }, [boardSize]);
 
-  // Add particles for explosion
+  // Add particles for explosion effect
   const addParticles = useCallback((indices, currentBoard) => {
-    indices.forEach(idx => {
+    const idxArray = Array.from(indices);
+    idxArray.forEach(idx => {
       const candy = currentBoard[idx];
-      if (!candy) return;
+      if (!candy || candy.type === null || candy.type === undefined) return;
       const col = idx % boardSize;
       const row = Math.floor(idx / boardSize);
       const x = col * CELL_SIZE + CELL_SIZE / 2;
-      const y = row * CELL_SIZE + CELL_SIZE / 2;
-      const color = CANDY_COLORS[candy.type] || "#fff";
-      for (let i = 0; i < 12; i++) {
-        const angle = (Math.PI * 2 * i) / 12 + Math.random() * 0.3;
-        const speed = 4 + Math.random() * 4;
+      const y = candy.y !== undefined ? candy.y : (row * CELL_SIZE + CELL_SIZE / 2);
+      const color = CANDY_COLORS[candy.type] || "#ff6b6b";
+
+      // Create explosion particles
+      for (let i = 0; i < 15; i++) {
+        const angle = (Math.PI * 2 * i) / 15 + Math.random() * 0.4;
+        const speed = 3 + Math.random() * 6;
         particlesRef.current.push({
           x, y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed - 2,
           color,
           life: 1,
-          size: 4 + Math.random() * 4,
+          size: 5 + Math.random() * 5,
+        });
+      }
+
+      // Add glow particles
+      for (let i = 0; i < 5; i++) {
+        particlesRef.current.push({
+          x: x + (Math.random() - 0.5) * 20,
+          y: y + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -1 - Math.random() * 2,
+          color: "#fff",
+          life: 0.8,
+          size: 3 + Math.random() * 3,
         });
       }
     });
   }, [boardSize]);
 
-  // Process matches
-  const processMatches = useCallback((currentBoard, currentCombo = 0) => {
+  // Process matches with falling animation
+  const processMatches = useCallback(() => {
+    const currentBoard = boardRef.current;
     const matches = findMatches(currentBoard);
+
     if (matches.size === 0) {
       setIsAnimating(false);
+      comboRef.current = 0;
       setCombo(0);
       return;
     }
 
     addParticles(matches, currentBoard);
 
+    const currentCombo = comboRef.current;
     const matchScore = matches.size * 10 * (currentCombo + 1);
     setScore(prev => {
       const newScore = prev + matchScore;
@@ -204,8 +240,8 @@ const Match3Game = () => {
       return newScore;
     });
 
-    const newCombo = currentCombo + 1;
-    setCombo(newCombo);
+    comboRef.current = currentCombo + 1;
+    setCombo(comboRef.current);
 
     if (currentCombo > 0) {
       const texts = ["Nice!", "Great!", "Amazing!", "Incredible!"];
@@ -222,36 +258,62 @@ const Match3Game = () => {
       }
     }
 
-    // Remove matched
-    let newBoard = currentBoard.map((cell, idx) => matches.has(idx) ? { ...cell, type: null } : cell);
+    // Remove matched - set scale to 0 for pop animation
+    let newBoard = currentBoard.map((cell, idx) =>
+      matches.has(idx) ? { ...cell, type: null, scale: 0 } : cell
+    );
+    boardRef.current = newBoard;
 
+    // Apply gravity after short delay
     setTimeout(() => {
-      // Gravity - move cells down
+      // For each column, calculate new positions
       for (let col = 0; col < boardSize; col++) {
         const column = [];
         for (let row = boardSize - 1; row >= 0; row--) {
           const idx = row * boardSize + col;
-          if (newBoard[idx].type !== null) column.push(newBoard[idx]);
+          if (newBoard[idx].type !== null) {
+            column.push({ ...newBoard[idx] });
+          }
         }
+
+        // Place existing candies from bottom
         for (let row = boardSize - 1; row >= 0; row--) {
           const idx = row * boardSize + col;
           const fromBottom = boardSize - 1 - row;
+          const targetY = row * CELL_SIZE + CELL_SIZE / 2;
+
           if (fromBottom < column.length) {
-            newBoard[idx] = column[fromBottom];
+            // Existing candy falls down
+            newBoard[idx] = {
+              ...column[fromBottom],
+              targetY: targetY,
+              vy: column[fromBottom].y < targetY ? column[fromBottom].vy : 0,
+            };
           } else {
-            newBoard[idx] = { type: Math.floor(Math.random() * candyCount), key: Date.now() + Math.random() };
+            // New candy spawns above
+            const spawnRow = fromBottom - column.length;
+            newBoard[idx] = {
+              type: Math.floor(Math.random() * candyCount),
+              key: Date.now() + Math.random(),
+              y: -CELL_SIZE * (spawnRow + 1) - CELL_SIZE / 2,
+              targetY: targetY,
+              vy: 0,
+              scale: 1,
+            };
           }
         }
       }
+
+      boardRef.current = newBoard;
+      fallingRef.current = true;
       setBoard([...newBoard]);
-      setTimeout(() => processMatches(newBoard, newCombo), 300);
-    }, 250);
+    }, 150);
   }, [findMatches, boardSize, candyCount, highScore, canvasSize, addParticles]);
 
-  // Handle click with smooth swap animation
+  // Handle click
   const handleCanvasClick = useCallback((e) => {
     if (isAnimating || (gameStatus !== "playing" && gameStatus !== "tutorial")) return;
-    if (swapAnimRef.current) return; // Already swapping
+    if (swapAnimRef.current || fallingRef.current) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const scaleX = canvasSize / rect.width;
@@ -273,33 +335,38 @@ const Match3Game = () => {
       const isAdjacent = (Math.abs(row1 - row) === 1 && col1 === col) || (Math.abs(col1 - col) === 1 && row1 === row);
 
       if (isAdjacent) {
-        // Start swap animation
+        const savedSelectedCell = selectedCell; // Save before clearing
         swapAnimRef.current = {
-          idx1: selectedCell,
+          idx1: savedSelectedCell,
           idx2: idx,
           startTime: performance.now(),
           duration: SWAP_DURATION,
         };
 
-        // After animation, do the actual swap
         setTimeout(() => {
-          const newBoard = [...boardRef.current];
-          const temp = newBoard[selectedCell].type;
-          newBoard[selectedCell] = { ...newBoard[selectedCell], type: newBoard[idx].type };
-          newBoard[idx] = { ...newBoard[idx], type: temp };
+          const currentBoard = boardRef.current;
+          const newBoard = currentBoard.map((cell, i) => ({ ...cell }));
+
+          // Swap only the type between two cells
+          const type1 = newBoard[savedSelectedCell].type;
+          const type2 = newBoard[idx].type;
+          newBoard[savedSelectedCell].type = type2;
+          newBoard[idx].type = type1;
 
           swapAnimRef.current = null;
 
           if (findMatches(newBoard).size > 0) {
             setIsAnimating(true);
             setMoves(prev => prev - 1);
+            boardRef.current = newBoard;
             setBoard(newBoard);
-            setTimeout(() => processMatches(newBoard, 0), 100);
+            comboRef.current = 0;
+            setTimeout(() => processMatches(), 50);
           } else {
             // Invalid swap - swap back with animation
             swapAnimRef.current = {
               idx1: idx,
-              idx2: selectedCell,
+              idx2: savedSelectedCell,
               startTime: performance.now(),
               duration: SWAP_DURATION,
             };
@@ -314,7 +381,7 @@ const Match3Game = () => {
     }
   }, [board, selectedCell, boardSize, isAnimating, gameStatus, findMatches, processMatches, canvasSize]);
 
-  // Render loop
+  // Render loop with physics
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -345,7 +412,7 @@ const Match3Game = () => {
         ctx.fill();
       }
 
-      // Get swap animation state
+      // Swap animation
       const swap = swapAnimRef.current;
       let swapProgress = 0;
       if (swap) {
@@ -353,19 +420,66 @@ const Match3Game = () => {
         swapProgress = Math.min(elapsed / swap.duration, 1);
       }
 
-      // Candies
+      // Update falling physics
+      let stillFalling = false;
       const currentBoard = boardRef.current;
+
+      currentBoard.forEach((candy, idx) => {
+        if (candy.type === null) return;
+
+        // Physics update
+        if (candy.y < candy.targetY) {
+          candy.vy = Math.min(candy.vy + GRAVITY, FALL_SPEED_LIMIT);
+          candy.y += candy.vy;
+
+          // Check if reached target
+          if (candy.y >= candy.targetY) {
+            candy.y = candy.targetY;
+            // Bounce effect
+            if (candy.vy > 3) {
+              candy.vy = -candy.vy * BOUNCE_FACTOR;
+              candy.scale = 0.85; // Squish on impact
+            } else {
+              candy.vy = 0;
+            }
+          }
+          stillFalling = true;
+        } else if (candy.y > candy.targetY) {
+          // Bouncing back up
+          candy.vy += GRAVITY;
+          candy.y += candy.vy;
+          if (candy.y >= candy.targetY && candy.vy > 0) {
+            candy.y = candy.targetY;
+            candy.vy = Math.abs(candy.vy) > 1 ? -candy.vy * BOUNCE_FACTOR : 0;
+          }
+          stillFalling = true;
+        }
+
+        // Scale recovery
+        if (candy.scale < 1) {
+          candy.scale = Math.min(candy.scale + 0.08, 1);
+          stillFalling = true;
+        }
+      });
+
+      // Check if falling finished
+      if (fallingRef.current && !stillFalling) {
+        fallingRef.current = false;
+        // Check for chain matches
+        setTimeout(() => processMatches(), 100);
+      }
+
+      // Draw candies
       const selected = selectedCellRef.current;
 
       currentBoard.forEach((candy, idx) => {
         if (candy.type === null || candy.type === undefined) return;
 
         const col = idx % boardSize;
-        const row = Math.floor(idx / boardSize);
         let x = col * CELL_SIZE + CELL_SIZE / 2;
-        let y = row * CELL_SIZE + CELL_SIZE / 2;
+        let y = candy.y;
 
-        // Apply swap animation offset
+        // Swap animation offset
         if (swap) {
           const eased = easeInOutCubic(swapProgress);
           if (idx === swap.idx1) {
@@ -374,31 +488,35 @@ const Match3Game = () => {
             const targetX = col2 * CELL_SIZE + CELL_SIZE / 2;
             const targetY = row2 * CELL_SIZE + CELL_SIZE / 2;
             x = x + (targetX - x) * eased;
-            y = y + (targetY - y) * eased;
+            y = candy.targetY + (targetY - candy.targetY) * eased;
           } else if (idx === swap.idx2) {
             const col1 = swap.idx1 % boardSize;
             const row1 = Math.floor(swap.idx1 / boardSize);
             const targetX = col1 * CELL_SIZE + CELL_SIZE / 2;
             const targetY = row1 * CELL_SIZE + CELL_SIZE / 2;
             x = x + (targetX - x) * eased;
-            y = y + (targetY - y) * eased;
+            y = candy.targetY + (targetY - candy.targetY) * eased;
           }
         }
 
         const isSelected = selected === idx;
         const baseSize = CELL_SIZE - 10;
-        let drawSize = baseSize;
+        let drawSize = baseSize * candy.scale;
 
-        // Pulse animation for selected
+        // Pulse for selected
         if (isSelected) {
           const pulse = Math.sin(performance.now() / 150) * 0.08 + 1.1;
           drawSize = baseSize * pulse;
         }
 
+        // Squish effect (wider when compressed)
+        const squishX = candy.scale < 1 ? 1 + (1 - candy.scale) * 0.5 : 1;
+        const squishY = candy.scale;
+
         // Shadow
         ctx.fillStyle = "rgba(0,0,0,0.12)";
         ctx.beginPath();
-        ctx.arc(x + 2, y + 3, drawSize / 2, 0, Math.PI * 2);
+        ctx.ellipse(x + 2, y + 3, (drawSize / 2) * squishX, (drawSize / 2) * squishY, 0, 0, Math.PI * 2);
         ctx.fill();
 
         // Draw candy
@@ -407,16 +525,20 @@ const Match3Game = () => {
           ctx.shadowColor = CANDY_COLORS[candy.type];
           ctx.shadowBlur = 25;
         }
+
+        ctx.translate(x, y);
+        ctx.scale(squishX, squishY);
+
         if (imagesLoadedRef.current && imagesRef.current[candy.type]) {
-          ctx.drawImage(imagesRef.current[candy.type], x - drawSize / 2, y - drawSize / 2, drawSize, drawSize);
+          ctx.drawImage(imagesRef.current[candy.type], -drawSize / 2, -drawSize / 2, drawSize, drawSize);
         } else {
-          const gradient = ctx.createRadialGradient(x - drawSize * 0.2, y - drawSize * 0.2, 0, x, y, drawSize / 2);
+          const gradient = ctx.createRadialGradient(-drawSize * 0.2, -drawSize * 0.2, 0, 0, 0, drawSize / 2);
           gradient.addColorStop(0, "#fff");
           gradient.addColorStop(0.4, CANDY_COLORS[candy.type]);
           gradient.addColorStop(1, CANDY_COLORS[candy.type]);
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(x, y, drawSize / 2, 0, Math.PI * 2);
+          ctx.arc(0, 0, drawSize / 2, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.restore();
@@ -461,11 +583,11 @@ const Match3Game = () => {
 
     animationRef.current = requestAnimationFrame(render);
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [boardSize, canvasSize]);
+  }, [boardSize, canvasSize, processMatches]);
 
   // Check win/lose
   useEffect(() => {
-    if (gameStatus === "playing" && !isAnimating) {
+    if (gameStatus === "playing" && !isAnimating && !fallingRef.current) {
       if (score >= targetScore) setGameStatus("win");
       else if (moves <= 0) setGameStatus("gameover");
     }
@@ -473,20 +595,26 @@ const Match3Game = () => {
 
   // Game controls
   const startGame = () => {
-    setBoard(createBoard(boardSize, candyCount));
+    const newBoard = createBoard(boardSize, candyCount);
+    boardRef.current = newBoard;
+    setBoard(newBoard);
     setScore(0);
     setMoves(initialMoves);
     setCombo(0);
+    comboRef.current = 0;
     setSelectedCell(null);
     setIsAnimating(false);
     particlesRef.current = [];
     floatingTextsRef.current = [];
     swapAnimRef.current = null;
+    fallingRef.current = false;
     setGameStatus("playing");
   };
 
   const startTutorial = () => {
-    setBoard(createBoard(boardSize, candyCount));
+    const newBoard = createBoard(boardSize, candyCount);
+    boardRef.current = newBoard;
+    setBoard(newBoard);
     setScore(0);
     setMoves(99);
     setTutorialStep(0);
