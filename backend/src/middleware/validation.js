@@ -81,6 +81,11 @@ const validateUpdateProfile = [
         .isISO8601()
         .withMessage('Please provide a valid date of birth'),
 
+    body('avatar_id')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Avatar ID must be a positive integer'),
+
     // Check for validation errors
     (req, res, next) => {
         const errors = validationResult(req);

@@ -135,15 +135,19 @@ const getProfile = async (req, res, next) => {
 const updateProfile = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const { full_name, dob } = req.body;
+        const { full_name, dob, avatar_id } = req.body;
 
         // Build update object
         const updateData = {};
         if (full_name !== undefined) updateData.full_name = full_name;
         if (dob !== undefined) updateData.dob = dob;
+        if (avatar_id !== undefined) updateData.avatar_id = avatar_id;
 
         // Update user
-        const updatedUser = await User.update(userId, updateData);
+        await User.update(userId, updateData);
+
+        // Get updated user with avatar_url
+        const updatedUser = await User.findById(userId);
 
         if (!updatedUser) {
             return error(res, 'User not found', 404);

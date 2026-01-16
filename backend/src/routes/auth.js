@@ -487,6 +487,10 @@ router.get('/profile', authenticateJWT, authController.getProfile);
  *                 type: string
  *                 format: date
  *                 example: 1995-05-15
+ *               avatar_id:
+ *                 type: integer
+ *                 description: ID of the image to use as avatar
+ *                 example: 1
  *     responses:
  *       200:
  *         description: Profile updated successfully

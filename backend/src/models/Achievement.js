@@ -7,21 +7,46 @@ const db = require('../config/database');
 
 class Achievement {
     /**
-     * Get all achievements (summary only - no unlock_criteria)
-     * @param {Object} options - { category }
-     * @returns {Promise<Array>}
+     * Get all achievements with pagination (summary only - no unlock_criteria)
+     * @param {Object} options - { category, page, limit }
+     * @returns {Promise<Object>} - { achievements, pagination }
      */
     static async findAll(options = {}) {
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Build count query
+        let countQuery = db('achievements');
+        if (options.category) {
+            countQuery = countQuery.where('category', options.category);
+        }
+        const [{ count: total }] = await countQuery.count('id as count');
+
+        // Build data query
         let query = db('achievements')
             .select('id', 'name', 'description', 'icon', 'category', 'points', 'created_at')
             .orderBy('category', 'asc')
-            .orderBy('points', 'asc');
+            .orderBy('points', 'asc')
+            .limit(limit)
+            .offset(offset);
 
         if (options.category) {
             query = query.where('category', options.category);
         }
 
-        return query;
+        const achievements = await query;
+        const totalPages = Math.ceil(total / limit);
+
+        return {
+            achievements,
+            pagination: {
+                page,
+                limit,
+                total: parseInt(total),
+                totalPages
+            }
+        };
     }
 
     /**
