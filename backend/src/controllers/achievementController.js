@@ -12,15 +12,15 @@ const { success, error } = require('../utils/response');
 // ============================================
 
 /**
- * Get all achievements
- * GET /api/achievements
+ * Get all achievements with pagination
+ * GET /api/achievements?page=1&limit=10&category=beginner
  */
 const getAllAchievements = async (req, res, next) => {
     try {
-        const { category } = req.query;
-        const achievements = await Achievement.findAll({ category });
+        const { category, page, limit } = req.query;
+        const result = await Achievement.findAll({ category, page, limit });
 
-        return success(res, { achievements }, 'Achievements retrieved successfully');
+        return success(res, result, 'Achievements retrieved successfully');
     } catch (err) {
         next(err);
     }
@@ -50,16 +50,18 @@ const getAchievementById = async (req, res, next) => {
 // ============================================
 
 /**
- * Get current user's achievements with progress
- * GET /api/achievements/me
+ * Get current user's achievements with progress (paginated)
+ * GET /api/achievements/me?page=1&limit=10
  */
 const getMyAchievements = async (req, res, next) => {
     try {
         const userId = req.user.id;
-        const achievements = await UserAchievement.findByUser(userId);
+        const { page, limit } = req.query;
+        const result = await UserAchievement.findByUser(userId, { page, limit });
         const totalPoints = await UserAchievement.getTotalPoints(userId);
 
         // Group by status
+        const achievements = result.achievements;
         const unlocked = achievements.filter(a => a.is_unlocked);
         const inProgress = achievements.filter(a => !a.is_unlocked && a.progress.current > 0);
         const locked = achievements.filter(a => !a.is_unlocked && a.progress.current === 0);
@@ -67,12 +69,13 @@ const getMyAchievements = async (req, res, next) => {
         return success(res, {
             total_points: totalPoints,
             unlocked_count: unlocked.length,
-            total_count: achievements.length,
+            total_count: result.pagination.total,
             achievements: {
                 unlocked,
                 in_progress: inProgress,
                 locked
-            }
+            },
+            pagination: result.pagination
         }, 'User achievements retrieved successfully');
     } catch (err) {
         next(err);
