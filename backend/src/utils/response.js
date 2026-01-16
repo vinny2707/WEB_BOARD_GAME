@@ -61,21 +61,28 @@ const formatToUTC7 = (date) => {
     // Get UTC+7 offset in milliseconds (7 hours)
     const utc7Offset = 7 * 60 * 60 * 1000;
     const utc7Date = new Date(date.getTime() + utc7Offset);
-    
+
     // Format: "2026-01-10T15:00:00.000+07:00"
     const isoString = utc7Date.toISOString().replace('Z', '+07:00');
     return isoString;
 };
 
-const success = (res, data = null, message = 'Success', statusCode = 200) => {
+const success = (res, data = null, message = 'Success', statusCode = 200, pagination = null) => {
     // Convert all dates in data to UTC+7
     const convertedData = convertDatesToUTC7(data);
-    
-    return res.status(statusCode).json({
+
+    const response = {
         success: true,
         message,
         data: convertedData
-    });
+    };
+
+    // Add pagination if provided
+    if (pagination) {
+        response.pagination = pagination;
+    }
+
+    return res.status(statusCode).json(response);
 };
 
 const error = (res, message = 'An error occurred', statusCode = 500) => {
