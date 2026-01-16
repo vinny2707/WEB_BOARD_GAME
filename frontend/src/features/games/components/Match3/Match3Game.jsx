@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Home,
   RotateCcw,
@@ -12,8 +12,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-const BOARD_SIZE = 8;
-const CANDY_TYPES = ["🍎", "🍊", "🍋", "🍇", "🍓", "🫐"];
+const DEFAULT_BOARD_SIZE = 8;
+const ALL_CANDY_TYPES = ["🍎", "🍊", "🍋", "🍇", "🍓", "🫐", "🍒"];
 const CANDY_COLORS = [
   "#ef4444",
   "#f97316",
@@ -177,22 +177,22 @@ const TUTORIAL_STEPS = [
   },
 ];
 
-const createBoard = () => {
+const createBoard = (boardSize, candyCount) => {
   const board = [];
-  for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+  for (let i = 0; i < boardSize * boardSize; i++) {
     board.push({
-      type: Math.floor(Math.random() * CANDY_TYPES.length),
+      type: Math.floor(Math.random() * candyCount),
       key: Date.now() + i,
     });
   }
-  return removeInitialMatches(board);
+  return removeInitialMatches(board, boardSize, candyCount);
 };
 
-const removeInitialMatches = (board) => {
+const removeInitialMatches = (board, boardSize, candyCount) => {
   const newBoard = [...board];
-  for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
-    const row = Math.floor(i / BOARD_SIZE);
-    const col = i % BOARD_SIZE;
+  for (let i = 0; i < boardSize * boardSize; i++) {
+    const row = Math.floor(i / boardSize);
+    const col = i % boardSize;
     if (col >= 2) {
       while (
         newBoard[i].type === newBoard[i - 1].type &&
@@ -200,18 +200,18 @@ const removeInitialMatches = (board) => {
       ) {
         newBoard[i] = {
           ...newBoard[i],
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
+          type: Math.floor(Math.random() * candyCount),
         };
       }
     }
     if (row >= 2) {
       while (
-        newBoard[i].type === newBoard[i - BOARD_SIZE].type &&
-        newBoard[i].type === newBoard[i - BOARD_SIZE * 2].type
+        newBoard[i].type === newBoard[i - boardSize].type &&
+        newBoard[i].type === newBoard[i - boardSize * 2].type
       ) {
         newBoard[i] = {
           ...newBoard[i],
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
+          type: Math.floor(Math.random() * candyCount),
         };
       }
     }
@@ -221,17 +221,34 @@ const removeInitialMatches = (board) => {
 
 const Match3Game = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get settings from lobby navigation state
+  const lobbySettings = location.state?.settings || {};
+  const boardSize = lobbySettings.boardSize || DEFAULT_BOARD_SIZE;
+  const initialMoves = lobbySettings.moves || 30;
+  const targetScore = lobbySettings.targetScore || 5000;
+  const difficulty = lobbySettings.difficulty || 'medium';
+
+  // Candy types based on difficulty
+  const candyCount = useMemo(() => {
+    if (difficulty === 'easy') return 5;
+    if (difficulty === 'hard') return 7;
+    return 6; // medium
+  }, [difficulty]);
+
+  const CANDY_TYPES = useMemo(() => ALL_CANDY_TYPES.slice(0, candyCount), [candyCount]);
+
   const keyRef = useRef(1000);
-  const [board, setBoard] = useState(() => createBoard());
+  const [board, setBoard] = useState(() => createBoard(boardSize, candyCount));
   const [selectedCell, setSelectedCell] = useState(null);
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(30);
+  const [moves, setMoves] = useState(initialMoves);
   const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'gameover', 'tutorial'
   const [combo, setCombo] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [matchedCells, setMatchedCells] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
-  const [targetScore] = useState(5000);
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem("match3HighScore");
     return saved ? parseInt(saved, 10) : 0;
@@ -289,10 +306,10 @@ const Match3Game = () => {
   }, [tutorialStep, gameStatus]);
 
   const areAdjacent = (i1, i2) => {
-    const r1 = Math.floor(i1 / BOARD_SIZE),
-      c1 = i1 % BOARD_SIZE;
-    const r2 = Math.floor(i2 / BOARD_SIZE),
-      c2 = i2 % BOARD_SIZE;
+    const r1 = Math.floor(i1 / boardSize),
+      c1 = i1 % boardSize;
+    const r2 = Math.floor(i2 / boardSize),
+      c2 = i2 % boardSize;
     return (
       (Math.abs(r1 - r2) === 1 && c1 === c2) ||
       (Math.abs(c1 - c2) === 1 && r1 === r2)
@@ -300,10 +317,10 @@ const Match3Game = () => {
   };
 
   const getSwapDir = (from, to) => {
-    const rf = Math.floor(from / BOARD_SIZE),
-      cf = from % BOARD_SIZE;
-    const rt = Math.floor(to / BOARD_SIZE),
-      ct = to % BOARD_SIZE;
+    const rf = Math.floor(from / boardSize),
+      cf = from % boardSize;
+    const rt = Math.floor(to / boardSize),
+      ct = to % boardSize;
     if (rt < rf) return "up";
     if (rt > rf) return "down";
     if (ct < cf) return "left";
@@ -313,70 +330,70 @@ const Match3Game = () => {
 
   const findMatches = useCallback((b) => {
     const matches = new Set();
-    for (let r = 0; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE - 2; c++) {
-        const i = r * BOARD_SIZE + c;
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize - 2; c++) {
+        const i = r * boardSize + c;
         const t = b[i].type;
         if (t !== null && b[i + 1].type === t && b[i + 2].type === t) {
           matches.add(i);
           matches.add(i + 1);
           matches.add(i + 2);
           let k = 3;
-          while (c + k < BOARD_SIZE && b[i + k].type === t) {
+          while (c + k < boardSize && b[i + k].type === t) {
             matches.add(i + k);
             k++;
           }
         }
       }
     }
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      for (let r = 0; r < BOARD_SIZE - 2; r++) {
-        const i = r * BOARD_SIZE + c;
+    for (let c = 0; c < boardSize; c++) {
+      for (let r = 0; r < boardSize - 2; r++) {
+        const i = r * boardSize + c;
         const t = b[i].type;
         if (
           t !== null &&
-          b[i + BOARD_SIZE].type === t &&
-          b[i + BOARD_SIZE * 2].type === t
+          b[i + boardSize].type === t &&
+          b[i + boardSize * 2].type === t
         ) {
           matches.add(i);
-          matches.add(i + BOARD_SIZE);
-          matches.add(i + BOARD_SIZE * 2);
+          matches.add(i + boardSize);
+          matches.add(i + boardSize * 2);
           let k = 3;
-          while (r + k < BOARD_SIZE && b[i + BOARD_SIZE * k].type === t) {
-            matches.add(i + BOARD_SIZE * k);
+          while (r + k < boardSize && b[i + boardSize * k].type === t) {
+            matches.add(i + boardSize * k);
             k++;
           }
         }
       }
     }
     return Array.from(matches);
-  }, []);
+  }, [boardSize]);
 
   const prepareNewBoard = useCallback((b, matchedSet) => {
     const result = [];
-    for (let col = 0; col < BOARD_SIZE; col++) {
+    for (let col = 0; col < boardSize; col++) {
       const survivors = [];
-      for (let row = BOARD_SIZE - 1; row >= 0; row--) {
-        const idx = row * BOARD_SIZE + col;
+      for (let row = boardSize - 1; row >= 0; row--) {
+        const idx = row * boardSize + col;
         if (!matchedSet.has(idx)) {
           survivors.push({ ...b[idx], originalRow: row });
         }
       }
-      const newCount = BOARD_SIZE - survivors.length;
+      const newCount = boardSize - survivors.length;
       const newCandies = [];
       for (let i = 0; i < newCount; i++) {
         keyRef.current++;
         newCandies.push({
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
+          type: Math.floor(Math.random() * candyCount),
           key: keyRef.current,
           originalRow: -(newCount - i),
           isNew: true,
         });
       }
       const column = [...newCandies.reverse(), ...survivors.reverse()];
-      for (let row = 0; row < BOARD_SIZE; row++) {
+      for (let row = 0; row < boardSize; row++) {
         const candy = column[row];
-        const idx = row * BOARD_SIZE + col;
+        const idx = row * boardSize + col;
         const fallDistance = row - candy.originalRow;
         result[idx] = {
           type: candy.type,
@@ -389,13 +406,23 @@ const Match3Game = () => {
       }
     }
     return result;
-  }, []);
+  }, [boardSize, candyCount]);
+
+  const CANDY_COLORS = [
+    "#ef4444",
+    "#f97316",
+    "#eab308",
+    "#8b5cf6",
+    "#ec4899",
+    "#3b82f6",
+    "#dc2626",
+  ];
 
   const createExplosions = useCallback((matches, b) => {
     const exps = matches.map((idx, i) => ({
       id: Date.now() + idx,
-      x: ((idx % BOARD_SIZE) + 0.5) * (100 / BOARD_SIZE),
-      y: (Math.floor(idx / BOARD_SIZE) + 0.5) * (100 / BOARD_SIZE),
+      x: ((idx % boardSize) + 0.5) * (100 / boardSize),
+      y: (Math.floor(idx / boardSize) + 0.5) * (100 / boardSize),
       color: CANDY_COLORS[b[idx].type] || "#fff",
       delay: i * 10,
     }));
@@ -407,7 +434,7 @@ const Match3Game = () => {
         ),
       500
     );
-  }, []);
+  }, [boardSize]);
 
   const processMatches = useCallback(
     async (b, comboCount = 0) => {
@@ -540,9 +567,9 @@ const Match3Game = () => {
 
   const startGame = () => {
     keyRef.current = 1000;
-    setBoard(createBoard());
+    setBoard(createBoard(boardSize, candyCount));
     setScore(0);
-    setMoves(30);
+    setMoves(initialMoves);
     setCombo(0);
     setSelectedCell(null);
     setGameStatus("playing");
@@ -569,7 +596,7 @@ const Match3Game = () => {
   const exitTutorial = () => {
     setGameStatus("idle");
     setTutorialStep(0);
-    setBoard(createBoard());
+    setBoard(createBoard(boardSize, candyCount));
     setSelectedCell(null);
   };
 
@@ -584,9 +611,9 @@ const Match3Game = () => {
 
   const restartGame = () => {
     keyRef.current = 1000;
-    setBoard(createBoard());
+    setBoard(createBoard(boardSize, candyCount));
     setScore(0);
-    setMoves(30);
+    setMoves(initialMoves);
     setCombo(0);
     setSelectedCell(null);
     setGameStatus("playing");
@@ -649,17 +676,15 @@ const Match3Game = () => {
         key={idx}
         className={`aspect-square rounded-lg flex items-center justify-center bg-secondary border border-border relative overflow-hidden
                     ${isSelected ? "ring-2 ring-pink-500 ring-offset-1" : ""}
-                    ${
-                      isHighlighted
-                        ? "ring-2 ring-yellow-400 ring-offset-1 animate-pulse"
-                        : ""
-                    }
-                    ${
-                      !isAnimating &&
-                      (gameStatus === "playing" || gameStatus === "tutorial")
-                        ? "cursor-pointer hover:bg-accent"
-                        : ""
-                    }`}
+                    ${isHighlighted
+            ? "ring-2 ring-yellow-400 ring-offset-1 animate-pulse"
+            : ""
+          }
+                    ${!isAnimating &&
+            (gameStatus === "playing" || gameStatus === "tutorial")
+            ? "cursor-pointer hover:bg-accent"
+            : ""
+          }`}
         onClick={() => handleCellClick(idx)}
       >
         {candy.type !== null && (
@@ -674,8 +699,8 @@ const Match3Game = () => {
                 (isMatched
                   ? "scale(0) rotate(180deg)"
                   : isSelected
-                  ? "scale(1.1)"
-                  : "translateY(var(--fall-to))"),
+                    ? "scale(1.1)"
+                    : "translateY(var(--fall-to))"),
               opacity: isMatched ? 0 : 1,
               animation:
                 hasFall && !swapTf && !isMatched
@@ -684,10 +709,11 @@ const Match3Game = () => {
               transition: swapTf
                 ? "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
                 : isMatched
-                ? "transform 0.2s ease-out, opacity 0.2s ease-out"
-                : "transform 0.1s ease-out",
+                  ? "transform 0.2s ease-out, opacity 0.2s ease-out"
+                  : "transform 0.1s ease-out",
               zIndex: isSwapping ? 10 : 1,
-              animationDelay: hasFall ? `${(idx % BOARD_SIZE) * 15}ms` : "0ms",
+              // Use boardSize for animation delay
+              animationDelay: hasFall ? `${(idx % boardSize) * 15}ms` : "0ms",
             }}
           >
             <span className="drop-shadow">{CANDY_TYPES[candy.type]}</span>
@@ -731,8 +757,22 @@ const Match3Game = () => {
         >
           <Home size={20} />
         </button>
-        <div className="text-lg font-bold tracking-wider text-foreground">
-          {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "GHÉP HÀNG 3"}
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold tracking-wider text-foreground">
+            {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "GHÉP HÀNG 3"}
+          </span>
+          {gameStatus !== "tutorial" && gameStatus !== "idle" && (
+            <>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                  difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                }`}>
+                {difficulty === 'easy' ? 'Dễ' : difficulty === 'medium' ? 'TB' : 'Khó'}
+              </span>
+              <span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-500/20 text-purple-500">
+                {boardSize}x{boardSize}
+              </span>
+            </>
+          )}
         </div>
         <button
           className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
@@ -784,9 +824,8 @@ const Match3Game = () => {
       )}
 
       <div
-        className={`flex-1 flex items-center justify-center p-4 gap-6 ${
-          gameStatus === "tutorial" ? "md:pb-4 pb-48" : ""
-        }`}
+        className={`flex-1 flex items-center justify-center p-4 gap-6 ${gameStatus === "tutorial" ? "md:pb-4 pb-48" : ""
+          }`}
       >
         {/* Idle Screen */}
         {gameStatus === "idle" && (
@@ -815,7 +854,7 @@ const Match3Game = () => {
             <div
               className="grid gap-0.5"
               style={{
-                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
+                gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
                 width: "min(88vw, 380px)",
                 height: "min(88vw, 380px)",
               }}
@@ -927,13 +966,12 @@ const Match3Game = () => {
               {TUTORIAL_STEPS.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`flex-1 h-1.5 rounded-full transition-colors ${
-                    idx < tutorialStep
+                  className={`flex-1 h-1.5 rounded-full transition-colors ${idx < tutorialStep
                       ? "bg-pink-500"
                       : idx === tutorialStep
-                      ? "bg-pink-400 animate-pulse"
-                      : "bg-secondary"
-                  }`}
+                        ? "bg-pink-400 animate-pulse"
+                        : "bg-secondary"
+                    }`}
                 />
               ))}
             </div>
@@ -1011,13 +1049,12 @@ const Match3Game = () => {
               {TUTORIAL_STEPS.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`flex-1 h-1 rounded-full transition-colors ${
-                    idx < tutorialStep
+                  className={`flex-1 h-1 rounded-full transition-colors ${idx < tutorialStep
                       ? "bg-pink-500"
                       : idx === tutorialStep
-                      ? "bg-pink-400 animate-pulse"
-                      : "bg-secondary"
-                  }`}
+                        ? "bg-pink-400 animate-pulse"
+                        : "bg-secondary"
+                    }`}
                 />
               ))}
             </div>
