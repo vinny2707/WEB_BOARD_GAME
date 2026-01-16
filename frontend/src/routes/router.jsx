@@ -10,7 +10,7 @@ import Auth from "../features/auth/pages/Auth.jsx";
 import LandingPage from "../features/landingPage/pages/landingPage.jsx";
 import Games from "../features/games/pages/Games.jsx";
 import Ranking from "../features/ranking/pages/Ranking.jsx";
-import Social from "../features/social/pages/social.jsx";
+import Friends from "../features/social/pages/Friends.jsx";
 import Profile from "../features/profile/pages/Profile.jsx";
 import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
 import NotFound from "@/features/errors/pages/NotFound.jsx";
@@ -71,7 +71,7 @@ const router = createBrowserRouter([
             path: "ranking",
           },
           {
-            element: <Social />,
+            element: <Friends />,
             path: "social",
           },
           {

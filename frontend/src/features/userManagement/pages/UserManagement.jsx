@@ -40,6 +40,7 @@ import {
 import { getInitials } from "@/utils/Username";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
+import { se } from "date-fns/locale";
 
 const UserManagement = () => {
   const { theme } = useTheme();
@@ -68,7 +69,7 @@ const UserManagement = () => {
         ...(status && { status }),
       });
 
-      const response = await api.get(`/api/users?${params}`);
+      const response = await api.get(`/api/users/admin?${params}`);
       const data = response.data?.data;
 
       setUsers(data.users || []);
@@ -87,7 +88,7 @@ const UserManagement = () => {
   // Initial fetch
   useEffect(() => {
     fetchUsers(1, searchTerm, statusFilter);
-  }, []);
+  }, [searchTerm, statusFilter]);
 
   // Handle search
   const handleSearch = (e) => {
