@@ -17,8 +17,8 @@ import {
   GameForm,
   GameDetailDialog,
   GameDeleteDialog,
-  Pagination,
 } from "../components";
+import { Pagination } from "@/components/ui/pagination";
 
 const GameConfig = () => {
   const { theme } = useTheme();
@@ -33,7 +33,7 @@ const GameConfig = () => {
   const [totalGames, setTotalGames] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [enabledFilter, setEnabledFilter] = useState("");
-  const limit = 9; // 3 columns x 3 rows for large card grid
+  const [limit, setLimit] = useState(9); // Dynamic limit with selector
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -54,13 +54,13 @@ const GameConfig = () => {
   });
   const [formLoading, setFormLoading] = useState(false);
 
-  // Fetch games
-  const fetchGames = async (page = 1, search = "", enabled = "") => {
+  // Fetch games - use current limit state
+  const fetchGames = async (page = 1, search = "", enabled = "", itemsPerPage = limit) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page,
-        limit,
+        limit: itemsPerPage,
         ...(search && { search }),
         ...(enabled !== "" && { enabled }),
       });
@@ -106,6 +106,13 @@ const GameConfig = () => {
     if (page >= 1 && page <= totalPages) {
       fetchGames(page, searchTerm, enabledFilter);
     }
+  };
+
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setCurrentPage(1);
+    fetchGames(1, searchTerm, enabledFilter, newLimit);
   };
 
   // Handle create game
@@ -361,11 +368,10 @@ const GameConfig = () => {
           <>
             {/* Card Grid - 3 columns max for larger cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {games.map((game, index) => (
+              {games.map((game) => (
                 <GameCard
                   key={game.id}
                   game={game}
-                  index={(currentPage - 1) * limit + index + 1}
                   onView={handleViewDetails}
                   onEdit={handleEdit}
                   onToggle={handleToggleStatus}
@@ -377,13 +383,17 @@ const GameConfig = () => {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination - Always visible */}
+      {!loading && !error && (
         <div className="flex-none px-4 sm:px-6 md:px-8 py-3 sm:py-4 border-t border-gray-200 dark:border-zinc-800">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
+            totalItems={totalGames}
+            limit={limit}
             onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            limitOptions={[6, 9, 12, 18, 24]}
           />
         </div>
       )}
