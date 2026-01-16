@@ -11,7 +11,7 @@ const useGameReviews = (gameId, initialParams = {}) => {
     const [reviews, setReviews] = useState([]);
     const [pagination, setPagination] = useState({
         page: 1,
-        limit: 10,
+        limit: 3,
         total: 0,
         totalPages: 0,
     });
@@ -23,7 +23,7 @@ const useGameReviews = (gameId, initialParams = {}) => {
     const [error, setError] = useState(null);
     const [params, setParams] = useState({
         page: 1,
-        limit: 10,
+        limit: 3,
         sort: 'newest',
         ...initialParams,
     });

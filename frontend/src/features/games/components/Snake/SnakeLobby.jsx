@@ -248,7 +248,7 @@ const SnakeLobby = () => {
                 </div>
 
                 {/* Right Side - Reviews */}
-                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-3">
+                <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3">
                     <GameReviews gameId={4} />
                 </div>
             </div>

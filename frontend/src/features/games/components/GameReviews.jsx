@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Star, ChevronLeft, ChevronRight, Filter, Clock, User, Send, Loader2, Pencil, X, Check } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, Filter, Clock, User, Send, Loader2, Pencil, X, Check, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import useGameReviews from '../hooks/useGameReviews';
-import { createReview, updateReview } from '../../../api/reviewsApi';
+import { createReview, updateReview, deleteReview } from '../../../api/reviewsApi';
 
 // Get current user ID from token
 const getCurrentUserId = () => {
@@ -163,12 +163,14 @@ const ReviewForm = ({ gameId, onSuccess }) => {
     );
 };
 
-// Single Review Item with Edit functionality
-const ReviewItem = ({ review, onEditSuccess }) => {
+// Single Review Item with Edit and Delete functionality
+const ReviewItem = ({ review, onEditSuccess, onDeleteSuccess }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editRating, setEditRating] = useState(review.rating);
     const [editComment, setEditComment] = useState(review.comment || '');
     const [submitting, setSubmitting] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const currentUserId = getCurrentUserId();
     const isOwner = currentUserId && review.user_id === currentUserId;
@@ -225,6 +227,28 @@ const ReviewItem = ({ review, onEditSuccess }) => {
             toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật đánh giá');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDelete = () => {
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        setDeleting(true);
+        setShowDeleteConfirm(false);
+
+        try {
+            await deleteReview(review.id);
+            toast.success('Đánh giá đã được xóa!');
+
+            if (onDeleteSuccess) {
+                onDeleteSuccess();
+            }
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi xóa đánh giá');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -305,13 +329,24 @@ const ReviewItem = ({ review, onEditSuccess }) => {
                 <div className="flex items-center gap-2">
                     <StarRating rating={review.rating} />
                     {isOwner && (
-                        <button
-                            onClick={handleEdit}
-                            className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                            title="Sửa đánh giá"
-                        >
-                            <Pencil size={14} />
-                        </button>
+                        <>
+                            <button
+                                onClick={handleEdit}
+                                disabled={deleting}
+                                className="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all disabled:opacity-50"
+                                title="Sửa đánh giá"
+                            >
+                                <Pencil size={14} />
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting || submitting}
+                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all disabled:opacity-50"
+                                title="Xóa đánh giá"
+                            >
+                                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -321,6 +356,39 @@ const ReviewItem = ({ review, onEditSuccess }) => {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                     {review.comment}
                 </p>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteConfirm(false)}>
+                    <div className="bg-card rounded-xl border border-border shadow-xl w-full max-w-sm p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
+                                <Trash2 size={20} className="text-destructive" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-foreground">Xác nhận xóa</h3>
+                                <p className="text-sm text-muted-foreground">Bạn có chắc muốn xóa đánh giá này?</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                disabled={deleting}
+                                className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg text-sm font-medium hover:bg-destructive/90 disabled:opacity-50 transition-all"
+                            >
+                                {deleting && <Loader2 size={14} className="animate-spin" />}
+                                Xóa
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
@@ -541,7 +609,12 @@ const GameReviews = ({ gameId, className = '' }) => {
                     </>
                 ) : reviews.length > 0 ? (
                     reviews.map((review) => (
-                        <ReviewItem key={review.id} review={review} onEditSuccess={handleReviewSuccess} />
+                        <ReviewItem
+                            key={review.id}
+                            review={review}
+                            onEditSuccess={handleReviewSuccess}
+                            onDeleteSuccess={handleReviewSuccess}
+                        />
                     ))
                 ) : (
                     // Empty state
