@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import GameSessionHistory from '../GameSessionHistory';
 import {
     fetchGameSettings,
     hasApiSetting,
@@ -262,6 +263,9 @@ const SnakeLobby = () => {
                                 <span className="text-xs text-muted-foreground">với người chơi ngẫu nhiên</span>
                             </div>
                         </button>
+
+                        {/* Game Session History */}
+                        <GameSessionHistory gameId={4} limit={5} />
                     </div>
 
                     {/* How to Play */}

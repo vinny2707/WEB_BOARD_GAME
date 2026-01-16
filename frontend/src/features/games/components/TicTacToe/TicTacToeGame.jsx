@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import TicTacToeBoard from "./TicTacToeBoard";
 import { findBestMove, getHint, checkWinner, isDraw, getWinningLine } from "./TicTacToeAI";
+import useGameSession from "../../hooks/useGameSession";
 
 // Tutorial steps for TicTacToe - Kịch bản logic
 // Board indices: 0=TopLeft, 1=TopCenter, 2=TopRight, 3=MidLeft, 4=Center, 5=MidRight, 6=BotLeft, 7=BotCenter, 8=BotRight
@@ -144,6 +145,9 @@ const TicTacToeGame = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Session tracking for rankings (gameId=3 for TicTacToe)
+  const { completeGame, incrementMoves, isAuthenticated } = useGameSession(3);
+
   // Get settings from lobby navigation state
   const lobbySettings = location.state?.settings || {};
   const boardSize = lobbySettings.boardSize || 3;
@@ -267,6 +271,18 @@ const TicTacToeGame = () => {
     }
   }, [gameStatus, winner, winReason]);
 
+  // Submit game results to rankings API when game ends
+  useEffect(() => {
+    if ((gameStatus === "win" || gameStatus === "draw") && isAuthenticated) {
+      const result = gameStatus === "draw" ? "draw" : (winner === "X" ? "win" : "loss");
+      completeGame({
+        result,
+        score: result === "win" ? 100 : (result === "draw" ? 50 : 0),
+        gameState: { board, winner, winReason },
+      });
+    }
+  }, [gameStatus, winner, isAuthenticated]);
+
   // Timer for current player - countdown
   useEffect(() => {
     if (gameStatus !== "playing") return;
@@ -358,6 +374,11 @@ const TicTacToeGame = () => {
       newBoard[index] = player;
       setBoard(newBoard);
       setMoveHistory((prev) => [...prev, { index, player }]);
+
+      // Track player moves for session
+      if (player === "X") {
+        incrementMoves();
+      }
 
       // Play tick sound for each move
       playSound(tickSoundRef);

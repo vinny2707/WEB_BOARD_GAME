@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft } from 'lucide-react';
 import CaroBoard from './CaroBoard';
 import { createCaroAI } from './CaroAI';
+import useGameSession from '../../hooks/useGameSession';
 
 
 // Player Card Component
@@ -52,6 +53,7 @@ const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
 /**
  * Shared Game component for Caro games with tutorial support
  * @param {Object} props
+ * @param {number} props.gameId - Game ID for session tracking
  * @param {string} props.gameName - Display name (e.g., "CARO 5 HÀNG")
  * @param {string} props.lobbyPath - Path to lobby (e.g., "/games/gomoku")
  * @param {number} props.winCount - Number of pieces in a row to win (4 or 5)
@@ -59,9 +61,12 @@ const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
  * @param {string} props.theme - 'emerald' or 'amber'
  * @param {Array} props.tutorialSteps - Optional tutorial steps array
  */
-const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, theme = 'emerald', tutorialSteps = null }) => {
+const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, theme = 'emerald', tutorialSteps = null }) => {
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Session tracking for rankings
+    const { completeGame, incrementMoves, isAuthenticated } = useGameSession(gameId);
 
     // Get settings from lobby navigation state
     const lobbySettings = location.state?.settings || {};
@@ -210,6 +215,18 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         }
     }, [gameStatus, winner, winReason]);
 
+    // Submit game results to rankings API when game ends
+    useEffect(() => {
+        if ((gameStatus === 'win' || gameStatus === 'draw') && isAuthenticated) {
+            const result = gameStatus === 'draw' ? 'draw' : (winner === 'X' ? 'win' : 'loss');
+            completeGame({
+                result,
+                score: result === 'win' ? 100 : (result === 'draw' ? 50 : 0),
+                gameState: { board, winner, winReason },
+            });
+        }
+    }, [gameStatus, winner, isAuthenticated]);
+
     // Timer for current player - countdown
     useEffect(() => {
         if (gameStatus !== 'playing') return;
@@ -300,6 +317,11 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         newBoard[index] = player;
         setBoard(newBoard);
         setMoveHistory(prev => [...prev, { index, player }]);
+
+        // Track player moves for session
+        if (player === 'X') {
+            incrementMoves();
+        }
 
         // Play tick sound for each move
         playSound(tickSoundRef);

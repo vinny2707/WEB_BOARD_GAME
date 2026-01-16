@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Play, Pause, RotateCcw, Settings, Trophy, BookOpen, X, ChevronRight } from 'lucide-react';
+import useGameSession from '../../hooks/useGameSession';
 
 // Game Constants
 const CELL_SIZE = 20;
@@ -38,6 +39,9 @@ const SnakeGame = () => {
     const animationRef = useRef(null);
     const lastTimeRef = useRef(0);
     const gameTickRef = useRef(0);
+
+    // Session tracking for rankings (gameId=4 for Snake)
+    const { completeGame, isAuthenticated } = useGameSession(4);
 
     // Settings from lobby
     const lobbySettings = location.state?.settings || {};
@@ -202,6 +206,15 @@ const SnakeGame = () => {
             setTimeout(() => setShakeOffset({ x: 0, y: 0 }), 150);
             setGameOverOpacity(1);
             setGameStatus('gameover');
+
+            // Submit game result to API
+            if (isAuthenticated) {
+                completeGame({
+                    result: 'loss',
+                    score: score,
+                    gameState: { snake: currentSnake, food: currentFood },
+                });
+            }
             return;
         }
 

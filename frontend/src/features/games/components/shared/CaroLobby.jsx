@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import GameSessionHistory from '../GameSessionHistory';
 import {
     fetchGameSettings,
     hasApiSetting,
@@ -325,6 +326,9 @@ const CaroLobby = ({
                                 <span className="text-xs opacity-80">với người chơi ngẫu nhiên</span>
                             </div>
                         </button>
+
+                        {/* Game Session History */}
+                        {gameId && <GameSessionHistory gameId={gameId} limit={5} />}
                     </div>
                 </div>
 
