@@ -1,13 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RotateCcw, Lightbulb, Settings, Home, BookOpen, X, ChevronRight, ArrowLeft } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft } from 'lucide-react';
 import CaroBoard from './CaroBoard';
+import { createCaroAI } from './CaroAI';
 
-const DIFFICULTY_LABELS = {
-    easy: 'Dễ',
-    medium: 'Trung Bình',
-    hard: 'Khó'
-};
 
 // Player Card Component
 const PlayerCard = ({ name, symbol, avatar, isActive, timer, isLeft, theme }) => {
@@ -58,27 +54,40 @@ const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
  * @param {Object} props
  * @param {string} props.gameName - Display name (e.g., "CARO 5 HÀNG")
  * @param {string} props.lobbyPath - Path to lobby (e.g., "/games/gomoku")
- * @param {Object} props.ai - AI module with { findBestMove, getHint, checkWinner, isDraw, BOARD_SIZE }
+ * @param {number} props.winCount - Number of pieces in a row to win (4 or 5)
+ * @param {number} props.defaultBoardSize - Default board size if not in settings
  * @param {string} props.theme - 'emerald' or 'amber'
  * @param {Array} props.tutorialSteps - Optional tutorial steps array
  */
-const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = null }) => {
+const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, theme = 'emerald', tutorialSteps = null }) => {
     const navigate = useNavigate();
-    const { findBestMove, getHint, checkWinner, isDraw, BOARD_SIZE } = ai;
+    const location = useLocation();
 
-    const [board, setBoard] = useState(Array(BOARD_SIZE * BOARD_SIZE).fill(null));
+    // Get settings from lobby navigation state
+    const lobbySettings = location.state?.settings || {};
+    const boardSize = lobbySettings.boardSize || defaultBoardSize;
+    const timePerTurn = lobbySettings.timePerTurn ?? 40; // seconds (0 = unlimited)
+    const timePerPlayer = lobbySettings.timePerPlayer ?? 240; // seconds (0 = unlimited)
+    const firstPlayer = lobbySettings.firstPlayer || 'random';
+    const difficulty = lobbySettings.difficulty || 'medium';
+
+    // Create AI dynamically based on boardSize and winCount
+    const ai = useMemo(() => createCaroAI(winCount, boardSize), [winCount, boardSize]);
+    const { findBestMove, getHint, checkWinner, isDraw } = ai;
+
+    const [board, setBoard] = useState(Array(boardSize * boardSize).fill(null));
     const [isXNext, setIsXNext] = useState(true);
     const [score, setScore] = useState({ player: 0, ai: 0 });
     const [gameStatus, setGameStatus] = useState(tutorialSteps ? 'idle' : 'playing');
     const [winner, setWinner] = useState(null);
+    const [winReason, setWinReason] = useState(null); // 'normal', 'timeout', 'turnTimeout', 'lessTime'
     const [winningLine, setWinningLine] = useState(null);
     const [moveHistory, setMoveHistory] = useState([]);
-    const [playerTime, setPlayerTime] = useState(0);
-    const [aiTime, setAiTime] = useState(0);
-    const [difficulty, setDifficulty] = useState('medium');
+    const [playerTime, setPlayerTime] = useState(timePerPlayer);
+    const [aiTime, setAiTime] = useState(timePerPlayer);
+    const [turnTime, setTurnTime] = useState(timePerTurn);
     const [hintCell, setHintCell] = useState(null);
     const [isAIThinking, setIsAIThinking] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
 
     // Tutorial state
     const [tutorialStep, setTutorialStep] = useState(0);
@@ -86,6 +95,25 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
     const [displayedText, setDisplayedText] = useState('');
     const [displayedTitle, setDisplayedTitle] = useState('');
     const typingRef = useRef(null);
+
+    // Audio
+    const gameStartSoundRef = useRef(null);
+    const victorySoundRef = useRef(null);
+
+    // Initialize sounds
+    useEffect(() => {
+        gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        gameStartSoundRef.current.load();
+        victorySoundRef.current.load();
+    }, []);
+
+    const playSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => { });
+        }
+    }, []);
 
     const themeColors = {
         emerald: {
@@ -169,20 +197,72 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
         }
     }, [tutorialStep, gameStatus, tutorialSteps]);
 
-    // Timer for current player
+    // Timer for current player - countdown
     useEffect(() => {
         if (gameStatus !== 'playing') return;
+        if (timePerPlayer === 0) return; // Unlimited time
 
         const timer = setInterval(() => {
             if (isXNext && !isAIThinking) {
-                setPlayerTime(prev => prev + 1);
+                setPlayerTime(prev => {
+                    if (prev <= 1) {
+                        // Player ran out of time - loses
+                        clearInterval(timer);
+                        setGameStatus('win');
+                        setWinner('O');
+                        setWinReason('timeout');
+                        setScore(prev => ({ ...prev, ai: prev.ai + 1 }));
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             } else if (!isXNext) {
-                setAiTime(prev => prev + 1);
+                setAiTime(prev => {
+                    if (prev <= 1) {
+                        // AI ran out of time - player wins
+                        clearInterval(timer);
+                        setGameStatus('win');
+                        setWinner('X');
+                        setWinReason('timeout');
+                        setScore(prev => ({ ...prev, player: prev.player + 1 }));
+                        return 0;
+                    }
+                    return prev - 1;
+                });
             }
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [isXNext, gameStatus, isAIThinking]);
+    }, [isXNext, gameStatus, isAIThinking, timePerPlayer]);
+
+    // Turn timer countdown
+    useEffect(() => {
+        if (gameStatus !== 'playing') return;
+        if (timePerTurn === 0) return; // Unlimited turn time
+
+        // Reset turn time when turn changes
+        setTurnTime(timePerTurn);
+
+        const turnTimer = setInterval(() => {
+            setTurnTime(prev => {
+                if (prev <= 1) {
+                    // Turn time ran out
+                    clearInterval(turnTimer);
+                    if (isXNext && !isAIThinking) {
+                        // Player ran out of turn time - loses
+                        setGameStatus('win');
+                        setWinner('O');
+                        setWinReason('turnTimeout');
+                        setScore(prevScore => ({ ...prevScore, ai: prevScore.ai + 1 }));
+                    }
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(turnTimer);
+    }, [isXNext, gameStatus, isAIThinking, timePerTurn]);
 
     // AI makes a move
     useEffect(() => {
@@ -211,18 +291,35 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
         const result = checkWinner(newBoard);
         if (result) {
             setWinner(result.winner);
+            setWinReason('normal');
             setWinningLine(result.line);
             setGameStatus('win');
             setScore(prev => ({
                 ...prev,
                 [result.winner === 'X' ? 'player' : 'ai']: prev[result.winner === 'X' ? 'player' : 'ai'] + 1
             }));
+            if (result.winner === 'X') playSound(victorySoundRef);
         } else if (isDraw(newBoard)) {
-            setGameStatus('draw');
+            // Check if time-based win should apply
+            if (timePerPlayer > 0 && playerTime !== aiTime) {
+                if (playerTime < aiTime) {
+                    setWinner('O');
+                    setWinReason('lessTime');
+                    setGameStatus('win');
+                    setScore(prev => ({ ...prev, ai: prev.ai + 1 }));
+                } else {
+                    setWinner('X');
+                    setWinReason('lessTime');
+                    setGameStatus('win');
+                    setScore(prev => ({ ...prev, player: prev.player + 1 }));
+                }
+            } else {
+                setGameStatus('draw');
+            }
         } else {
             setIsXNext(player === 'O');
         }
-    }, [board, checkWinner, isDraw]);
+    }, [board, checkWinner, isDraw, timePerPlayer, playerTime, aiTime]);
 
     const handleCellClick = (index) => {
         // Tutorial mode
@@ -277,32 +374,44 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
     };
 
     const handlePlayAgain = () => {
-        setBoard(Array(BOARD_SIZE * BOARD_SIZE).fill(null));
+        setBoard(Array(boardSize * boardSize).fill(null));
         setIsXNext(true);
         setGameStatus('playing');
         setWinner(null);
+        setWinReason(null);
         setWinningLine(null);
         setMoveHistory([]);
-        setPlayerTime(0);
-        setAiTime(0);
+        setPlayerTime(timePerPlayer);
+        setAiTime(timePerPlayer);
+        setTurnTime(timePerTurn);
         setHintCell(null);
     };
 
     const startGame = () => {
-        setBoard(Array(BOARD_SIZE * BOARD_SIZE).fill(null));
-        setIsXNext(true);
+        playSound(gameStartSoundRef);
+        setBoard(Array(boardSize * boardSize).fill(null));
+        // Determine who starts based on firstPlayer setting
+        if (firstPlayer === 'ai') {
+            setIsXNext(false);
+        } else if (firstPlayer === 'random') {
+            setIsXNext(Math.random() > 0.5);
+        } else {
+            setIsXNext(true);
+        }
         setGameStatus('playing');
         setWinner(null);
+        setWinReason(null);
         setWinningLine(null);
         setMoveHistory([]);
-        setPlayerTime(0);
-        setAiTime(0);
+        setPlayerTime(timePerPlayer);
+        setAiTime(timePerPlayer);
+        setTurnTime(timePerTurn);
         setHintCell(null);
         setIsAIThinking(false);
     };
 
     const startTutorial = () => {
-        setBoard(Array(BOARD_SIZE * BOARD_SIZE).fill(null));
+        setBoard(Array(boardSize * boardSize).fill(null));
         setIsXNext(true);
         setGameStatus('tutorial');
         setWinner(null);
@@ -316,7 +425,7 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
     const exitTutorial = () => {
         setGameStatus('idle');
         setTutorialStep(0);
-        setBoard(Array(BOARD_SIZE * BOARD_SIZE).fill(null));
+        setBoard(Array(boardSize * boardSize).fill(null));
     };
 
     const nextTutorialStep = () => {
@@ -329,12 +438,6 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
         }
     };
 
-    const handleDifficultyChange = (newDifficulty) => {
-        setDifficulty(newDifficulty);
-        handlePlayAgain();
-        setShowSettings(false);
-    };
-
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -344,7 +447,18 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
     const getStatusMessage = () => {
         if (gameStatus === 'tutorial') return '📖 Chế độ hướng dẫn';
         if (isAIThinking) return 'Đang suy nghĩ...';
-        if (gameStatus === 'win') return winner === 'X' ? '🎉 Bạn thắng!' : '🤖 Máy thắng!';
+        if (gameStatus === 'win') {
+            if (winner === 'X') {
+                if (winReason === 'timeout') return '🎉 Bạn thắng! (Máy hết giờ)';
+                if (winReason === 'lessTime') return '🎉 Bạn thắng! (Hòa, máy ít thời gian hơn)';
+                return '🎉 Bạn thắng!';
+            } else {
+                if (winReason === 'timeout') return '⏱️ Bạn thua! (Hết giờ)';
+                if (winReason === 'turnTimeout') return '⏱️ Bạn thua! (Hết giờ lượt đi)';
+                if (winReason === 'lessTime') return '⏱️ Bạn thua! (Hòa, bạn ít thời gian hơn)';
+                return '🤖 Máy thắng!';
+            }
+        }
         if (gameStatus === 'draw') return '🤝 Hòa!';
         return isXNext ? 'Lượt của bạn' : 'Lượt của máy';
     };
@@ -362,39 +476,27 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
                     onClick={() => navigate(lobbyPath)}
                 >
-                    <Home size={20} />
+                    <ArrowLeft size={20} />
                 </button>
-                <div className="text-lg font-bold tracking-wider text-foreground">
-                    {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : gameName}
+                <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold tracking-wider text-foreground">
+                        {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : gameName}
+                    </span>
+                    {gameStatus !== 'tutorial' && (
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                            difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                            }`}>
+                            {difficulty === 'easy' ? 'Dễ' : difficulty === 'medium' ? 'TB' : 'Khó'}
+                        </span>
+                    )}
                 </div>
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-                    onClick={() => setShowSettings(!showSettings)}
+                    onClick={() => navigate('/games')}
                 >
-                    <Settings size={20} />
+                    <Home size={20} />
                 </button>
             </div>
-
-            {/* Settings Panel */}
-            {showSettings && (
-                <div className="px-4 py-3 bg-card border-b border-border">
-                    <div className="text-sm font-semibold text-foreground mb-2">Độ khó</div>
-                    <div className="flex gap-2">
-                        {Object.entries(DIFFICULTY_LABELS).map(([key, label]) => (
-                            <button
-                                key={key}
-                                className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
-                                    ${difficulty === key
-                                        ? `${colors.primary} text-white ${colors.border}`
-                                        : `text-muted-foreground border-transparent ${colors.hoverBorder}`}`}
-                                onClick={() => handleDifficultyChange(key)}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
 
             {/* Players Bar - Hide in tutorial and idle */}
             {gameStatus !== 'tutorial' && gameStatus !== 'idle' && (
@@ -404,17 +506,24 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
                         symbol="X"
                         avatar="👤"
                         isActive={isXNext && gameStatus === 'playing'}
-                        timer={formatTime(playerTime)}
+                        timer={timePerPlayer === 0 ? '∞' : formatTime(playerTime)}
                         isLeft={true}
                         theme={theme}
                     />
-                    <ScoreDisplay playerScore={score.player} aiScore={score.ai} theme={theme} />
+                    <div className="flex flex-col items-center gap-1">
+                        <ScoreDisplay playerScore={score.player} aiScore={score.ai} theme={theme} />
+                        {gameStatus === 'playing' && timePerTurn > 0 && (
+                            <div className={`text-xs font-mono px-2 py-1 rounded ${turnTime <= 10 ? 'text-red-500 bg-red-500/10' : 'text-muted-foreground'}`}>
+                                ⏱️ {formatTime(turnTime)}
+                            </div>
+                        )}
+                    </div>
                     <PlayerCard
                         name="Paper Man"
                         symbol="O"
                         avatar="🤖"
                         isActive={!isXNext && gameStatus === 'playing'}
-                        timer={formatTime(aiTime)}
+                        timer={timePerPlayer === 0 ? '∞' : formatTime(aiTime)}
                         isLeft={false}
                         theme={theme}
                     />
@@ -460,7 +569,7 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
                                     ? !(currentTutorialStep?.action === 'click_cell' && !isTyping)
                                     : (gameStatus !== 'playing' || !isXNext || isAIThinking)
                             }
-                            boardSize={BOARD_SIZE}
+                            boardSize={boardSize}
                             theme={theme}
                         />
 
@@ -602,7 +711,7 @@ const CaroGame = ({ gameName, lobbyPath, ai, theme = 'emerald', tutorialSteps = 
                     </button>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

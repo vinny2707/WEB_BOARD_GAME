@@ -1,5 +1,5 @@
 import React from 'react';
-import { CaroGame, gomokuAI } from '../shared';
+import { CaroGame } from '../shared';
 
 // Board size: 15x15 = 225 cells
 // Index formula: row * 15 + col (0-indexed)
@@ -160,7 +160,8 @@ const GomokuGame = () => {
         <CaroGame
             gameName="CARO 5 HÀNG"
             lobbyPath="/games/gomoku"
-            ai={gomokuAI}
+            winCount={5}
+            defaultBoardSize={15}
             theme="emerald"
             tutorialSteps={GOMOKU_TUTORIAL_STEPS}
         />

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     Home,
     RotateCcw,
@@ -12,26 +12,78 @@ import {
     ChevronRight,
 } from "lucide-react";
 
-const CARD_SYMBOLS = [
-    "🍎",
-    "🍊",
-    "🍋",
-    "🍇",
-    "🍓",
-    "🫐",
-    "🍌",
-    "🥝",
-    "🍑",
-    "🍒",
-    "🥭",
-    "🍍",
-    "🥥",
-    "🍐",
-    "🍈",
-    "🫒",
-    "🍆",
-    "🥕",
-];
+// Theme card symbols - fruits use Icons8 images, others use emoji
+const THEMES = {
+    fruits: [
+        "/Icons8/icons8-strawberry-50.png",
+        "/Icons8/icons8-orange-50.png",
+        "/Icons8/icons8-banana-50.png",
+        "/Icons8/icons8-grapes-50.png",
+        "/Icons8/icons8-cherry-50.png",
+        "/Icons8/icons8-blueberry-50.png",
+        "/Icons8/icons8-watermelon-50.png",
+        "/Icons8/icons8-apple-fruit-50.png",
+        "/Icons8/icons8-avocado-50.png",
+        "/Icons8/icons8-raspberry-50.png",
+        "/Icons8/icons8-tomato-50.png",
+        "/Icons8/icons8-natural-food-50.png",
+        "/Icons8/icons8-hamburger-50.png",
+        "/Icons8/icons8-ice-cream-cone-50.png",
+        "/Icons8/icons8-birthday-cake-50.png",
+        "/Icons8/icons8-salami-pizza-50.png",
+        "/Icons8/icons8-french-fries-50.png",
+        "/Icons8/icons8-cola-50.png",
+    ],
+    food: [
+        "/Icons8/icons8-hamburger-50.png",
+        "/Icons8/icons8-salami-pizza-50.png",
+        "/Icons8/icons8-birthday-cake-50.png",
+        "/Icons8/icons8-ice-cream-cone-50.png",
+        "/Icons8/icons8-french-fries-50.png",
+        "/Icons8/icons8-cola-50.png",
+        "/Icons8/icons8-dessert-50.png",
+        "/Icons8/icons8-cherry-cheesecake-50.png",
+        "/Icons8/icons8-greek-salad-50.png",
+        "/Icons8/icons8-salad-50.png",
+        "/Icons8/icons8-ingredients-50.png",
+        "/Icons8/icons8-cheese-50.png",
+        "/Icons8/icons8-croissant-50.png",
+        "/Icons8/icons8-baguette-50.png",
+        "/Icons8/icons8-thanksgiving-50.png",
+        "/Icons8/icons8-mcdonald`s-french-fries-50.png",
+        "/Icons8/icons8-natural-food-50.png",
+        "/Icons8/icons8-tomato-50.png",
+    ],
+    flags: [
+        "/contries/icons8-vietnam-50.png",
+        "/contries/icons8-japan-50.png",
+        "/contries/icons8-south-korea-50.png",
+        "/contries/icons8-china-50.png",
+        "/contries/icons8-great-britain-50.png",
+        "/contries/icons8-france-50.png",
+        "/contries/icons8-germany-50.png",
+        "/contries/icons8-italy-50.png",
+        "/contries/icons8-spain-50.png",
+        "/contries/icons8-brazil-50.png",
+        "/contries/icons8-australia-50.png",
+        "/contries/icons8-canada-50.png",
+        "/contries/icons8-india-50.png",
+        "/contries/icons8-mexico-50.png",
+        "/contries/icons8-russian-federation-50.png",
+        "/contries/icons8-singapore-50.png",
+        "/contries/icons8-south-africa-50.png",
+        "/contries/icons8-thailand-50.png",
+    ],
+};
+
+// Helper to check if symbol is an image path
+const isImageSymbol = (symbol) => symbol && symbol.startsWith('/');
+
+const DIFFICULTY_SETTINGS = {
+    easy: { previewTime: 3000, label: 'Dễ' },
+    medium: { previewTime: 1000, label: 'Trung Bình' },
+    hard: { previewTime: 0, label: 'Khó' },
+};
 
 // Tutorial board - fixed layout with known pairs
 const createTutorialBoard = () => {
@@ -128,9 +180,10 @@ const TUTORIAL_STEPS = [
     },
 ];
 
-const createBoard = (size) => {
+const createBoard = (size, theme = 'fruits') => {
     const pairCount = (size * size) / 2;
-    const symbols = CARD_SYMBOLS.slice(0, pairCount);
+    const cardSymbols = THEMES[theme] || THEMES.fruits;
+    const symbols = cardSymbols.slice(0, pairCount);
     const cards = [...symbols, ...symbols]
         .sort(() => Math.random() - 0.5)
         .map((symbol, index) => ({
@@ -144,22 +197,31 @@ const createBoard = (size) => {
 
 const MemoryGame = () => {
     const navigate = useNavigate();
-    const [boardSize, setBoardSize] = useState(4);
-    const [cards, setCards] = useState(() => createBoard(4));
+    const location = useLocation();
+
+    // Get settings from lobby navigation state
+    const lobbySettings = location.state?.settings || {};
+    const initialGridSize = lobbySettings.gridSize || 4;
+    const theme = lobbySettings.theme || 'fruits';
+    const difficulty = lobbySettings.difficulty || 'medium';
+    const previewTime = DIFFICULTY_SETTINGS[difficulty]?.previewTime ?? 1000;
+
+    const [boardSize, setBoardSize] = useState(initialGridSize);
+    const [cards, setCards] = useState(() => createBoard(initialGridSize, theme));
     const [flippedCards, setFlippedCards] = useState([]);
     const [moves, setMoves] = useState(0);
     const [matchedPairs, setMatchedPairs] = useState(0);
-    const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'tutorial'
+    const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'tutorial', 'preview'
     const [isChecking, setIsChecking] = useState(false);
     const [timer, setTimer] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [bestTime, setBestTime] = useState(() => {
-        const saved = localStorage.getItem(`memoryBestTime_${4}`);
+        const saved = localStorage.getItem(`memoryBestTime_${initialGridSize}`);
         return saved ? parseInt(saved, 10) : null;
     });
     const [bestMoves, setBestMoves] = useState(() => {
-        const saved = localStorage.getItem(`memoryBestMoves_${4}`);
+        const saved = localStorage.getItem(`memoryBestMoves_${initialGridSize}`);
         return saved ? parseInt(saved, 10) : null;
     });
 
@@ -169,6 +231,25 @@ const MemoryGame = () => {
     const [displayedText, setDisplayedText] = useState("");
     const [displayedTitle, setDisplayedTitle] = useState("");
     const typingRef = useRef(null);
+
+    // Audio
+    const gameStartSoundRef = useRef(null);
+    const victorySoundRef = useRef(null);
+
+    // Initialize sounds
+    useEffect(() => {
+        gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        gameStartSoundRef.current.load();
+        victorySoundRef.current.load();
+    }, []);
+
+    const playSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(() => { });
+        }
+    }, []);
 
     // Typewriter effect
     useEffect(() => {
@@ -229,6 +310,7 @@ const MemoryGame = () => {
         if (matchedPairs === totalPairs && matchedPairs > 0 && gameStatus === "playing") {
             setGameStatus("win");
             setIsTimerRunning(false);
+            playSound(victorySoundRef);
 
             // Save best scores
             const currentBestTime = localStorage.getItem(
@@ -341,15 +423,27 @@ const MemoryGame = () => {
         [cards, flippedCards, isChecking, gameStatus, isTimerRunning, tutorialStep, isTyping]
     );
 
-    const startGame = () => {
-        setCards(createBoard(boardSize));
+    const startGame = async () => {
+        playSound(gameStartSoundRef);
+        const newCards = createBoard(boardSize, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
+
+        // Preview mode - show all cards briefly based on difficulty
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            // Flip all cards for preview
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            // Hide all cards
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
     };
 
     const startTutorial = () => {
@@ -370,7 +464,7 @@ const MemoryGame = () => {
     const exitTutorial = () => {
         setGameStatus("idle");
         setTutorialStep(0);
-        setCards(createBoard(boardSize));
+        setCards(createBoard(boardSize, theme));
     };
 
     const nextTutorialStep = () => {
@@ -382,28 +476,46 @@ const MemoryGame = () => {
         }
     };
 
-    const restartGame = () => {
-        setCards(createBoard(boardSize));
+    const restartGame = async () => {
+        const newCards = createBoard(boardSize, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
+
+        // Preview mode
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
     };
 
-    const changeDifficulty = (size) => {
+    const changeDifficulty = async (size) => {
         setBoardSize(size);
-        setCards(createBoard(size));
+        const newCards = createBoard(size, theme);
+        setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
         setMatchedPairs(0);
-        setGameStatus("playing");
         setIsChecking(false);
         setTimer(0);
         setIsTimerRunning(false);
         setShowSettings(false);
+
+        // Preview mode
+        if (previewTime > 0) {
+            setGameStatus("preview");
+            setCards(newCards.map(c => ({ ...c, isFlipped: true })));
+            await new Promise(r => setTimeout(r, previewTime));
+            setCards(newCards.map(c => ({ ...c, isFlipped: false })));
+        }
+        setGameStatus("playing");
 
         // Load best scores for new size
         const savedTime = localStorage.getItem(`memoryBestTime_${size}`);
@@ -467,12 +579,20 @@ const MemoryGame = () => {
                             transform: "rotateY(180deg)",
                         }}
                     >
-                        <span
-                            className={`text-2xl sm:text-4xl transition-transform duration-200 ${card.isMatched ? "scale-110" : ""
-                                }`}
-                        >
-                            {card.symbol}
-                        </span>
+                        {isImageSymbol(card.symbol) ? (
+                            <img
+                                src={card.symbol}
+                                alt="card"
+                                className={`w-8 h-8 sm:w-10 sm:h-10 object-contain transition-transform duration-200 ${card.isMatched ? "scale-110" : ""}`}
+                                draggable={false}
+                            />
+                        ) : (
+                            <span
+                                className={`text-2xl sm:text-4xl transition-transform duration-200 ${card.isMatched ? "scale-110" : ""}`}
+                            >
+                                {card.symbol}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
@@ -491,8 +611,22 @@ const MemoryGame = () => {
                 >
                     <Home size={20} />
                 </button>
-                <div className="text-lg font-bold tracking-wider text-foreground">
-                    {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "CỜ TRÍ NHỚ"}
+                <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold tracking-wider text-foreground">
+                        {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : gameStatus === "preview" ? "👀 XEM TRƯỚC..." : "CỜ TRÍ NHỚ"}
+                    </span>
+                    {gameStatus !== "tutorial" && gameStatus !== "idle" && (
+                        <>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                                difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                                }`}>
+                                {DIFFICULTY_SETTINGS[difficulty]?.label}
+                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-500/20 text-purple-500">
+                                {boardSize}x{boardSize}
+                            </span>
+                        </>
+                    )}
                 </div>
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
@@ -644,10 +778,10 @@ const MemoryGame = () => {
                                 <div
                                     key={idx}
                                     className={`flex-1 h-1.5 rounded-full transition-colors ${idx < tutorialStep
-                                            ? "bg-indigo-500"
-                                            : idx === tutorialStep
-                                                ? "bg-indigo-400 animate-pulse"
-                                                : "bg-secondary"
+                                        ? "bg-indigo-500"
+                                        : idx === tutorialStep
+                                            ? "bg-indigo-400 animate-pulse"
+                                            : "bg-secondary"
                                         }`}
                                 />
                             ))}
@@ -727,10 +861,10 @@ const MemoryGame = () => {
                                 <div
                                     key={idx}
                                     className={`flex-1 h-1 rounded-full transition-colors ${idx < tutorialStep
-                                            ? "bg-indigo-500"
-                                            : idx === tutorialStep
-                                                ? "bg-indigo-400 animate-pulse"
-                                                : "bg-secondary"
+                                        ? "bg-indigo-500"
+                                        : idx === tutorialStep
+                                            ? "bg-indigo-400 animate-pulse"
+                                            : "bg-secondary"
                                         }`}
                                 />
                             ))}

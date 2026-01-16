@@ -39,6 +39,8 @@ const Caro4Lobby = () => {
             currentUser={{ rank: 756, name: 'You', score: 1850 }}
             theme="amber"
             icon={<Caro4Icon />}
+            defaultBoardSize={10}
+            showBoardSizeSelector={true}
         />
     );
 };

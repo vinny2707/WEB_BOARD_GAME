@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, Gamepad2 } from 'lucide-react';
+import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, Gamepad2, X, Minus, Plus, ChevronLeft } from 'lucide-react';
+import useClickSound from '../../hooks/useClickSound';
+
+// Default game settings
+const DEFAULT_SETTINGS = {
+    boardSize: 20,
+    difficulty: 'medium',
+    wallMode: 'solid', // 'solid' or 'wrap'
+};
+
+const DIFFICULTY_SETTINGS = {
+    easy: { speed: 200, label: 'Dễ' },
+    medium: { speed: 150, label: 'Trung Bình' },
+    hard: { speed: 80, label: 'Khó' }
+};
 
 // Sample leaderboard data
 const sampleLeaderboard = [
@@ -16,12 +30,18 @@ const sampleLeaderboard = [
 
 const SnakeLobby = () => {
     const navigate = useNavigate();
+    const playClick = useClickSound();
     const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
     const [currentUserRank, setCurrentUserRank] = useState({ rank: 456, name: 'You', score: 980 });
     const [highScore, setHighScore] = useState(() => {
         const saved = localStorage.getItem('snakeHighScore');
         return saved ? parseInt(saved, 10) : 0;
     });
+
+    // Settings modal state
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS });
+    const [isCustomMode, setIsCustomMode] = useState(false);
 
     // Countdown timer for daily leaderboard
     useEffect(() => {
@@ -38,19 +58,36 @@ const SnakeLobby = () => {
         return () => clearInterval(timer);
     }, []);
 
+    const openSettings = (e) => {
+        e?.stopPropagation();
+        playClick();
+        setIsCustomMode(false);
+        setShowSettingsModal(true);
+    };
+
+    const handleSaveSettings = () => {
+        playClick();
+        setShowSettingsModal(false);
+        setIsCustomMode(false);
+    };
+
     const handlePlayNow = () => {
-        navigate('/games/snake/play');
+        playClick();
+        navigate('/games/snake/play', { state: { settings: gameSettings } });
     };
 
     const handlePlayWithFriend = () => {
+        playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
+        playClick();
         alert('Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
+        playClick();
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 
@@ -98,16 +135,25 @@ const SnakeLobby = () => {
                             </div>
                         )}
 
-                        <button
-                            className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-green-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-green-700"
-                            onClick={handlePlayNow}
-                        >
-                            <Gamepad2 size={20} />
-                            <div className="flex-1 flex flex-col text-left">
-                                <span className="font-semibold">Chơi ngay</span>
-                                <span className="text-xs opacity-80">Chế độ một người chơi</span>
-                            </div>
-                        </button>
+                        {/* Play Now Button with Settings */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-green-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-green-700"
+                                onClick={handlePlayNow}
+                            >
+                                <Gamepad2 size={20} />
+                                <div className="flex-1 flex flex-col text-left">
+                                    <span className="font-semibold">Chơi ngay</span>
+                                    <span className="text-xs opacity-80">Chế độ một người chơi</span>
+                                </div>
+                            </button>
+                            <button
+                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                onClick={openSettings}
+                            >
+                                <Settings size={18} />
+                            </button>
+                        </div>
 
                         <button
                             className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500"
@@ -200,6 +246,184 @@ const SnakeLobby = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Settings Modal */}
+            {showSettingsModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md overflow-hidden">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                            <div className="flex items-center gap-3">
+                                {isCustomMode && (
+                                    <button
+                                        className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all mr-1"
+                                        onClick={() => setIsCustomMode(false)}
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                )}
+                                <Gamepad2 size={20} className="text-green-500" />
+                                <h2 className="text-lg font-bold text-foreground m-0">
+                                    {isCustomMode ? 'Tùy chỉnh cài đặt' : 'Cài đặt game'}
+                                </h2>
+                            </div>
+                            <button
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                onClick={() => { setShowSettingsModal(false); setIsCustomMode(false); }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Game Info */}
+                        <div className="px-6 py-4 border-b border-border">
+                            <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                                <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-500 rounded-lg p-1.5 flex items-center justify-center text-xl">
+                                    🐍
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-foreground m-0">Rắn Săn Mồi</p>
+                                    <p className="text-xs text-muted-foreground m-0">Ăn táo và trở nên dài hơn!</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Settings Content */}
+                        <div className="px-6 py-5 space-y-4">
+                            {!isCustomMode ? (
+                                <>
+                                    {/* Current Settings Summary */}
+                                    <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Kích thước bàn chơi:</span>
+                                            <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Độ khó:</span>
+                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                }`}>
+                                                {DIFFICULTY_SETTINGS[gameSettings.difficulty]?.label}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Chế độ tường:</span>
+                                            <span className="font-semibold text-foreground">
+                                                {gameSettings.wallMode === 'solid' ? '🧱 Tường cứng' : '🌀 Xuyên tường'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Actions */}
+                                    <button
+                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                        onClick={() => setIsCustomMode(true)}
+                                    >
+                                        Tùy chỉnh cài đặt
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Custom Settings Editor */}
+                                    <div className="space-y-4">
+                                        {/* Board Size */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground">Kích thước bàn:</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {[15, 20, 25, 30].map(size => (
+                                                    <button
+                                                        key={size}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
+                                                            ? 'bg-green-500 text-white'
+                                                            : 'bg-secondary text-foreground hover:bg-accent'
+                                                            }`}
+                                                        onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
+                                                    >
+                                                        {size}x{size}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Difficulty */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Trophy size={16} className="text-muted-foreground" />
+                                                <span className="text-sm text-muted-foreground">Độ khó:</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                {[
+                                                    { key: 'easy', label: 'Dễ', color: 'text-green-500 bg-green-500' },
+                                                    { key: 'medium', label: 'TB', color: 'text-yellow-500 bg-yellow-500' },
+                                                    { key: 'hard', label: 'Khó', color: 'text-red-500 bg-red-500' }
+                                                ].map(diff => (
+                                                    <button
+                                                        key={diff.key}
+                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
+                                                            ? `${diff.color} text-white`
+                                                            : 'bg-secondary text-foreground hover:bg-accent'
+                                                            }`}
+                                                        onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
+                                                    >
+                                                        {diff.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Wall Mode */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-muted-foreground">Chế độ tường:</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.wallMode === 'solid'
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-secondary text-foreground hover:bg-accent'
+                                                        }`}
+                                                    onClick={() => setGameSettings(prev => ({ ...prev, wallMode: 'solid' }))}
+                                                >
+                                                    🧱 Tường cứng
+                                                </button>
+                                                <button
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.wallMode === 'wrap'
+                                                        ? 'bg-green-500 text-white'
+                                                        : 'bg-secondary text-foreground hover:bg-accent'
+                                                        }`}
+                                                    onClick={() => setGameSettings(prev => ({ ...prev, wallMode: 'wrap' }))}
+                                                >
+                                                    🌀 Xuyên tường
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Reset */}
+                                    <button
+                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                                        onClick={() => setGameSettings({ ...DEFAULT_SETTINGS })}
+                                    >
+                                        Đặt lại mặc định
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="px-6 py-4 border-t border-border">
+                            <button
+                                className="w-full py-3 bg-green-500 rounded-xl text-white text-sm font-semibold hover:bg-green-600 transition-all shadow-md"
+                                onClick={handleSaveSettings}
+                            >
+                                {isCustomMode ? 'Áp dụng' : 'Lưu cài đặt'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

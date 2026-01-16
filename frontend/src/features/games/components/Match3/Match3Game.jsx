@@ -1,218 +1,84 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Home,
-  RotateCcw,
-  Settings,
-  Trophy,
-  Zap,
-  Clock,
-  BookOpen,
-  X,
-  ChevronRight,
-} from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Home, RotateCcw, Settings, Trophy, Zap, BookOpen, X, ChevronRight } from "lucide-react";
 
-const BOARD_SIZE = 8;
-const CANDY_TYPES = ["🍎", "🍊", "🍋", "🍇", "🍓", "🫐"];
-const CANDY_COLORS = [
-  "#ef4444",
-  "#f97316",
-  "#eab308",
-  "#8b5cf6",
-  "#ec4899",
-  "#3b82f6",
-];
+// Game Constants
+const CELL_SIZE = 50;
+const DEFAULT_BOARD_SIZE = 8;
+const SWAP_DURATION = 200;
+const GRAVITY = 0.8;
+const BOUNCE_FACTOR = 0.3;
+const FALL_SPEED_LIMIT = 18;
 
-// Tutorial board - fixed layout for learning
-// Swap [2,4] với [2,5] để tạo 3 🍎 theo cột 4
-// Logic: [1,4]=🍎, [2,4]=🍊, [3,4]=🍎, [2,5]=🍎
-// Sau swap [2,4]↔[2,5]: [2,4]=🍎 => cột 4 có 3 🍎 liên tiếp
-const createTutorialBoard = () => {
-  // CANDY_TYPES: 0=🍎, 1=🍊, 2=🍋, 3=🍇, 4=🍓, 5=🫐
-  // [1,4]=12: 🍎(0), [2,4]=20: 🍊(1), [3,4]=28: 🍎(0), [2,5]=21: 🍎(0)
-  const pattern = [
-    2,
-    3,
-    4,
-    5,
-    3,
-    2,
-    4,
-    5, // Row 0: tránh match
-    3,
-    4,
-    5,
-    2,
-    0,
-    3,
-    5,
-    4, // Row 1: col4=🍎
-    4,
-    5,
-    3,
-    4,
-    1,
-    0,
-    2,
-    3, // Row 2: col4=🍊(swap), col5=🍎(swap với)
-    5,
-    2,
-    4,
-    3,
-    0,
-    4,
-    3,
-    2, // Row 3: col4=🍎
-    2,
-    3,
-    5,
-    4,
-    2,
-    5,
-    4,
-    3, // Row 4: tránh match
-    3,
-    4,
-    2,
-    5,
-    3,
-    2,
-    5,
-    4, // Row 5
-    4,
-    5,
-    3,
-    2,
-    4,
-    3,
-    2,
-    5, // Row 6
-    5,
-    2,
-    4,
-    3,
-    5,
-    4,
-    3,
-    2, // Row 7
-  ];
-  return pattern.map((type, i) => ({ type, key: i }));
+// Easing functions
+const easeOutBounce = (t) => {
+  if (t < 1 / 2.75) return 7.5625 * t * t;
+  if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+  if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+  return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
 };
 
-// Tutorial steps - Swap [2,4] with [2,5] (swap ngang để tạo match dọc)
-// Cell indices: [1,4]=12, [2,4]=20, [2,5]=21, [3,4]=28
-const TUTORIAL_STEPS = [
-  {
-    id: 1,
-    title: "Chào mừng đến với Ghép Hàng 3! 🍬",
-    message:
-      "Hãy học cách ghép các viên kẹo để ghi điểm! Swap 2 viên kẹo cạnh nhau để tạo hàng 3+ viên giống nhau.",
-    action: "click_next",
-    highlightCells: [],
-    swapPair: null,
-  },
-  {
-    id: 2,
-    title: "Bước 1: Nhận diện cơ hội! 👀",
-    message:
-      "Nhìn cột thứ 5: có 2 quả 🍎 ở hàng 2 và hàng 4. Nếu swap viên 🍊 ở giữa với 🍎 bên phải, sẽ tạo 3 🍎 liên tiếp theo cột!",
-    action: "click_next",
-    highlightCells: [12, 20, 28], // col 4: row 1,2,3 - highlight cột sẽ match
-    swapPair: null,
-  },
-  {
-    id: 3,
-    title: "Bước 2: Chọn viên đầu tiên! ☝️",
-    message: "Click vào viên 🍊 ở vị trí (hàng 3, cột 5) để chọn nó.",
-    action: "click_cell",
-    highlightCells: [20],
-    targetCell: 20, // [2,4] - viên 🍊
-    swapPair: null,
-  },
-  {
-    id: 4,
-    title: "Bước 3: Swap để tạo match! 🔄",
-    message:
-      "Giờ click vào viên 🍎 bên phải để hoán đổi! Kết quả: 3 quả 🍎 liên tiếp theo cột!",
-    action: "click_cell",
-    highlightCells: [21],
-    targetCell: 21, // [2,5] - viên 🍎 bên phải
-    swapPair: [20, 21],
-  },
-  {
-    id: 5,
-    title: "Tuyệt vời! Bạn đã tạo Match! 🎉",
-    message:
-      "3 quả 🍎 biến mất và bạn ghi điểm! Các viên phía trên rơi xuống lấp đầy chỗ trống.",
-    action: "click_next",
-    highlightCells: [],
-    swapPair: null,
-  },
-  {
-    id: 6,
-    title: "Mẹo: Match 4+ viên! ⚡",
-    message:
-      "Ghép 4 viên = nhiều điểm hơn! Ghép 5 viên = SIÊU điểm! Hãy tìm cơ hội tạo combo dài!",
-    action: "click_next",
-    highlightCells: [],
-    swapPair: null,
-  },
-  {
-    id: 7,
-    title: "Mẹo: Combo Chain! 🔥",
-    message:
-      "Khi viên kẹo rơi xuống có thể tạo thêm match mới → COMBO! Combo tăng điểm gấp bội!",
-    action: "click_next",
-    highlightCells: [],
-    swapPair: null,
-  },
-  {
-    id: 8,
-    title: "Hoàn thành! 🚀",
-    message:
-      "Bạn đã sẵn sàng! Đạt 5000 điểm trong 30 lượt để thắng. Chúc may mắn!",
-    action: "finish",
-    highlightCells: [],
-    swapPair: null,
-  },
+const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const easeOutBack = (t) => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2);
+
+// Candy icons
+const ALL_CANDY_ICONS = [
+  "/Icons8/icons8-strawberry-50.png",
+  "/Icons8/icons8-orange-50.png",
+  "/Icons8/icons8-banana-50.png",
+  "/Icons8/icons8-grapes-50.png",
+  "/Icons8/icons8-cherry-50.png",
+  "/Icons8/icons8-blueberry-50.png",
+  "/Icons8/icons8-watermelon-50.png",
 ];
 
-const createBoard = () => {
+const CANDY_COLORS = [
+  "#ef4444", "#f97316", "#eab308", "#8b5cf6", "#ec4899", "#3b82f6", "#06b6d4"
+];
+
+const DIFFICULTY_SETTINGS = {
+  easy: { candies: 5, label: 'Dễ' },
+  medium: { candies: 6, label: 'Trung Bình' },
+  hard: { candies: 7, label: 'Khó' }
+};
+
+const TUTORIAL_STEPS = [
+  { id: 1, title: "Chào mừng! 🍬", message: "Swap 2 viên kẹo cạnh nhau để tạo hàng 3+!", action: "click_next" },
+  { id: 2, title: "Click chọn kẹo 🎯", message: "Click vào viên kẹo để chọn, rồi click viên bên cạnh!", action: "click_next" },
+  { id: 3, title: "Hoàn thành! 🚀", message: "Đạt điểm mục tiêu để thắng. Chúc may mắn!", action: "finish" }
+];
+
+// Create board with positions
+const createBoard = (size, candyCount) => {
   const board = [];
-  for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
+  for (let i = 0; i < size * size; i++) {
+    const col = i % size;
+    const row = Math.floor(i / size);
     board.push({
-      type: Math.floor(Math.random() * CANDY_TYPES.length),
+      type: Math.floor(Math.random() * candyCount),
       key: Date.now() + i,
+      y: row * CELL_SIZE + CELL_SIZE / 2,
+      targetY: row * CELL_SIZE + CELL_SIZE / 2,
+      vy: 0,
+      scale: 1,
     });
   }
-  return removeInitialMatches(board);
+  return removeInitialMatches(board, size, candyCount);
 };
 
-const removeInitialMatches = (board) => {
+const removeInitialMatches = (board, size, candyCount) => {
   const newBoard = [...board];
-  for (let i = 0; i < BOARD_SIZE * BOARD_SIZE; i++) {
-    const row = Math.floor(i / BOARD_SIZE);
-    const col = i % BOARD_SIZE;
+  for (let i = 0; i < size * size; i++) {
+    const row = Math.floor(i / size);
+    const col = i % size;
     if (col >= 2) {
-      while (
-        newBoard[i].type === newBoard[i - 1].type &&
-        newBoard[i].type === newBoard[i - 2].type
-      ) {
-        newBoard[i] = {
-          ...newBoard[i],
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
-        };
+      while (newBoard[i].type === newBoard[i - 1].type && newBoard[i].type === newBoard[i - 2].type) {
+        newBoard[i] = { ...newBoard[i], type: Math.floor(Math.random() * candyCount) };
       }
     }
     if (row >= 2) {
-      while (
-        newBoard[i].type === newBoard[i - BOARD_SIZE].type &&
-        newBoard[i].type === newBoard[i - BOARD_SIZE * 2].type
-      ) {
-        newBoard[i] = {
-          ...newBoard[i],
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
-        };
+      while (newBoard[i].type === newBoard[i - size].type && newBoard[i].type === newBoard[i - size * 2].type) {
+        newBoard[i] = { ...newBoard[i], type: Math.floor(Math.random() * candyCount) };
       }
     }
   }
@@ -221,882 +87,735 @@ const removeInitialMatches = (board) => {
 
 const Match3Game = () => {
   const navigate = useNavigate();
-  const keyRef = useRef(1000);
-  const [board, setBoard] = useState(() => createBoard());
+  const location = useLocation();
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const imagesRef = useRef([]);
+  const imagesLoadedRef = useRef(false);
+  const particlesRef = useRef([]);
+  const floatingTextsRef = useRef([]);
+  const swapAnimRef = useRef(null);
+  const fallingRef = useRef(false);
+
+  // Audio refs
+  const swapSoundRef = useRef(null);
+  const matchSoundRef = useRef(null);
+  const comboSoundRef = useRef(null);
+  const failSoundRef = useRef(null);
+  const gameStartSoundRef = useRef(null);
+  const victorySoundRef = useRef(null);
+
+  // Settings
+  const lobbySettings = location.state?.settings || {};
+  const boardSize = lobbySettings.boardSize || DEFAULT_BOARD_SIZE;
+  const initialMoves = lobbySettings.moves || 30;
+  const targetScore = lobbySettings.targetScore || 5000;
+  const difficulty = lobbySettings.difficulty || 'medium';
+  const candyCount = DIFFICULTY_SETTINGS[difficulty]?.candies || 6;
+
+  // Game state
+  const [board, setBoard] = useState(() => createBoard(boardSize, candyCount));
   const [selectedCell, setSelectedCell] = useState(null);
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(30);
-  const [gameStatus, setGameStatus] = useState("idle"); // 'idle', 'playing', 'win', 'gameover', 'tutorial'
+  const [moves, setMoves] = useState(initialMoves);
   const [combo, setCombo] = useState(0);
+  const [gameStatus, setGameStatus] = useState("idle");
   const [isAnimating, setIsAnimating] = useState(false);
-  const [matchedCells, setMatchedCells] = useState([]);
-  const [showSettings, setShowSettings] = useState(false);
-  const [targetScore] = useState(5000);
+  const [shakeOffset, setShakeOffset] = useState({ x: 0, y: 0 });
   const [highScore, setHighScore] = useState(() => {
     const saved = localStorage.getItem("match3HighScore");
     return saved ? parseInt(saved, 10) : 0;
   });
-  const [swappingCells, setSwappingCells] = useState({ from: null, to: null });
-  const [explosions, setExplosions] = useState([]);
 
-  // Tutorial states
+  // Tutorial
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [displayedText, setDisplayedText] = useState("");
   const [displayedTitle, setDisplayedTitle] = useState("");
   const typingRef = useRef(null);
 
-  // Typewriter effect
+  const canvasSize = boardSize * CELL_SIZE;
+  const boardRef = useRef(board);
+  const selectedCellRef = useRef(selectedCell);
+  const comboRef = useRef(0);
+
+  useEffect(() => { boardRef.current = board; }, [board]);
+  useEffect(() => { selectedCellRef.current = selectedCell; }, [selectedCell]);
+
+  // Load images
   useEffect(() => {
-    if (gameStatus !== "tutorial") return;
-    const currentStep = TUTORIAL_STEPS[tutorialStep];
-    if (!currentStep) return;
+    const images = ALL_CANDY_ICONS.map(src => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    });
+    imagesRef.current = images;
+    Promise.all(images.map(img => new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    }))).then(() => { imagesLoadedRef.current = true; });
 
-    if (typingRef.current) clearInterval(typingRef.current);
+    // Initialize sounds
+    swapSoundRef.current = new Audio('/sounds/swap.wav');
+    matchSoundRef.current = new Audio('/sounds/match.wav');
+    comboSoundRef.current = new Audio('/sounds/combo.wav');
+    failSoundRef.current = new Audio('/sounds/fail-game.wav');
+    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+    victorySoundRef.current = new Audio('/sounds/Victory.mp3');
 
-    setIsTyping(true);
-    setDisplayedTitle("");
-    setDisplayedText("");
-
-    const fullTitle = currentStep.title;
-    const fullMessage = currentStep.message;
-    let titleIndex = 0;
-    let messageIndex = 0;
-    let typingPhase = "title";
-
-    typingRef.current = setInterval(() => {
-      if (typingPhase === "title") {
-        if (titleIndex < fullTitle.length) {
-          setDisplayedTitle(fullTitle.slice(0, titleIndex + 1));
-          titleIndex++;
-        } else {
-          typingPhase = "message";
-        }
-      } else {
-        if (messageIndex < fullMessage.length) {
-          setDisplayedText(fullMessage.slice(0, messageIndex + 1));
-          messageIndex++;
-        } else {
-          clearInterval(typingRef.current);
-          setIsTyping(false);
-        }
-      }
-    }, 35);
-
-    return () => {
-      if (typingRef.current) clearInterval(typingRef.current);
-    };
-  }, [tutorialStep, gameStatus]);
-
-  const areAdjacent = (i1, i2) => {
-    const r1 = Math.floor(i1 / BOARD_SIZE),
-      c1 = i1 % BOARD_SIZE;
-    const r2 = Math.floor(i2 / BOARD_SIZE),
-      c2 = i2 % BOARD_SIZE;
-    return (
-      (Math.abs(r1 - r2) === 1 && c1 === c2) ||
-      (Math.abs(c1 - c2) === 1 && r1 === r2)
-    );
-  };
-
-  const getSwapDir = (from, to) => {
-    const rf = Math.floor(from / BOARD_SIZE),
-      cf = from % BOARD_SIZE;
-    const rt = Math.floor(to / BOARD_SIZE),
-      ct = to % BOARD_SIZE;
-    if (rt < rf) return "up";
-    if (rt > rf) return "down";
-    if (ct < cf) return "left";
-    if (ct > cf) return "right";
-    return null;
-  };
-
-  const findMatches = useCallback((b) => {
-    const matches = new Set();
-    for (let r = 0; r < BOARD_SIZE; r++) {
-      for (let c = 0; c < BOARD_SIZE - 2; c++) {
-        const i = r * BOARD_SIZE + c;
-        const t = b[i].type;
-        if (t !== null && b[i + 1].type === t && b[i + 2].type === t) {
-          matches.add(i);
-          matches.add(i + 1);
-          matches.add(i + 2);
-          let k = 3;
-          while (c + k < BOARD_SIZE && b[i + k].type === t) {
-            matches.add(i + k);
-            k++;
-          }
-        }
-      }
-    }
-    for (let c = 0; c < BOARD_SIZE; c++) {
-      for (let r = 0; r < BOARD_SIZE - 2; r++) {
-        const i = r * BOARD_SIZE + c;
-        const t = b[i].type;
-        if (
-          t !== null &&
-          b[i + BOARD_SIZE].type === t &&
-          b[i + BOARD_SIZE * 2].type === t
-        ) {
-          matches.add(i);
-          matches.add(i + BOARD_SIZE);
-          matches.add(i + BOARD_SIZE * 2);
-          let k = 3;
-          while (r + k < BOARD_SIZE && b[i + BOARD_SIZE * k].type === t) {
-            matches.add(i + BOARD_SIZE * k);
-            k++;
-          }
-        }
-      }
-    }
-    return Array.from(matches);
+    // Preload sounds
+    swapSoundRef.current.load();
+    matchSoundRef.current.load();
+    comboSoundRef.current.load();
+    failSoundRef.current.load();
+    gameStartSoundRef.current.load();
+    victorySoundRef.current.load();
   }, []);
 
-  const prepareNewBoard = useCallback((b, matchedSet) => {
-    const result = [];
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      const survivors = [];
-      for (let row = BOARD_SIZE - 1; row >= 0; row--) {
-        const idx = row * BOARD_SIZE + col;
-        if (!matchedSet.has(idx)) {
-          survivors.push({ ...b[idx], originalRow: row });
+  // Play sound helper
+  const playSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.currentTime = 0;
+      soundRef.current.play().catch(() => { }); // Ignore autoplay errors
+    }
+  }, []);
+
+  // Find matches
+  const findMatches = useCallback((currentBoard) => {
+    const matches = new Set();
+    for (let row = 0; row < boardSize; row++) {
+      for (let col = 0; col < boardSize - 2; col++) {
+        const idx = row * boardSize + col;
+        const type = currentBoard[idx]?.type;
+        if (type !== null && type !== undefined && currentBoard[idx + 1]?.type === type && currentBoard[idx + 2]?.type === type) {
+          matches.add(idx); matches.add(idx + 1); matches.add(idx + 2);
+          if (col < boardSize - 3 && currentBoard[idx + 3]?.type === type) matches.add(idx + 3);
         }
       }
-      const newCount = BOARD_SIZE - survivors.length;
-      const newCandies = [];
-      for (let i = 0; i < newCount; i++) {
-        keyRef.current++;
-        newCandies.push({
-          type: Math.floor(Math.random() * CANDY_TYPES.length),
-          key: keyRef.current,
-          originalRow: -(newCount - i),
-          isNew: true,
+    }
+    for (let col = 0; col < boardSize; col++) {
+      for (let row = 0; row < boardSize - 2; row++) {
+        const idx = row * boardSize + col;
+        const type = currentBoard[idx]?.type;
+        if (type !== null && type !== undefined && currentBoard[idx + boardSize]?.type === type && currentBoard[idx + boardSize * 2]?.type === type) {
+          matches.add(idx); matches.add(idx + boardSize); matches.add(idx + boardSize * 2);
+          if (row < boardSize - 3 && currentBoard[idx + boardSize * 3]?.type === type) matches.add(idx + boardSize * 3);
+        }
+      }
+    }
+    return matches;
+  }, [boardSize]);
+
+  // Add particles for explosion effect
+  const addParticles = useCallback((indices, currentBoard) => {
+    const idxArray = Array.from(indices);
+    idxArray.forEach(idx => {
+      const candy = currentBoard[idx];
+      if (!candy || candy.type === null || candy.type === undefined) return;
+      const col = idx % boardSize;
+      const row = Math.floor(idx / boardSize);
+      const x = col * CELL_SIZE + CELL_SIZE / 2;
+      const y = candy.y !== undefined ? candy.y : (row * CELL_SIZE + CELL_SIZE / 2);
+      const color = CANDY_COLORS[candy.type] || "#ff6b6b";
+
+      // Create explosion particles
+      for (let i = 0; i < 15; i++) {
+        const angle = (Math.PI * 2 * i) / 15 + Math.random() * 0.4;
+        const speed = 3 + Math.random() * 6;
+        particlesRef.current.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          color,
+          life: 1,
+          size: 5 + Math.random() * 5,
         });
       }
-      const column = [...newCandies.reverse(), ...survivors.reverse()];
-      for (let row = 0; row < BOARD_SIZE; row++) {
-        const candy = column[row];
-        const idx = row * BOARD_SIZE + col;
-        const fallDistance = row - candy.originalRow;
-        result[idx] = {
-          type: candy.type,
-          key: candy.key,
-          fallFrom: candy.originalRow,
-          fallTo: row,
-          fallDistance: fallDistance,
-          isNew: candy.isNew || false,
-        };
+
+      // Add glow particles
+      for (let i = 0; i < 5; i++) {
+        particlesRef.current.push({
+          x: x + (Math.random() - 0.5) * 20,
+          y: y + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -1 - Math.random() * 2,
+          color: "#fff",
+          life: 0.8,
+          size: 3 + Math.random() * 3,
+        });
       }
-    }
-    return result;
-  }, []);
+    });
+  }, [boardSize]);
 
-  const createExplosions = useCallback((matches, b) => {
-    const exps = matches.map((idx, i) => ({
-      id: Date.now() + idx,
-      x: ((idx % BOARD_SIZE) + 0.5) * (100 / BOARD_SIZE),
-      y: (Math.floor(idx / BOARD_SIZE) + 0.5) * (100 / BOARD_SIZE),
-      color: CANDY_COLORS[b[idx].type] || "#fff",
-      delay: i * 10,
-    }));
-    setExplosions((prev) => [...prev, ...exps]);
-    setTimeout(
-      () =>
-        setExplosions((prev) =>
-          prev.filter((e) => !exps.find((ex) => ex.id === e.id))
-        ),
-      500
-    );
-  }, []);
+  // Process matches with falling animation
+  const processMatches = useCallback(() => {
+    const currentBoard = boardRef.current;
+    const matches = findMatches(currentBoard);
 
-  const processMatches = useCallback(
-    async (b, comboCount = 0) => {
-      const matches = findMatches(b);
-      if (matches.length === 0) {
-        setCombo(0);
-        setIsAnimating(false);
-        return b;
-      }
-      const matchedSet = new Set(matches);
-      setMatchedCells(matches);
-      createExplosions(matches, b);
-      const pts = matches.length * 10 * (comboCount + 1);
-      setScore((prev) => {
-        const ns = prev + pts;
-        if (ns > highScore) {
-          setHighScore(ns);
-          localStorage.setItem("match3HighScore", ns.toString());
-        }
-        return ns;
-      });
-      setCombo(comboCount + 1);
-      await new Promise((r) => setTimeout(r, 250));
-      setMatchedCells([]);
-      const newBoard = prepareNewBoard(b, matchedSet);
-      setBoard(newBoard);
-      await new Promise((r) => setTimeout(r, 400));
-      setBoard((prev) => prev.map((c) => ({ type: c.type, key: c.key })));
-      return processMatches(
-        newBoard.map((c) => ({ type: c.type, key: c.key })),
-        comboCount + 1
-      );
-    },
-    [findMatches, prepareNewBoard, createExplosions, highScore]
-  );
-
-  const handleCellClick = async (index) => {
-    // Tutorial mode
-    if (gameStatus === "tutorial") {
-      const currentStep = TUTORIAL_STEPS[tutorialStep];
-      if (currentStep?.action === "click_cell" && !isTyping) {
-        if (currentStep.targetCell === index) {
-          // Step 3: Chọn cell đầu tiên
-          if (!currentStep.swapPair) {
-            setSelectedCell(index);
-            setTutorialStep((prev) => prev + 1);
-          } else {
-            // Step 4: Thực hiện swap và tạo match effect
-            const [from, to] = currentStep.swapPair;
-            setSelectedCell(null);
-            setSwappingCells({ from, to });
-            await new Promise((r) => setTimeout(r, 250));
-
-            const newBoard = [...board];
-            [newBoard[from], newBoard[to]] = [newBoard[to], newBoard[from]];
-            setBoard(newBoard);
-            setSwappingCells({ from: null, to: null });
-
-            // Hiệu ứng match: highlight các cells sẽ match
-            const matchCells = [12, 20, 28]; // col 4: row 1,2,3
-            setMatchedCells(matchCells);
-
-            // Tạo hiệu ứng explosion
-            createExplosions(matchCells, newBoard);
-
-            await new Promise((r) => setTimeout(r, 400));
-
-            // Xóa các cells match và tạo hiệu ứng rơi
-            const matchedSet = new Set(matchCells);
-            const fallingBoard = prepareNewBoard(newBoard, matchedSet);
-            setMatchedCells([]);
-            setBoard(fallingBoard);
-
-            await new Promise((r) => setTimeout(r, 400));
-
-            // Reset board state sau animation
-            setBoard((prev) => prev.map((c) => ({ type: c.type, key: c.key })));
-
-            setTutorialStep((prev) => prev + 1);
-          }
-        }
-      }
+    if (matches.size === 0) {
+      setIsAnimating(false);
+      comboRef.current = 0;
+      setCombo(0);
       return;
     }
 
-    if (isAnimating || gameStatus !== "playing") return;
+    addParticles(matches, currentBoard);
+
+    // Play match sound
+    playSound(matchSoundRef);
+
+    const currentCombo = comboRef.current;
+    const matchScore = matches.size * 10 * (currentCombo + 1);
+    setScore(prev => {
+      const newScore = prev + matchScore;
+      if (newScore > highScore) {
+        setHighScore(newScore);
+        localStorage.setItem("match3HighScore", newScore.toString());
+      }
+      return newScore;
+    });
+
+    comboRef.current = currentCombo + 1;
+    setCombo(comboRef.current);
+
+    if (currentCombo > 0) {
+      // Play combo sound
+      playSound(comboSoundRef);
+      const texts = ["Nice!", "Great!", "Amazing!", "Incredible!"];
+      floatingTextsRef.current.push({
+        text: texts[Math.min(currentCombo, texts.length - 1)],
+        x: canvasSize / 2,
+        y: canvasSize / 2,
+        life: 1,
+      });
+      if (currentCombo >= 2) {
+        setShakeOffset({ x: 8, y: 0 });
+        setTimeout(() => setShakeOffset({ x: -8, y: 4 }), 50);
+        setTimeout(() => setShakeOffset({ x: 0, y: 0 }), 150);
+      }
+    }
+
+    // Remove matched - set scale to 0 for pop animation
+    let newBoard = currentBoard.map((cell, idx) =>
+      matches.has(idx) ? { ...cell, type: null, scale: 0 } : cell
+    );
+    boardRef.current = newBoard;
+
+    // Apply gravity after short delay
+    setTimeout(() => {
+      // For each column, calculate new positions
+      for (let col = 0; col < boardSize; col++) {
+        const column = [];
+        for (let row = boardSize - 1; row >= 0; row--) {
+          const idx = row * boardSize + col;
+          if (newBoard[idx].type !== null) {
+            column.push({ ...newBoard[idx] });
+          }
+        }
+
+        // Place existing candies from bottom
+        for (let row = boardSize - 1; row >= 0; row--) {
+          const idx = row * boardSize + col;
+          const fromBottom = boardSize - 1 - row;
+          const targetY = row * CELL_SIZE + CELL_SIZE / 2;
+
+          if (fromBottom < column.length) {
+            // Existing candy falls down
+            newBoard[idx] = {
+              ...column[fromBottom],
+              targetY: targetY,
+              vy: column[fromBottom].y < targetY ? column[fromBottom].vy : 0,
+            };
+          } else {
+            // New candy spawns above
+            const spawnRow = fromBottom - column.length;
+            newBoard[idx] = {
+              type: Math.floor(Math.random() * candyCount),
+              key: Date.now() + Math.random(),
+              y: -CELL_SIZE * (spawnRow + 1) - CELL_SIZE / 2,
+              targetY: targetY,
+              vy: 0,
+              scale: 1,
+            };
+          }
+        }
+      }
+
+      boardRef.current = newBoard;
+      fallingRef.current = true;
+      setBoard([...newBoard]);
+    }, 150);
+  }, [findMatches, boardSize, candyCount, highScore, canvasSize, addParticles]);
+
+  // Handle click
+  const handleCanvasClick = useCallback((e) => {
+    if (isAnimating || (gameStatus !== "playing" && gameStatus !== "tutorial")) return;
+    if (swapAnimRef.current || fallingRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasSize / rect.width;
+    const scaleY = canvasSize / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    const col = Math.floor(x / CELL_SIZE);
+    const row = Math.floor(y / CELL_SIZE);
+    if (col < 0 || col >= boardSize || row < 0 || row >= boardSize) return;
+    const idx = row * boardSize + col;
 
     if (selectedCell === null) {
-      setSelectedCell(index);
-    } else if (selectedCell === index) {
+      setSelectedCell(idx);
+    } else if (selectedCell === idx) {
       setSelectedCell(null);
-    } else if (areAdjacent(selectedCell, index)) {
-      setIsAnimating(true);
-      const from = selectedCell,
-        to = index;
-      setSelectedCell(null);
-
-      setSwappingCells({ from, to });
-      await new Promise((r) => setTimeout(r, 250));
-
-      const newBoard = [...board];
-      [newBoard[from], newBoard[to]] = [newBoard[to], newBoard[from]];
-      setBoard(newBoard);
-      setSwappingCells({ from: null, to: null });
-
-      const matches = findMatches(newBoard);
-      if (matches.length === 0) {
-        await new Promise((r) => setTimeout(r, 100));
-        setSwappingCells({ from: to, to: from });
-        await new Promise((r) => setTimeout(r, 250));
-        [newBoard[from], newBoard[to]] = [newBoard[to], newBoard[from]];
-        setBoard(newBoard);
-        setSwappingCells({ from: null, to: null });
-        setIsAnimating(false);
-      } else {
-        setMoves((prev) => prev - 1);
-        await processMatches(newBoard);
-      }
     } else {
-      setSelectedCell(index);
-    }
-  };
+      const row1 = Math.floor(selectedCell / boardSize);
+      const col1 = selectedCell % boardSize;
+      const isAdjacent = (Math.abs(row1 - row) === 1 && col1 === col) || (Math.abs(col1 - col) === 1 && row1 === row);
 
+      if (isAdjacent) {
+        const savedSelectedCell = selectedCell; // Save before clearing
+        playSound(swapSoundRef); // Play swap sound
+        swapAnimRef.current = {
+          idx1: savedSelectedCell,
+          idx2: idx,
+          startTime: performance.now(),
+          duration: SWAP_DURATION,
+        };
+
+        setTimeout(() => {
+          const currentBoard = boardRef.current;
+          const newBoard = currentBoard.map((cell, i) => ({ ...cell }));
+
+          // Swap only the type between two cells
+          const type1 = newBoard[savedSelectedCell].type;
+          const type2 = newBoard[idx].type;
+          newBoard[savedSelectedCell].type = type2;
+          newBoard[idx].type = type1;
+
+          swapAnimRef.current = null;
+
+          if (findMatches(newBoard).size > 0) {
+            setIsAnimating(true);
+            setMoves(prev => prev - 1);
+            boardRef.current = newBoard;
+            setBoard(newBoard);
+            comboRef.current = 0;
+            setTimeout(() => processMatches(), 50);
+          } else {
+            // Invalid swap - swap back with animation
+            swapAnimRef.current = {
+              idx1: idx,
+              idx2: savedSelectedCell,
+              startTime: performance.now(),
+              duration: SWAP_DURATION,
+            };
+            setTimeout(() => { swapAnimRef.current = null; }, SWAP_DURATION);
+          }
+        }, SWAP_DURATION);
+
+        setSelectedCell(null);
+      } else {
+        setSelectedCell(idx);
+      }
+    }
+  }, [board, selectedCell, boardSize, isAnimating, gameStatus, findMatches, processMatches, canvasSize]);
+
+  // Render loop with physics
   useEffect(() => {
-    if (gameStatus === "playing") {
-      if (score >= targetScore) setGameStatus("win");
-      else if (moves <= 0) setGameStatus("gameover");
-    }
-  }, [score, moves, targetScore, gameStatus]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
 
+    const render = () => {
+      ctx.fillStyle = "#fff8f0";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+      // Grid
+      ctx.strokeStyle = "rgba(0,0,0,0.03)";
+      for (let i = 0; i <= boardSize; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, canvasSize);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(canvasSize, i * CELL_SIZE);
+        ctx.stroke();
+      }
+
+      // Cell backgrounds
+      for (let i = 0; i < boardSize * boardSize; i++) {
+        const col = i % boardSize;
+        const row = Math.floor(i / boardSize);
+        ctx.fillStyle = (row + col) % 2 === 0 ? "rgba(255,255,255,0.5)" : "rgba(255,240,220,0.3)";
+        ctx.beginPath();
+        ctx.roundRect(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4, 8);
+        ctx.fill();
+      }
+
+      // Swap animation
+      const swap = swapAnimRef.current;
+      let swapProgress = 0;
+      if (swap) {
+        const elapsed = performance.now() - swap.startTime;
+        swapProgress = Math.min(elapsed / swap.duration, 1);
+      }
+
+      // Update falling physics
+      let stillFalling = false;
+      const currentBoard = boardRef.current;
+
+      currentBoard.forEach((candy, idx) => {
+        if (candy.type === null) return;
+
+        // Physics update
+        if (candy.y < candy.targetY) {
+          candy.vy = Math.min(candy.vy + GRAVITY, FALL_SPEED_LIMIT);
+          candy.y += candy.vy;
+
+          // Check if reached target
+          if (candy.y >= candy.targetY) {
+            candy.y = candy.targetY;
+            // Bounce effect
+            if (candy.vy > 3) {
+              candy.vy = -candy.vy * BOUNCE_FACTOR;
+              candy.scale = 0.85; // Squish on impact
+            } else {
+              candy.vy = 0;
+            }
+          }
+          stillFalling = true;
+        } else if (candy.y > candy.targetY) {
+          // Bouncing back up
+          candy.vy += GRAVITY;
+          candy.y += candy.vy;
+          if (candy.y >= candy.targetY && candy.vy > 0) {
+            candy.y = candy.targetY;
+            candy.vy = Math.abs(candy.vy) > 1 ? -candy.vy * BOUNCE_FACTOR : 0;
+          }
+          stillFalling = true;
+        }
+
+        // Scale recovery
+        if (candy.scale < 1) {
+          candy.scale = Math.min(candy.scale + 0.08, 1);
+          stillFalling = true;
+        }
+      });
+
+      // Check if falling finished
+      if (fallingRef.current && !stillFalling) {
+        fallingRef.current = false;
+        // Check for chain matches
+        setTimeout(() => processMatches(), 100);
+      }
+
+      // Draw candies
+      const selected = selectedCellRef.current;
+
+      currentBoard.forEach((candy, idx) => {
+        if (candy.type === null || candy.type === undefined) return;
+
+        const col = idx % boardSize;
+        let x = col * CELL_SIZE + CELL_SIZE / 2;
+        let y = candy.y;
+
+        // Swap animation offset
+        if (swap) {
+          const eased = easeInOutCubic(swapProgress);
+          if (idx === swap.idx1) {
+            const col2 = swap.idx2 % boardSize;
+            const row2 = Math.floor(swap.idx2 / boardSize);
+            const targetX = col2 * CELL_SIZE + CELL_SIZE / 2;
+            const targetY = row2 * CELL_SIZE + CELL_SIZE / 2;
+            x = x + (targetX - x) * eased;
+            y = candy.targetY + (targetY - candy.targetY) * eased;
+          } else if (idx === swap.idx2) {
+            const col1 = swap.idx1 % boardSize;
+            const row1 = Math.floor(swap.idx1 / boardSize);
+            const targetX = col1 * CELL_SIZE + CELL_SIZE / 2;
+            const targetY = row1 * CELL_SIZE + CELL_SIZE / 2;
+            x = x + (targetX - x) * eased;
+            y = candy.targetY + (targetY - candy.targetY) * eased;
+          }
+        }
+
+        const isSelected = selected === idx;
+        const baseSize = CELL_SIZE - 10;
+        let drawSize = baseSize * candy.scale;
+
+        // Pulse for selected
+        if (isSelected) {
+          const pulse = Math.sin(performance.now() / 150) * 0.08 + 1.1;
+          drawSize = baseSize * pulse;
+        }
+
+        // Squish effect (wider when compressed)
+        const squishX = candy.scale < 1 ? 1 + (1 - candy.scale) * 0.5 : 1;
+        const squishY = candy.scale;
+
+        // Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.12)";
+        ctx.beginPath();
+        ctx.ellipse(x + 2, y + 3, (drawSize / 2) * squishX, (drawSize / 2) * squishY, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw candy
+        ctx.save();
+        if (isSelected) {
+          ctx.shadowColor = CANDY_COLORS[candy.type];
+          ctx.shadowBlur = 25;
+        }
+
+        ctx.translate(x, y);
+        ctx.scale(squishX, squishY);
+
+        if (imagesLoadedRef.current && imagesRef.current[candy.type]) {
+          ctx.drawImage(imagesRef.current[candy.type], -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+        } else {
+          const gradient = ctx.createRadialGradient(-drawSize * 0.2, -drawSize * 0.2, 0, 0, 0, drawSize / 2);
+          gradient.addColorStop(0, "#fff");
+          gradient.addColorStop(0.4, CANDY_COLORS[candy.type]);
+          gradient.addColorStop(1, CANDY_COLORS[candy.type]);
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(0, 0, drawSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // Particles
+      particlesRef.current = particlesRef.current.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.25;
+        p.life -= 0.025;
+        if (p.life <= 0) return false;
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        return true;
+      });
+
+      // Floating texts
+      floatingTextsRef.current = floatingTextsRef.current.filter(t => {
+        t.y -= 1.5;
+        t.life -= 0.018;
+        if (t.life <= 0) return false;
+        const scale = easeOutBack(Math.min(1, (1 - t.life) * 3));
+        ctx.globalAlpha = t.life;
+        ctx.font = `bold ${28 * scale}px sans-serif`;
+        ctx.fillStyle = "#ff6b6b";
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 4;
+        ctx.textAlign = "center";
+        ctx.strokeText(t.text, t.x, t.y);
+        ctx.fillText(t.text, t.x, t.y);
+        ctx.globalAlpha = 1;
+        return true;
+      });
+
+      animationRef.current = requestAnimationFrame(render);
+    };
+
+    animationRef.current = requestAnimationFrame(render);
+    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
+  }, [boardSize, canvasSize, processMatches]);
+
+  // Check win/lose
+  useEffect(() => {
+    if (gameStatus === "playing" && !isAnimating && !fallingRef.current) {
+      if (score >= targetScore) {
+        setGameStatus("win");
+        playSound(victorySoundRef);
+      } else if (moves <= 0) {
+        setGameStatus("gameover");
+        playSound(failSoundRef);
+      }
+    }
+  }, [gameStatus, isAnimating, score, moves, targetScore, playSound]);
+
+  // Game controls
   const startGame = () => {
-    keyRef.current = 1000;
-    setBoard(createBoard());
+    playSound(gameStartSoundRef);
+    const newBoard = createBoard(boardSize, candyCount);
+    boardRef.current = newBoard;
+    setBoard(newBoard);
     setScore(0);
-    setMoves(30);
+    setMoves(initialMoves);
     setCombo(0);
+    comboRef.current = 0;
     setSelectedCell(null);
-    setGameStatus("playing");
     setIsAnimating(false);
-    setMatchedCells([]);
-    setSwappingCells({ from: null, to: null });
-    setExplosions([]);
+    particlesRef.current = [];
+    floatingTextsRef.current = [];
+    swapAnimRef.current = null;
+    fallingRef.current = false;
+    setGameStatus("playing");
   };
 
   const startTutorial = () => {
-    setBoard(createTutorialBoard());
+    const newBoard = createBoard(boardSize, candyCount);
+    boardRef.current = newBoard;
+    setBoard(newBoard);
     setScore(0);
-    setMoves(30);
-    setCombo(0);
-    setSelectedCell(null);
-    setGameStatus("tutorial");
+    setMoves(99);
     setTutorialStep(0);
-    setIsTyping(false);
-    setDisplayedText("");
-    setDisplayedTitle("");
-    setMatchedCells([]);
+    setGameStatus("tutorial");
   };
 
-  const exitTutorial = () => {
-    setGameStatus("idle");
-    setTutorialStep(0);
-    setBoard(createBoard());
-    setSelectedCell(null);
-  };
+  const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
 
   const nextTutorialStep = () => {
-    const currentStep = TUTORIAL_STEPS[tutorialStep];
-    if (currentStep?.action === "finish") {
-      startGame();
-    } else {
-      setTutorialStep((prev) => prev + 1);
-    }
+    if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") startGame();
+    else setTutorialStep(prev => prev + 1);
   };
 
-  const restartGame = () => {
-    keyRef.current = 1000;
-    setBoard(createBoard());
-    setScore(0);
-    setMoves(30);
-    setCombo(0);
-    setSelectedCell(null);
-    setGameStatus("playing");
-    setIsAnimating(false);
-    setMatchedCells([]);
-    setSwappingCells({ from: null, to: null });
-    setExplosions([]);
-  };
-
-  const getSwapTransform = (idx) => {
-    if (swappingCells.from === null) return null;
-    const dir = getSwapDir(swappingCells.from, swappingCells.to);
-    if (idx === swappingCells.from) {
-      switch (dir) {
-        case "up":
-          return "translateY(-100%)";
-        case "down":
-          return "translateY(100%)";
-        case "left":
-          return "translateX(-100%)";
-        case "right":
-          return "translateX(100%)";
+  // Typewriter
+  useEffect(() => {
+    if (gameStatus !== "tutorial") return;
+    const step = TUTORIAL_STEPS[tutorialStep];
+    if (!step) return;
+    if (typingRef.current) clearInterval(typingRef.current);
+    setIsTyping(true);
+    setDisplayedTitle("");
+    setDisplayedText("");
+    let ti = 0, mi = 0, phase = "title";
+    typingRef.current = setInterval(() => {
+      if (phase === "title") {
+        if (ti < step.title.length) setDisplayedTitle(step.title.slice(0, ++ti));
+        else phase = "message";
+      } else {
+        if (mi < step.message.length) setDisplayedText(step.message.slice(0, ++mi));
+        else { clearInterval(typingRef.current); setIsTyping(false); }
       }
-    }
-    if (idx === swappingCells.to) {
-      switch (dir) {
-        case "up":
-          return "translateY(100%)";
-        case "down":
-          return "translateY(-100%)";
-        case "left":
-          return "translateX(100%)";
-        case "right":
-          return "translateX(-100%)";
-      }
-    }
-    return null;
-  };
+    }, 35);
+    return () => clearInterval(typingRef.current);
+  }, [tutorialStep, gameStatus]);
 
-  const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
-  const showNextButton =
-    gameStatus === "tutorial" &&
-    (currentTutorialStep?.action === "click_next" ||
-      currentTutorialStep?.action === "finish") &&
-    !isTyping;
-
-  const renderCell = (candy, idx) => {
-    const isSelected = selectedCell === idx;
-    const isMatched = matchedCells.includes(idx);
-    const isSwapping = swappingCells.from === idx || swappingCells.to === idx;
-    const swapTf = getSwapTransform(idx);
-    const hasFall = candy.fallDistance > 0;
-    const fallOffset = hasFall ? -candy.fallDistance * 100 : 0;
-    const isHighlighted =
-      gameStatus === "tutorial" &&
-      currentTutorialStep?.highlightCells?.includes(idx);
-
-    return (
-      <div
-        key={idx}
-        className={`aspect-square rounded-lg flex items-center justify-center bg-secondary border border-border relative overflow-hidden
-                    ${isSelected ? "ring-2 ring-pink-500 ring-offset-1" : ""}
-                    ${
-                      isHighlighted
-                        ? "ring-2 ring-yellow-400 ring-offset-1 animate-pulse"
-                        : ""
-                    }
-                    ${
-                      !isAnimating &&
-                      (gameStatus === "playing" || gameStatus === "tutorial")
-                        ? "cursor-pointer hover:bg-accent"
-                        : ""
-                    }`}
-        onClick={() => handleCellClick(idx)}
-      >
-        {candy.type !== null && (
-          <div
-            key={candy.key}
-            className="absolute inset-0 flex items-center justify-center text-2xl sm:text-3xl select-none will-change-transform"
-            style={{
-              "--fall-from": `${fallOffset}%`,
-              "--fall-to": "0%",
-              transform:
-                swapTf ||
-                (isMatched
-                  ? "scale(0) rotate(180deg)"
-                  : isSelected
-                  ? "scale(1.1)"
-                  : "translateY(var(--fall-to))"),
-              opacity: isMatched ? 0 : 1,
-              animation:
-                hasFall && !swapTf && !isMatched
-                  ? `candyFall 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards`
-                  : "none",
-              transition: swapTf
-                ? "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
-                : isMatched
-                ? "transform 0.2s ease-out, opacity 0.2s ease-out"
-                : "transform 0.1s ease-out",
-              zIndex: isSwapping ? 10 : 1,
-              animationDelay: hasFall ? `${(idx % BOARD_SIZE) * 15}ms` : "0ms",
-            }}
-          >
-            <span className="drop-shadow">{CANDY_TYPES[candy.type]}</span>
-          </div>
-        )}
-        {isMatched && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className="w-8 h-8 rounded-full animate-ping"
-              style={{ backgroundColor: CANDY_COLORS[candy.type] + "80" }}
-            />
-          </div>
-        )}
-      </div>
-    );
-  };
+  const currentStep = TUTORIAL_STEPS[tutorialStep];
 
   return (
     <div className="flex flex-col flex-1 w-full h-full bg-background">
-      <style>{`
-                @keyframes candyFall {
-                    from { transform: translateY(var(--fall-from)); }
-                    to { transform: translateY(var(--fall-to)); }
-                }
-                @keyframes comboPopIn {
-                    0% { transform: scale(0.5); opacity: 0; }
-                    60% { transform: scale(1.15); opacity: 1; }
-                    100% { transform: scale(1); opacity: 1; }
-                }
-                @keyframes particle-fly-0 { 0%{transform:translate(-50%,-50%)scale(1);opacity:1}100%{transform:translate(calc(-50%+20px),calc(-50%-20px))scale(0);opacity:0} }
-                @keyframes particle-fly-1 { 0%{transform:translate(-50%,-50%)scale(1);opacity:1}100%{transform:translate(calc(-50%+25px),calc(-50%+10px))scale(0);opacity:0} }
-                @keyframes particle-fly-2 { 0%{transform:translate(-50%,-50%)scale(1);opacity:1}100%{transform:translate(calc(-50%-20px),calc(-50%+20px))scale(0);opacity:0} }
-                @keyframes particle-fly-3 { 0%{transform:translate(-50%,-50%)scale(1);opacity:1}100%{transform:translate(calc(-50%-25px),calc(-50%-10px))scale(0);opacity:0} }
-                @keyframes score-fly { 0%{transform:translate(-50%,-50%)scale(.5);opacity:0}40%{transform:translate(-50%,-70%)scale(1);opacity:1}100%{transform:translate(-50%,-100%)scale(.8);opacity:0} }
-            `}</style>
-
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
-        <button
-          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
-          onClick={() => navigate("/games/match3")}
-        >
+        <button className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all" onClick={() => navigate("/games/match3")}>
           <Home size={20} />
         </button>
-        <div className="text-lg font-bold tracking-wider text-foreground">
-          {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "GHÉP HÀNG 3"}
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold tracking-wider text-foreground">
+            {gameStatus === "tutorial" ? "📖 HƯỚNG DẪN" : "🍬 GHÉP HÀNG 3"}
+          </span>
+          {gameStatus !== "tutorial" && (
+            <>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' : difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'}`}>
+                {DIFFICULTY_SETTINGS[difficulty]?.label}
+              </span>
+              <span className="text-xs px-2 py-1 rounded-full font-medium bg-purple-500/20 text-purple-500">{boardSize}x{boardSize}</span>
+            </>
+          )}
         </div>
-        <button
-          className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
-          onClick={() => setShowSettings(!showSettings)}
-        >
-          <Settings size={20} />
-        </button>
+        <div className="w-10" />
       </div>
 
+      {/* Score */}
       {gameStatus !== "idle" && gameStatus !== "tutorial" && (
-        <div className="flex items-center justify-center gap-3 p-3 bg-card flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-full">
-            <Trophy size={14} className="text-yellow-500" />
-            <span className="text-xs text-muted-foreground">Mục tiêu:</span>
-            <span className="font-mono text-lg font-bold text-yellow-500">
-              {targetScore.toLocaleString()}
-            </span>
+        <div className="flex items-center justify-center gap-4 p-3 bg-card border-b border-border">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg">
+            <Trophy size={16} className="text-yellow-500" />
+            <span className="text-sm text-muted-foreground">Mục tiêu:</span>
+            <span className="font-mono font-bold text-yellow-500">{targetScore.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-full">
-            <Zap size={14} className="text-pink-500" />
-            <span className="text-xs text-muted-foreground">Điểm:</span>
-            <span className="font-mono text-lg font-bold text-pink-500">
-              {score.toLocaleString()}
-            </span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg">
+            <Zap size={16} className="text-green-500" />
+            <span className="text-sm text-muted-foreground">Điểm:</span>
+            <span className="font-mono font-bold text-green-500">{score.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-full">
-            <Clock size={14} className="text-cyan-500" />
-            <span className="text-xs text-muted-foreground">Lượt:</span>
-            <span className="font-mono text-lg font-bold text-cyan-500">
-              {moves}
-            </span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg">
+            <span className="text-sm text-muted-foreground">Lượt:</span>
+            <span className={`font-mono font-bold ${moves <= 5 ? 'text-red-500' : 'text-foreground'}`}>{moves}</span>
           </div>
-        </div>
-      )}
-
-      {/* Fixed height container for combo */}
-      {gameStatus === "playing" && (
-        <div className="h-8 flex items-center justify-center">
           {combo > 1 && (
-            <span
-              key={combo}
-              className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-500"
-              style={{ animation: "comboPopIn 0.3s ease-out" }}
-            >
-              🔥 COMBO x{combo}! 🔥
-            </span>
+            <div className="px-3 py-1.5 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-lg animate-pulse">
+              <span className="font-bold text-pink-500">COMBO x{combo}!</span>
+            </div>
           )}
         </div>
       )}
 
-      <div
-        className={`flex-1 flex items-center justify-center p-4 gap-6 ${
-          gameStatus === "tutorial" ? "md:pb-4 pb-48" : ""
-        }`}
-      >
-        {/* Idle Screen */}
-        {gameStatus === "idle" && (
-          <div className="flex flex-col items-center justify-center gap-4 p-8 bg-card rounded-2xl shadow-lg border-2 border-border">
-            <div className="text-3xl font-bold text-foreground mb-2">
-              🍬 Ghép Hàng 3 🍬
-            </div>
-            <button
-              className="flex items-center gap-2 px-6 py-3 bg-pink-500 rounded-xl text-white font-semibold hover:bg-pink-600 transition-all"
-              onClick={startGame}
-            >
-              🎮 Bắt đầu chơi
-            </button>
-            <button
-              className="flex items-center gap-2 px-6 py-3 bg-blue-500 rounded-xl text-white font-semibold hover:bg-blue-600 transition-all"
-              onClick={startTutorial}
-            >
-              <BookOpen size={20} /> Hướng dẫn chơi
-            </button>
+      {/* Game */}
+      <div className="flex-1 flex items-center justify-center gap-6 p-4">
+        <div className="relative bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl p-3"
+          style={{ boxShadow: '8px 8px 20px rgba(0,0,0,0.12), -8px -8px 20px rgba(255,255,255,0.9)', transform: `translate(${shakeOffset.x}px, ${shakeOffset.y}px)` }}>
+          <div className="rounded-xl overflow-hidden cursor-pointer" style={{ boxShadow: 'inset 4px 4px 10px rgba(0,0,0,0.08), inset -4px -4px 10px rgba(255,255,255,0.6)' }}>
+            <canvas ref={canvasRef} width={canvasSize} height={canvasSize} onClick={handleCanvasClick} style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />
           </div>
-        )}
 
-        {/* Game Board */}
-        {gameStatus !== "idle" && (
-          <div className="bg-card rounded-2xl p-1.5 shadow-lg border-2 border-border relative overflow-hidden">
-            <div
-              className="grid gap-0.5"
-              style={{
-                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
-                width: "min(88vw, 380px)",
-                height: "min(88vw, 380px)",
-              }}
-            >
-              {board.map((candy, idx) => renderCell(candy, idx))}
+          {(gameStatus === "idle" || gameStatus === "win" || gameStatus === "gameover") && (
+            <div className="absolute inset-3 bg-black/60 flex flex-col items-center justify-center rounded-xl backdrop-blur-sm">
+              {gameStatus === "idle" && (
+                <>
+                  <div className="text-3xl font-bold text-white mb-4">🍬 Ghép Hàng 3</div>
+                  <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-pink-500 rounded-xl text-white font-semibold shadow-lg mb-3" onClick={startGame}>
+                    <Zap size={20} /> Bắt đầu
+                  </button>
+                  <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white font-semibold shadow-lg" onClick={startTutorial}>
+                    <BookOpen size={20} /> Hướng dẫn
+                  </button>
+                  <div className="text-sm text-gray-400 mt-4">{boardSize}x{boardSize} | {initialMoves} lượt | {targetScore.toLocaleString()} điểm</div>
+                </>
+              )}
+              {gameStatus === "win" && (
+                <>
+                  <div className="text-3xl font-bold text-green-400 mb-2">🎉 Chiến Thắng!</div>
+                  <div className="text-xl text-white mb-4">Điểm: <span className="text-yellow-400 font-bold">{score.toLocaleString()}</span></div>
+                  <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white font-semibold shadow-lg" onClick={startGame}>
+                    <RotateCcw size={20} /> Chơi lại
+                  </button>
+                </>
+              )}
+              {gameStatus === "gameover" && (
+                <>
+                  <div className="text-3xl font-bold text-red-400 mb-2">💔 Hết lượt!</div>
+                  <div className="text-xl text-white mb-4">Điểm: <span className="text-yellow-400 font-bold">{score.toLocaleString()}</span></div>
+                  <button className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-pink-500 rounded-xl text-white font-semibold shadow-lg" onClick={startGame}>
+                    <RotateCcw size={20} /> Thử lại
+                  </button>
+                </>
+              )}
             </div>
+          )}
+        </div>
 
-            <div className="absolute inset-0 pointer-events-none">
-              {explosions.map((exp) => (
-                <div
-                  key={exp.id}
-                  className="absolute"
-                  style={{
-                    left: `${exp.x}%`,
-                    top: `${exp.y}%`,
-                    transform: "translate(-50%,-50%)",
-                    zIndex: 50,
-                  }}
-                >
-                  <div
-                    className="absolute animate-ping"
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      backgroundColor: exp.color,
-                      opacity: 0.6,
-                      transform: "translate(-50%,-50%)",
-                      animationDuration: "0.3s",
-                    }}
-                  />
-                  {[0, 1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="absolute text-xs"
-                      style={{
-                        animation: `particle-fly-${i} 0.3s ease-out forwards`,
-                        animationDelay: `${exp.delay + i * 10}ms`,
-                        opacity: 0,
-                      }}
-                    >
-                      ✨
-                    </div>
-                  ))}
-                  <div
-                    className="absolute text-[10px] font-bold text-yellow-400"
-                    style={{
-                      animation: "score-fly 0.4s ease-out forwards",
-                      textShadow: "0 1px 2px rgba(0,0,0,0.5)",
-                    }}
-                  >
-                    +10
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {(gameStatus === "win" || gameStatus === "gameover") && (
-              <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center rounded-2xl">
-                {gameStatus === "win" ? (
-                  <>
-                    <div className="text-4xl mb-2">🎉</div>
-                    <div className="text-xl font-bold text-green-400 mb-2">
-                      THẮNG!
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-4xl mb-2">😢</div>
-                    <div className="text-xl font-bold text-red-400 mb-2">
-                      HẾT LƯỢT!
-                    </div>
-                  </>
-                )}
-                <div className="text-base text-white mb-3">
-                  Điểm: {score.toLocaleString()}
-                </div>
-                <button
-                  className="flex items-center gap-2 px-5 py-2.5 bg-pink-500 rounded-xl text-white font-semibold hover:bg-pink-600 transition-all"
-                  onClick={restartGame}
-                >
-                  <RotateCcw size={18} /> Chơi lại
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tutorial Panel - Desktop */}
-        {gameStatus === "tutorial" && currentTutorialStep && (
-          <div className="hidden md:flex flex-col w-80 h-fit p-6 bg-gradient-to-br from-pink-500/10 to-purple-500/10 border border-pink-500/30 rounded-2xl shadow-lg">
-            <div className="flex items-center justify-between mb-4">
+        {gameStatus === "tutorial" && currentStep && (
+          <div className="hidden md:flex flex-col w-64 h-fit p-4 bg-gradient-to-br from-orange-500/10 to-pink-500/10 border border-orange-500/30 rounded-2xl shadow-lg">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <BookOpen size={20} className="text-pink-400" />
-                <span className="text-sm font-semibold text-pink-400">
-                  Hướng dẫn chơi
-                </span>
+                <BookOpen size={18} className="text-orange-400" />
+                <span className="text-sm font-semibold text-orange-400">Hướng dẫn</span>
               </div>
-              <button
-                className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent transition-all"
-                onClick={exitTutorial}
-              >
-                <X size={18} />
-              </button>
+              <button className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent" onClick={exitTutorial}><X size={16} /></button>
             </div>
-
-            {/* Progress Bar */}
             <div className="flex gap-1 mb-4">
-              {TUTORIAL_STEPS.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`flex-1 h-1.5 rounded-full transition-colors ${
-                    idx < tutorialStep
-                      ? "bg-pink-500"
-                      : idx === tutorialStep
-                      ? "bg-pink-400 animate-pulse"
-                      : "bg-secondary"
-                  }`}
-                />
-              ))}
+              {TUTORIAL_STEPS.map((_, i) => <div key={i} className={`flex-1 h-1.5 rounded-full ${i < tutorialStep ? 'bg-orange-500' : i === tutorialStep ? 'bg-orange-400 animate-pulse' : 'bg-secondary'}`} />)}
             </div>
-
-            {/* Step Content */}
             <div className="mb-4">
-              <div className="text-xs text-muted-foreground mb-2">
-                Bước {tutorialStep + 1}/{TUTORIAL_STEPS.length}
-              </div>
-              <div className="text-xl font-bold text-foreground mb-3 min-h-[2rem]">
-                {displayedTitle}
-                {isTyping && displayedText.length === 0 && (
-                  <span className="animate-pulse">|</span>
-                )}
-              </div>
-              <div className="text-sm text-muted-foreground leading-relaxed min-h-[4rem]">
-                {displayedText}
-                {isTyping && displayedText.length > 0 && (
-                  <span className="animate-pulse text-pink-400">|</span>
-                )}
-              </div>
+              <div className="text-lg font-bold text-foreground mb-2">{displayedTitle}{isTyping && !displayedText && <span className="animate-pulse">|</span>}</div>
+              <div className="text-sm text-muted-foreground min-h-[3rem]">{displayedText}{isTyping && displayedText && <span className="animate-pulse text-orange-400">|</span>}</div>
             </div>
-
-            {/* Action Buttons */}
-            {showNextButton && (
-              <button
-                className="flex items-center justify-center gap-2 w-full py-3 bg-pink-500 text-white text-sm font-semibold rounded-xl hover:bg-pink-600 transition-all shadow-md"
-                onClick={nextTutorialStep}
-              >
-                {currentTutorialStep.action === "finish" ? (
-                  <>🎮 Bắt đầu chơi</>
-                ) : (
-                  <>
-                    Tiếp tục
-                    <ChevronRight size={18} />
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Hint for click_cell */}
-            {!isTyping && currentTutorialStep?.action === "click_cell" && (
-              <div className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-xl border border-pink-500/50">
-                <div className="text-sm text-muted-foreground">
-                  Nhấn vào ô được đánh dấu!
-                </div>
-                <div className="text-3xl animate-bounce">👆</div>
-              </div>
-            )}
-
-            {/* Tips */}
-            <div className="mt-4 pt-4 border-t border-border">
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                💡{" "}
-                {currentTutorialStep?.action === "click_cell" &&
-                  !isTyping &&
-                  "Nhấn vào ô sáng lên"}
-                {currentTutorialStep?.action === "click_next" &&
-                  !isTyping &&
-                  "Nhấn nút Tiếp tục"}
-                {currentTutorialStep?.action === "finish" &&
-                  !isTyping &&
-                  "Bạn đã sẵn sàng!"}
-                {isTyping && "Đang hiển thị hướng dẫn..."}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tutorial Panel - Mobile (shown below board) */}
-        {gameStatus === "tutorial" && currentTutorialStep && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-br from-pink-500/10 to-purple-500/10 border-t border-pink-500/30 shadow-lg z-50">
-            {/* Progress Bar */}
-            <div className="flex gap-1 mb-3">
-              {TUTORIAL_STEPS.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`flex-1 h-1 rounded-full transition-colors ${
-                    idx < tutorialStep
-                      ? "bg-pink-500"
-                      : idx === tutorialStep
-                      ? "bg-pink-400 animate-pulse"
-                      : "bg-secondary"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Step Content */}
-            <div className="mb-3">
-              <div className="text-xs text-muted-foreground mb-1">
-                Bước {tutorialStep + 1}/{TUTORIAL_STEPS.length}
-              </div>
-              <div className="text-base font-bold text-foreground mb-2">
-                {displayedTitle}
-                {isTyping && displayedText.length === 0 && (
-                  <span className="animate-pulse">|</span>
-                )}
-              </div>
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                {displayedText}
-                {isTyping && displayedText.length > 0 && (
-                  <span className="animate-pulse text-pink-400">|</span>
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            {showNextButton && (
-              <button
-                className="flex items-center justify-center gap-2 w-full py-2.5 bg-pink-500 text-white text-sm font-semibold rounded-xl hover:bg-pink-600 transition-all shadow-md"
-                onClick={nextTutorialStep}
-              >
-                {currentTutorialStep.action === "finish" ? (
-                  <>🎮 Bắt đầu chơi</>
-                ) : (
-                  <>
-                    Tiếp tục
-                    <ChevronRight size={18} />
-                  </>
-                )}
-              </button>
-            )}
-
-            {/* Hint for click_cell */}
-            {!isTyping && currentTutorialStep?.action === "click_cell" && (
-              <div className="flex items-center justify-center gap-2 py-2 text-sm text-muted-foreground">
-                <span className="animate-bounce">👆</span>
-                <span>Nhấn vào ô được đánh dấu!</span>
-              </div>
-            )}
+            {!isTyping && <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-xl hover:bg-orange-600" onClick={nextTutorialStep}>
+              {currentStep.action === "finish" ? "🎮 Bắt đầu" : "Tiếp tục"} <ChevronRight size={16} />
+            </button>}
           </div>
         )}
       </div>
 
-      {gameStatus === "playing" && (
-        <div className="text-center pb-1.5">
-          <span className="text-muted-foreground text-xs">Điểm cao nhất: </span>
-          <span className="text-yellow-500 font-bold text-sm">
-            {highScore.toLocaleString()}
-          </span>
+      <div className="flex justify-center p-2 bg-card border-t border-border">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Trophy size={14} className="text-yellow-500" />
+          Điểm cao nhất: <span className="font-bold text-yellow-500">{highScore.toLocaleString()}</span>
         </div>
-      )}
-
-      <div className="flex items-center justify-center gap-3 p-3 bg-card border-t border-border">
-        {gameStatus === "tutorial" && (
-          <button
-            className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
-            onClick={exitTutorial}
-          >
-            <X size={18} />
-            <span>Thoát hướng dẫn</span>
-          </button>
-        )}
-        {gameStatus === "playing" && (
-          <button
-            className="flex items-center gap-2 px-4 py-2.5 bg-secondary rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-            onClick={restartGame}
-          >
-            <RotateCcw size={16} />
-            <span>Chơi lại</span>
-          </button>
-        )}
       </div>
     </div>
   );

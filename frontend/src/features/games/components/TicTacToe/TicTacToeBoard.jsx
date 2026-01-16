@@ -8,24 +8,25 @@ const TicTacToeBoard = ({
   hintCell,
   disabled,
   highlightCells = [],
+  boardSize = 3,
 }) => {
+  // Dynamic grid classes based on board size
+  const gridClass = boardSize === 5
+    ? "grid grid-cols-5 grid-rows-5"
+    : "grid grid-cols-3 grid-rows-3";
+
+  // Dynamic board size
+  const boardSizeClass = boardSize === 5
+    ? "w-[400px] h-[400px]"
+    : "w-80 h-80";
+
   return (
     <div
-      className={`relative w-80 h-80 bg-transparent ${
-        disabled ? "opacity-50" : ""
-      }`}
+      className={`relative ${boardSizeClass} bg-transparent ${disabled ? "opacity-50" : ""
+        }`}
     >
-      {/* Dot matrix background - hidden in papergames layout */}
-      <div className="absolute inset-0 grid grid-cols-9 grid-rows-9 opacity-0 pointer-events-none">
-        {Array(81)
-          .fill(null)
-          .map((_, i) => (
-            <div key={i} className="w-1 h-1 rounded-full bg-border" />
-          ))}
-      </div>
-
       {/* Game grid */}
-      <div className="grid grid-cols-3 grid-rows-3 h-full gap-0">
+      <div className={`${gridClass} h-full gap-0`}>
         {board.map((cell, index) => (
           <TicTacToeCell
             key={index}
@@ -35,6 +36,7 @@ const TicTacToeBoard = ({
             isHint={hintCell === index || highlightCells.includes(index)}
             disabled={disabled}
             cellIndex={index}
+            boardSize={boardSize}
           />
         ))}
       </div>
@@ -43,3 +45,4 @@ const TicTacToeBoard = ({
 };
 
 export default TicTacToeBoard;
+

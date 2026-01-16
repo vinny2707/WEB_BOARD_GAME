@@ -1,5 +1,5 @@
 import React from "react";
-import { CaroGame, caro4AI } from "../shared";
+import { CaroGame } from "../shared";
 
 const BOARD_SIZE = 15;
 // User dùng tọa độ 1-indexed, code dùng 0-indexed
@@ -181,7 +181,8 @@ const Caro4Game = () => {
     <CaroGame
       gameName="CARO 4 HÀNG"
       lobbyPath="/games/caro4"
-      ai={caro4AI}
+      winCount={4}
+      defaultBoardSize={15}
       theme="amber"
       tutorialSteps={CARO4_TUTORIAL_STEPS}
     />

@@ -1,17 +1,18 @@
 import React from 'react';
 
-const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disabled, cellIndex }) => {
+const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disabled, cellIndex, boardSize = 3 }) => {
     // Determine border classes based on cell position
     const getBorderClasses = () => {
-        const row = Math.floor(cellIndex / 3);
-        const col = cellIndex % 3;
+        const size = boardSize;
+        const row = Math.floor(cellIndex / size);
+        const col = cellIndex % size;
         let borders = 'border-2 border-slate-400';
 
         // Remove borders at edges
         if (row === 0) borders += ' border-t-0';
-        if (row === 2) borders += ' border-b-0';
+        if (row === size - 1) borders += ' border-b-0';
         if (col === 0) borders += ' border-l-0';
-        if (col === 2) borders += ' border-r-0';
+        if (col === size - 1) borders += ' border-r-0';
 
         return borders;
     };
@@ -28,6 +29,10 @@ const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disable
         return classes;
     };
 
+    // Adjust symbol size based on board size
+    const symbolSizeClass = boardSize === 5 ? 'w-2/3 h-2/3' : 'w-3/4 h-3/4';
+    const strokeWidth = boardSize === 5 ? 2.5 : 3;
+
     return (
         <button
             className={getCellClasses()}
@@ -37,12 +42,12 @@ const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disable
         >
             <div className="flex items-center justify-center w-full h-full">
                 {value === 'X' && (
-                    <svg viewBox="0 0 24 24" className="w-3/4 h-3/4 stroke-emerald-500 stroke-[3] fill-none">
+                    <svg viewBox="0 0 24 24" className={`${symbolSizeClass} stroke-emerald-500 fill-none`} strokeWidth={strokeWidth}>
                         <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
                     </svg>
                 )}
                 {value === 'O' && (
-                    <svg viewBox="0 0 24 24" className="w-3/4 h-3/4 stroke-slate-600 stroke-[3] fill-none">
+                    <svg viewBox="0 0 24 24" className={`${symbolSizeClass} stroke-slate-600 fill-none`} strokeWidth={strokeWidth}>
                         <circle cx="12" cy="12" r="8" />
                     </svg>
                 )}
@@ -52,3 +57,4 @@ const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disable
 };
 
 export default TicTacToeCell;
+
