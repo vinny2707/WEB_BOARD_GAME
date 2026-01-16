@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Home, Play, Pause, RotateCcw, Settings, Trophy, BookOpen, X, ChevronRight } from 'lucide-react';
 
-const BOARD_SIZE = 20;
 const INITIAL_SPEED = 150;
 const SPEED_INCREMENT = 5;
 const MIN_SPEED = 50;
@@ -89,8 +88,16 @@ const TUTORIAL_STEPS = [
 
 const SnakeGame = () => {
     const navigate = useNavigate();
-    const [snake, setSnake] = useState([{ x: 10, y: 10 }]);
-    const [food, setFood] = useState({ x: 15, y: 10 });
+    const location = useLocation();
+
+    // Get settings from lobby navigation state
+    const lobbySettings = location.state?.settings || {};
+    const boardSize = lobbySettings.boardSize || 20;
+    const wallMode = lobbySettings.wallMode || 'solid'; // 'solid' or 'wrap'
+    const initialDifficulty = lobbySettings.difficulty || 'medium';
+
+    const [snake, setSnake] = useState([{ x: Math.floor(boardSize / 2), y: Math.floor(boardSize / 2) }]);
+    const [food, setFood] = useState({ x: Math.floor(boardSize / 2) + 5, y: Math.floor(boardSize / 2) });
     const [direction, setDirection] = useState(DIRECTIONS.RIGHT);
     const [gameStatus, setGameStatus] = useState('idle'); // 'idle', 'playing', 'paused', 'gameover', 'tutorial'
     const [score, setScore] = useState(0);
@@ -98,8 +105,8 @@ const SnakeGame = () => {
         const saved = localStorage.getItem('snakeHighScore');
         return saved ? parseInt(saved, 10) : 0;
     });
-    const [speed, setSpeed] = useState(INITIAL_SPEED);
-    const [difficulty, setDifficulty] = useState('medium');
+    const [speed, setSpeed] = useState(DIFFICULTY_SETTINGS[initialDifficulty].speed);
+    const [difficulty, setDifficulty] = useState(initialDifficulty);
     const [showSettings, setShowSettings] = useState(false);
 
     // Tutorial state
@@ -117,10 +124,12 @@ const SnakeGame = () => {
 
     // Check if snake is near danger (wall or body)
     const checkNearDanger = useCallback((snakeHead, snakeBody) => {
-        // Check near wall (1 cell away)
-        if (snakeHead.x <= 1 || snakeHead.x >= BOARD_SIZE - 2 ||
-            snakeHead.y <= 1 || snakeHead.y >= BOARD_SIZE - 2) {
-            return 'wall';
+        // Only check for wall danger in solid mode
+        if (wallMode === 'solid') {
+            if (snakeHead.x <= 1 || snakeHead.x >= boardSize - 2 ||
+                snakeHead.y <= 1 || snakeHead.y >= boardSize - 2) {
+                return 'wall';
+            }
         }
         // Check near body (adjacent to any body segment)
         const adjacentPositions = [
@@ -135,43 +144,60 @@ const SnakeGame = () => {
             }
         }
         return null;
-    }, []);
+    }, [boardSize, wallMode]);
 
     // Generate random food position
     const generateFood = useCallback((currentSnake) => {
         let newFood;
         do {
             newFood = {
-                x: Math.floor(Math.random() * BOARD_SIZE),
-                y: Math.floor(Math.random() * BOARD_SIZE)
+                x: Math.floor(Math.random() * boardSize),
+                y: Math.floor(Math.random() * boardSize)
             };
         } while (currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
         return newFood;
-    }, []);
+    }, [boardSize]);
 
     // Check collision with walls or self
     const checkCollision = useCallback((head, snakeBody) => {
-        // Wall collision
-        if (head.x < 0 || head.x >= BOARD_SIZE || head.y < 0 || head.y >= BOARD_SIZE) {
-            return true;
+        // Wall collision - only in solid mode
+        if (wallMode === 'solid') {
+            if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize) {
+                return true;
+            }
         }
         // Self collision (skip head)
         return snakeBody.slice(1).some(segment => segment.x === head.x && segment.y === head.y);
-    }, []);
+    }, [boardSize, wallMode]);
+
+    // Wrap position for wrap mode
+    const wrapPosition = useCallback((pos) => {
+        let { x, y } = pos;
+        if (x < 0) x = boardSize - 1;
+        if (x >= boardSize) x = 0;
+        if (y < 0) y = boardSize - 1;
+        if (y >= boardSize) y = 0;
+        return { x, y };
+    }, [boardSize]);
 
     // Game loop
     const gameLoop = useCallback(() => {
         setSnake(prevSnake => {
-            const newHead = {
+            let newHead = {
                 x: prevSnake[0].x + directionRef.current.x,
                 y: prevSnake[0].y + directionRef.current.y
             };
+
+            // Wrap position in wrap mode
+            if (wallMode === 'wrap') {
+                newHead = wrapPosition(newHead);
+            }
 
             // Check collision
             if (checkCollision(newHead, prevSnake)) {
                 if (gameStatus === 'tutorial') {
                     // In tutorial, just reset position
-                    return [{ x: 10, y: 10 }];
+                    return [{ x: Math.floor(boardSize / 2), y: Math.floor(boardSize / 2) }];
                 }
                 setGameStatus('gameover');
                 return prevSnake;
@@ -203,7 +229,7 @@ const SnakeGame = () => {
 
             return newSnake;
         });
-    }, [food, generateFood, checkCollision, highScore, gameStatus]);
+    }, [food, generateFood, checkCollision, highScore, gameStatus, wallMode, wrapPosition, boardSize]);
 
     // Check danger proximity for tutorial warning
     useEffect(() => {
@@ -376,7 +402,8 @@ const SnakeGame = () => {
     }, [gameStatus, speed, gameLoop, isTyping, tutorialMoving]);
 
     const startGame = () => {
-        const initialSnake = [{ x: 10, y: 10 }];
+        const center = Math.floor(boardSize / 2);
+        const initialSnake = [{ x: center, y: center }];
         setSnake(initialSnake);
         setFood(generateFood(initialSnake));
         setDirection(DIRECTIONS.RIGHT);
@@ -476,6 +503,12 @@ const SnakeGame = () => {
     const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
     const showNextButton = currentTutorialStep?.action === 'click_next' || currentTutorialStep?.action === 'finish';
 
+    // Calculate cell size based on board size
+    const getCellSize = () => {
+        const maxBoardPx = 400;
+        return Math.floor(maxBoardPx / boardSize);
+    };
+
     return (
         <div className="flex flex-col flex-1 w-full h-full bg-background">
             {/* Top Navigation */}
@@ -486,8 +519,23 @@ const SnakeGame = () => {
                 >
                     <Home size={20} />
                 </button>
-                <div className="text-lg font-bold tracking-wider text-foreground">
-                    {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : 'RẮN SĂN MỒI'}
+                <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold tracking-wider text-foreground">
+                        {gameStatus === 'tutorial' ? '📖 HƯỚNG DẪN' : 'RẮN SĂN MỒI'}
+                    </span>
+                    {gameStatus !== 'tutorial' && (
+                        <>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${difficulty === 'easy' ? 'bg-green-500/20 text-green-500' :
+                                difficulty === 'medium' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-red-500/20 text-red-500'
+                                }`}>
+                                {DIFFICULTY_SETTINGS[difficulty]?.label}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${wallMode === 'solid' ? 'bg-orange-500/20 text-orange-500' : 'bg-purple-500/20 text-purple-500'
+                                }`}>
+                                {wallMode === 'solid' ? '🧱' : '🌀'}
+                            </span>
+                        </>
+                    )}
                 </div>
                 <button
                     className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
@@ -533,6 +581,12 @@ const SnakeGame = () => {
                         <span className="font-mono text-xl font-bold text-yellow-500">{highScore}</span>
                     </div>
                 )}
+                {gameStatus !== 'tutorial' && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg">
+                        <span className="text-sm text-muted-foreground">Bàn:</span>
+                        <span className="font-mono text-sm font-bold text-foreground">{boardSize}x{boardSize}</span>
+                    </div>
+                )}
             </div>
 
             {/* Game Area */}
@@ -546,14 +600,14 @@ const SnakeGame = () => {
                         <div
                             className="grid gap-[1px]"
                             style={{
-                                gridTemplateColumns: `repeat(${BOARD_SIZE}, 1fr)`,
+                                gridTemplateColumns: `repeat(${boardSize}, 1fr)`,
                                 width: 'min(80vw, 400px)',
                                 height: 'min(80vw, 400px)'
                             }}
                         >
-                            {Array.from({ length: BOARD_SIZE * BOARD_SIZE }).map((_, i) => {
-                                const x = i % BOARD_SIZE;
-                                const y = Math.floor(i / BOARD_SIZE);
+                            {Array.from({ length: boardSize * boardSize }).map((_, i) => {
+                                const x = i % boardSize;
+                                const y = Math.floor(i / boardSize);
                                 return renderCell(x, y);
                             })}
                         </div>
@@ -579,6 +633,9 @@ const SnakeGame = () => {
                                             Hướng dẫn
                                         </button>
                                         <div className="text-sm text-gray-400 mt-4">Dùng phím mũi tên hoặc WASD</div>
+                                        <div className="text-xs text-gray-500 mt-2">
+                                            {boardSize}x{boardSize} | {DIFFICULTY_SETTINGS[difficulty]?.label} | {wallMode === 'solid' ? 'Tường cứng' : 'Xuyên tường'}
+                                        </div>
                                     </>
                                 )}
                                 {gameStatus === 'paused' && (
