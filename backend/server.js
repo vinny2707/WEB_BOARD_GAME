@@ -158,6 +158,7 @@ const achievementRoutes = require('./src/routes/achievements');
 const reviewRoutes = require('./src/routes/reviews');
 const friendRoutes = require('./src/routes/friends');
 const imageRoutes = require('./src/routes/images');
+const rankingRoutes = require('./src/routes/rankings');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -167,6 +168,7 @@ app.use('/api/achievements', achievementRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/images', imageRoutes);
+app.use('/api/rankings', rankingRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
