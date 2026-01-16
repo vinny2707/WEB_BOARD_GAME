@@ -31,8 +31,16 @@ const PendingRequestCard = ({ requester, createdAt, onAccept, onReject }) => {
     <div className="bg-white dark:!bg-zinc-800/50 border-2 border-amber-200 dark:border-amber-800/50 rounded-xl p-4 hover:border-amber-500 dark:hover:border-amber-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-md font-semibold shrink-0">
-          {getInitials(requester.username)}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">
+          {requester.avatar_url ? (
+            <img
+              src={requester.avatar_url}
+              alt={requester.username}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+            />
+          ) : (
+            getInitials(requester.username)
+          )}
         </div>
 
         {/* User Info */}

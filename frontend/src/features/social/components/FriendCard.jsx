@@ -24,8 +24,16 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
     <div className="bg-white dark:!bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0">
-          {getInitials(friend.username)}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">
+          {friend.avatar_url ? (
+            <img
+              src={friend.avatar_url}
+              alt={friend.username}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+            />
+          ) : (
+            getInitials(friend.username)
+          )}
         </div>
 
         {/* User Info */}
