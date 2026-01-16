@@ -37,6 +37,14 @@ const PendingRequestCard = ({ requester, createdAt, onAccept, onReject }) => {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {requester.full_name || requester.username}
+          </h3>
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{requester.username}
+          </p>
+          
           <h3 className="font-semibold dark:text-white truncate">
             {requester.username}
           </h3>

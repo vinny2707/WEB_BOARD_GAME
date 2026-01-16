@@ -190,7 +190,11 @@ const Sidebar = () => {
           </button>
 
           {/* Action Icons (Notification & Settings) */}
-          <div className={`flex items-center gap-1 ${isCollapsed ? "flex-col" : "flex-row"}`}>
+          <div
+            className={`flex items-center gap-1 ${
+              isCollapsed ? "flex-col" : "flex-row"
+            }`}
+          >
             {/* Notification Bell
             <button
               className={`p-2 rounded-lg transition-all cursor-pointer ${
@@ -224,11 +228,11 @@ const Sidebar = () => {
               {/* Settings Dropdown Menu */}
               {showSettingsMenu && (
                 <div
-                  className={`absolute right-0 top-full mt-2 w-60 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl ${
+                  className={`absolute top-full mt-2 w-60 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl ${
                     isDarkMode
                       ? "bg-zinc-800/95 border border-zinc-700/50"
                       : "bg-white/95 border border-gray-200/50"
-                  }`}
+                  } ${isCollapsed ? "left-0" : "right-0"}`}
                   style={{
                     boxShadow: isDarkMode
                       ? "0 20px 60px rgba(0, 0, 0, 0.5)"

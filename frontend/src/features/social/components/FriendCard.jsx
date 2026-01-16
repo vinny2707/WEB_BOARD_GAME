@@ -30,14 +30,14 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold dark:text-white truncate">
-            {friend.username}
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {friend.full_name || friend.username}
           </h3>
-          {friend.full_name && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
-              {friend.full_name}
-            </p>
-          )}
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{friend.username}
+          </p>
+
           {friend.status && (
             <span
               className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${

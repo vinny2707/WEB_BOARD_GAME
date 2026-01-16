@@ -37,14 +37,14 @@ const SentRequestCard = ({ recipient, createdAt, onCancel }) => {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold dark:text-white truncate">
-            {recipient.username}
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {recipient.full_name || recipient.username}
           </h3>
-          {recipient.full_name && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
-              {recipient.full_name}
-            </p>
-          )}
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{recipient.username}
+          </p>
+          
           <div className="flex items-center gap-1 mt-1">
             <Clock className="w-3 h-3 text-blue-500" />
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
