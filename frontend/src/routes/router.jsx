@@ -7,15 +7,15 @@ import UserLayout from "../layouts/UserLayout.jsx";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 
 import Auth from "../features/auth/pages/Auth.jsx";
-import LandingPage from "../features/landingPage/pages/landingPage.jsx";
+import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
 import Games from "../features/games/pages/Games.jsx";
 import Ranking from "../features/ranking/pages/Ranking.jsx";
-import Social from "../features/social/pages/social.jsx";
+import Social from "../features/social/pages/Social.jsx";
 import Profile from "../features/profile/pages/Profile.jsx";
 import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
 import NotFound from "@/features/errors/pages/NotFound.jsx";
 import Statistics from "@/features/statistics/pages/Statistics.jsx";
-import GameConfig from "@/features/gameConfig/pages/gameConfig.jsx";
+import GameConfig from "@/features/gameConfig/pages/GameConfig.jsx";
 import { Navigate } from "react-router-dom";
 import {
   TicTacToeGame,
