@@ -136,7 +136,9 @@ const Friends = () => {
   const fetchUnreadCount = async () => {
     try {
       const response = await api.get("/api/messages/unread-count");
-      setUnreadCount(response.data.unreadCount || 0);
+      const count =
+        response.data.data?.unread_count || response.data.unreadCount || 0;
+      setUnreadCount(count);
     } catch (error) {
       console.error("Error fetching unread count:", error);
     }
@@ -161,6 +163,29 @@ const Friends = () => {
       setLoading(false);
     };
     fetchData();
+  }, [user]);
+
+  // Auto refresh unread count every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Refresh unread count when window gains focus
+  useEffect(() => {
+    if (!user) return;
+
+    const handleFocus = () => {
+      fetchUnreadCount();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [user]);
 
   // Handle unfriend

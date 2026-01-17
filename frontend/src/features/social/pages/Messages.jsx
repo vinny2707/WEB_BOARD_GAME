@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   MoreVertical,
   Users,
+  Shield,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/axios";
@@ -45,6 +46,7 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
+  const [friendshipStatus, setFriendshipStatus] = useState(null);
   const messagesEndRef = useRef(null);
   const hasHandledNavigation = useRef(false);
   const { isAuthenticated } = useUser();
@@ -151,10 +153,22 @@ export default function Messages() {
     };
   }, []);
 
+  // Fetch friendship status
+  const fetchFriendshipStatus = async (userId) => {
+    try {
+      const response = await api.get(`/api/friends/status/${userId}`);
+      setFriendshipStatus(response.data.data);
+    } catch (error) {
+      console.error("Error fetching friendship status:", error);
+      setFriendshipStatus(null);
+    }
+  };
+
   // Handle select conversation
   const handleSelectConversation = (conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.user.id);
+    fetchFriendshipStatus(conversation.user.id);
   };
 
   // Handle send message
@@ -203,6 +217,9 @@ export default function Messages() {
         ?.toLowerCase()
         .includes(searchQuery.toLowerCase())
   );
+
+  // Check if user is blocked
+  const isBlocked = friendshipStatus?.status === "blocked";
 
   // Format time
   const formatTime = (dateString) => {
@@ -487,32 +504,44 @@ export default function Messages() {
             </div>
 
             {/* Message Input */}
-            <form
-              onSubmit={handleSendMessage}
-              className="p-4 border-t dark:border-zinc-800 bg-white dark:!bg-zinc-900"
-            >
-              <div className="flex gap-2 item-stretch">
-                <Textarea
-                  rows={1}
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                    }
-                  }}
-                  className="flex-1 resize-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-white min-h-[40px] max-h-[120px]"
-                />
-                <Button
-                  type="submit"
-                  disabled={!newMessage.trim() || sending}
-                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white"
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
+            {isBlocked ? (
+              <div className="p-4 border-t dark:border-zinc-800 bg-red-50 dark:bg-red-900/20">
+                <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                  <Shield className="w-5 h-5" />
+                  <p className="text-sm font-medium">
+                    You cannot send messages to this user. This friendship has
+                    been blocked.
+                  </p>
+                </div>
               </div>
-            </form>
+            ) : (
+              <form
+                onSubmit={handleSendMessage}
+                className="p-4 border-t dark:border-zinc-800 bg-white dark:!bg-zinc-900"
+              >
+                <div className="flex gap-2 items-center">
+                  <Textarea
+                    rows={1}
+                    placeholder="Type your message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                      }
+                    }}
+                    className="flex-1 resize-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-white min-h-[40px] max-h-[120px]"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!newMessage.trim() || sending}
+                    className="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+              </form>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">

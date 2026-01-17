@@ -100,7 +100,7 @@ const OtpVerification = ({
       login(token, user);
 
       // All users (including admin) go to home page
-      navigate("/");
+      navigate("/games");
     } catch (error) {
       console.error("OTP verification error:", error);
       setErrorMessage(
