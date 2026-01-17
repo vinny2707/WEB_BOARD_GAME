@@ -1,122 +1,52 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, RotateCcw, Settings, Trophy, Zap, BookOpen, X, ChevronRight, Save } from "lucide-react";
+import { Home, RotateCcw, Trophy, Zap, BookOpen, X, ChevronRight, Save, Lightbulb } from "lucide-react";
 import useGameSession from '../../hooks/useGameSession';
 
-// Game Constants
-const CELL_SIZE = 50;
-const DEFAULT_BOARD_SIZE = 8;
-const SWAP_DURATION = 200;
-const GRAVITY = 0.8;
-const BOUNCE_FACTOR = 0.3;
-const FALL_SPEED_LIMIT = 18;
-
-// Easing functions
-const easeOutBounce = (t) => {
-  if (t < 1 / 2.75) return 7.5625 * t * t;
-  if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
-  if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
-  return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
-};
-
-const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-const easeOutBack = (t) => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2);
-
-// Candy icons
-const ALL_CANDY_ICONS = [
-  "/Icons8/icons8-strawberry-50.png",
-  "/Icons8/icons8-orange-50.png",
-  "/Icons8/icons8-banana-50.png",
-  "/Icons8/icons8-grapes-50.png",
-  "/Icons8/icons8-cherry-50.png",
-  "/Icons8/icons8-blueberry-50.png",
-  "/Icons8/icons8-watermelon-50.png",
-];
-
-const CANDY_COLORS = [
-  "#ef4444", "#f97316", "#eab308", "#8b5cf6", "#ec4899", "#3b82f6", "#06b6d4"
-];
-
-const DIFFICULTY_SETTINGS = {
-  easy: { candies: 5, label: 'Dễ' },
-  medium: { candies: 6, label: 'Trung Bình' },
-  hard: { candies: 7, label: 'Khó' }
-};
-
-const TUTORIAL_STEPS = [
-  { id: 1, title: "Chào mừng! 🍬", message: "Swap 2 viên kẹo cạnh nhau để tạo hàng 3+!", action: "click_next" },
-  { id: 2, title: "Click chọn kẹo 🎯", message: "Click vào viên kẹo để chọn, rồi click viên bên cạnh!", action: "click_next" },
-  { id: 3, title: "Hoàn thành! 🚀", message: "Đạt điểm mục tiêu để thắng. Chúc may mắn!", action: "finish" }
-];
-
-// Create board with positions
-const createBoard = (size, candyCount) => {
-  const board = [];
-  for (let i = 0; i < size * size; i++) {
-    const col = i % size;
-    const row = Math.floor(i / size);
-    board.push({
-      type: Math.floor(Math.random() * candyCount),
-      key: Date.now() + i,
-      y: row * CELL_SIZE + CELL_SIZE / 2,
-      targetY: row * CELL_SIZE + CELL_SIZE / 2,
-      vy: 0,
-      scale: 1,
-    });
-  }
-  return removeInitialMatches(board, size, candyCount);
-};
-
-const removeInitialMatches = (board, size, candyCount) => {
-  const newBoard = [...board];
-  for (let i = 0; i < size * size; i++) {
-    const row = Math.floor(i / size);
-    const col = i % size;
-    if (col >= 2) {
-      while (newBoard[i].type === newBoard[i - 1].type && newBoard[i].type === newBoard[i - 2].type) {
-        newBoard[i] = { ...newBoard[i], type: Math.floor(Math.random() * candyCount) };
-      }
-    }
-    if (row >= 2) {
-      while (newBoard[i].type === newBoard[i - size].type && newBoard[i].type === newBoard[i - size * 2].type) {
-        newBoard[i] = { ...newBoard[i], type: Math.floor(Math.random() * candyCount) };
-      }
-    }
-  }
-  return newBoard;
-};
+// Local modules
+import { 
+  CELL_SIZE, DEFAULT_BOARD_SIZE, SWAP_DURATION, GRAVITY, BOUNCE_FACTOR, FALL_SPEED_LIMIT,
+  CANDY_COLORS, DIFFICULTY_SETTINGS, TUTORIAL_STEPS 
+} from './constants';
+import { clampWithElastic } from './utils';
+import { createBoard, findMatches, isAdjacent, getSwapTarget, findHint } from './gameLogic';
+import { useMatch3Sound } from './useMatch3Sound';
+import { useMatch3Images } from './useMatch3Images';
+import { renderBoard, renderParticles, renderFloatingTexts } from './renderer';
 
 const Match3Game = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
-  const imagesRef = useRef([]);
-  const imagesLoadedRef = useRef(false);
   const particlesRef = useRef([]);
   const floatingTextsRef = useRef([]);
   const swapAnimRef = useRef(null);
   const fallingRef = useRef(false);
 
-  // Audio refs
-  const swapSoundRef = useRef(null);
-  const matchSoundRef = useRef(null);
-  const comboSoundRef = useRef(null);
-  const failSoundRef = useRef(null);
-  const gameStartSoundRef = useRef(null);
-  const victorySoundRef = useRef(null);
+  // Drag-and-drop refs
+  const dragStartRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const dragAnimationRef = useRef(null);
+  const dragVelocityRef = useRef({ x: 0, y: 0 });
+  const lastDragPosRef = useRef({ x: 0, y: 0 });
+
+  // Custom hooks
+  const { playSound } = useMatch3Sound();
+  const { imagesRef, imagesLoadedRef } = useMatch3Images();
 
   // Settings and resume session
   const lobbySettings = location.state?.settings || {};
   const resumeSession = location.state?.resumeSession;
+  const gameId = location.state?.gameId || location.state?.settings?.gameId;
   const boardSize = lobbySettings.boardSize || DEFAULT_BOARD_SIZE;
   const initialMoves = lobbySettings.moves || 30;
   const targetScore = lobbySettings.targetScore || 5000;
   const difficulty = lobbySettings.difficulty || 'medium';
   const candyCount = DIFFICULTY_SETTINGS[difficulty]?.candies || 6;
 
-  // Session tracking (gameId=6 for Match3)
-  const { completeGame, startSession, saveProgress, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(6);
+  // Session tracking (dynamic gameId)
+  const { completeGame, startSession, saveProgress, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(gameId);
 
   // Game state
   const [board, setBoard] = useState(() => createBoard(boardSize, candyCount));
@@ -132,8 +62,17 @@ const Match3Game = () => {
     return saved ? parseInt(saved, 10) : 0;
   });
 
+  // Drag-and-drop state
+  const [dragCell, setDragCell] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  // Hint state
+  const [hintCells, setHintCells] = useState(null);
+  const hintTimeoutRef = useRef(null);
+
   // Tutorial
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialActionCompleted, setTutorialActionCompleted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [displayedText, setDisplayedText] = useState("");
   const [displayedTitle, setDisplayedTitle] = useState("");
@@ -147,74 +86,9 @@ const Match3Game = () => {
   useEffect(() => { boardRef.current = board; }, [board]);
   useEffect(() => { selectedCellRef.current = selectedCell; }, [selectedCell]);
 
-  // Load images
-  useEffect(() => {
-    const images = ALL_CANDY_ICONS.map(src => {
-      const img = new Image();
-      img.src = src;
-      return img;
-    });
-    imagesRef.current = images;
-    Promise.all(images.map(img => new Promise(resolve => {
-      img.onload = resolve;
-      img.onerror = resolve;
-    }))).then(() => { imagesLoadedRef.current = true; });
-
-    // Initialize sounds
-    swapSoundRef.current = new Audio('/sounds/swap.wav');
-    matchSoundRef.current = new Audio('/sounds/match.wav');
-    comboSoundRef.current = new Audio('/sounds/combo.wav');
-    failSoundRef.current = new Audio('/sounds/fail-game.wav');
-    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
-    victorySoundRef.current = new Audio('/sounds/Victory.mp3');
-
-    // Preload sounds
-    swapSoundRef.current.load();
-    matchSoundRef.current.load();
-    comboSoundRef.current.load();
-    failSoundRef.current.load();
-    gameStartSoundRef.current.load();
-    victorySoundRef.current.load();
-  }, []);
-
-  // Play sound helper
-  const playSound = useCallback((soundRef) => {
-    if (soundRef.current) {
-      soundRef.current.currentTime = 0;
-      soundRef.current.play().catch(() => { }); // Ignore autoplay errors
-    }
-  }, []);
-
-  // Find matches
-  const findMatches = useCallback((currentBoard) => {
-    const matches = new Set();
-    for (let row = 0; row < boardSize; row++) {
-      for (let col = 0; col < boardSize - 2; col++) {
-        const idx = row * boardSize + col;
-        const type = currentBoard[idx]?.type;
-        if (type !== null && type !== undefined && currentBoard[idx + 1]?.type === type && currentBoard[idx + 2]?.type === type) {
-          matches.add(idx); matches.add(idx + 1); matches.add(idx + 2);
-          if (col < boardSize - 3 && currentBoard[idx + 3]?.type === type) matches.add(idx + 3);
-        }
-      }
-    }
-    for (let col = 0; col < boardSize; col++) {
-      for (let row = 0; row < boardSize - 2; row++) {
-        const idx = row * boardSize + col;
-        const type = currentBoard[idx]?.type;
-        if (type !== null && type !== undefined && currentBoard[idx + boardSize]?.type === type && currentBoard[idx + boardSize * 2]?.type === type) {
-          matches.add(idx); matches.add(idx + boardSize); matches.add(idx + boardSize * 2);
-          if (row < boardSize - 3 && currentBoard[idx + boardSize * 3]?.type === type) matches.add(idx + boardSize * 3);
-        }
-      }
-    }
-    return matches;
-  }, [boardSize]);
-
   // Add particles for explosion effect
   const addParticles = useCallback((indices, currentBoard) => {
-    const idxArray = Array.from(indices);
-    idxArray.forEach(idx => {
+    indices.forEach(idx => {
       const candy = currentBoard[idx];
       if (!candy || candy.type === null || candy.type === undefined) return;
       const col = idx % boardSize;
@@ -223,7 +97,7 @@ const Match3Game = () => {
       const y = candy.y !== undefined ? candy.y : (row * CELL_SIZE + CELL_SIZE / 2);
       const color = CANDY_COLORS[candy.type] || "#ff6b6b";
 
-      // Create explosion particles
+      // Explosion particles
       for (let i = 0; i < 15; i++) {
         const angle = (Math.PI * 2 * i) / 15 + Math.random() * 0.4;
         const speed = 3 + Math.random() * 6;
@@ -231,22 +105,18 @@ const Match3Game = () => {
           x, y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed - 2,
-          color,
-          life: 1,
-          size: 5 + Math.random() * 5,
+          color, life: 1, size: 5 + Math.random() * 5,
         });
       }
 
-      // Add glow particles
+      // Glow particles
       for (let i = 0; i < 5; i++) {
         particlesRef.current.push({
           x: x + (Math.random() - 0.5) * 20,
           y: y + (Math.random() - 0.5) * 20,
           vx: (Math.random() - 0.5) * 2,
           vy: -1 - Math.random() * 2,
-          color: "#fff",
-          life: 0.8,
-          size: 3 + Math.random() * 3,
+          color: "#fff", life: 0.8, size: 3 + Math.random() * 3,
         });
       }
     });
@@ -255,7 +125,7 @@ const Match3Game = () => {
   // Process matches with falling animation
   const processMatches = useCallback(() => {
     const currentBoard = boardRef.current;
-    const matches = findMatches(currentBoard);
+    const matches = findMatches(currentBoard, boardSize);
 
     if (matches.size === 0) {
       setIsAnimating(false);
@@ -264,10 +134,8 @@ const Match3Game = () => {
       return;
     }
 
-    addParticles(matches, currentBoard);
-
-    // Play match sound
-    playSound(matchSoundRef);
+    addParticles(Array.from(matches), currentBoard);
+    playSound('match');
 
     const currentCombo = comboRef.current;
     const matchScore = matches.size * 10 * (currentCombo + 1);
@@ -284,14 +152,11 @@ const Match3Game = () => {
     setCombo(comboRef.current);
 
     if (currentCombo > 0) {
-      // Play combo sound
-      playSound(comboSoundRef);
+      playSound('combo');
       const texts = ["Nice!", "Great!", "Amazing!", "Incredible!"];
       floatingTextsRef.current.push({
         text: texts[Math.min(currentCombo, texts.length - 1)],
-        x: canvasSize / 2,
-        y: canvasSize / 2,
-        life: 1,
+        x: canvasSize / 2, y: canvasSize / 2, life: 1,
       });
       if (currentCombo >= 2) {
         setShakeOffset({ x: 8, y: 0 });
@@ -300,15 +165,14 @@ const Match3Game = () => {
       }
     }
 
-    // Remove matched - set scale to 0 for pop animation
+    // Remove matched candies
     let newBoard = currentBoard.map((cell, idx) =>
       matches.has(idx) ? { ...cell, type: null, scale: 0 } : cell
     );
     boardRef.current = newBoard;
 
-    // Apply gravity after short delay
+    // Apply gravity
     setTimeout(() => {
-      // For each column, calculate new positions
       for (let col = 0; col < boardSize; col++) {
         const column = [];
         for (let row = boardSize - 1; row >= 0; row--) {
@@ -318,29 +182,24 @@ const Match3Game = () => {
           }
         }
 
-        // Place existing candies from bottom
         for (let row = boardSize - 1; row >= 0; row--) {
           const idx = row * boardSize + col;
           const fromBottom = boardSize - 1 - row;
           const targetY = row * CELL_SIZE + CELL_SIZE / 2;
 
           if (fromBottom < column.length) {
-            // Existing candy falls down
             newBoard[idx] = {
               ...column[fromBottom],
-              targetY: targetY,
+              targetY,
               vy: column[fromBottom].y < targetY ? column[fromBottom].vy : 0,
             };
           } else {
-            // New candy spawns above
             const spawnRow = fromBottom - column.length;
             newBoard[idx] = {
               type: Math.floor(Math.random() * candyCount),
               key: Date.now() + Math.random(),
               y: -CELL_SIZE * (spawnRow + 1) - CELL_SIZE / 2,
-              targetY: targetY,
-              vy: 0,
-              scale: 1,
+              targetY, vy: 0, scale: 1,
             };
           }
         }
@@ -349,8 +208,8 @@ const Match3Game = () => {
       boardRef.current = newBoard;
       fallingRef.current = true;
       setBoard([...newBoard]);
-    }, 150);
-  }, [findMatches, boardSize, candyCount, highScore, canvasSize, addParticles]);
+    }, 350);
+  }, [boardSize, candyCount, highScore, canvasSize, addParticles, playSound]);
 
   // Handle click
   const handleCanvasClick = useCallback((e) => {
@@ -367,51 +226,77 @@ const Match3Game = () => {
     if (col < 0 || col >= boardSize || row < 0 || row >= boardSize) return;
     const idx = row * boardSize + col;
 
+    // Tutorial action: select_candy
+    const currentTutorialAction = TUTORIAL_STEPS[tutorialStep]?.action;
+
     if (selectedCell === null) {
       setSelectedCell(idx);
+      // Tutorial: user selected a candy
+      if (gameStatus === "tutorial" && currentTutorialAction === "select_candy") {
+        setTutorialActionCompleted(true);
+        setTimeout(() => {
+          setTutorialStep(prev => prev + 1);
+          setTutorialActionCompleted(false);
+        }, 500);
+      }
     } else if (selectedCell === idx) {
       setSelectedCell(null);
     } else {
-      const row1 = Math.floor(selectedCell / boardSize);
-      const col1 = selectedCell % boardSize;
-      const isAdjacent = (Math.abs(row1 - row) === 1 && col1 === col) || (Math.abs(col1 - col) === 1 && row1 === row);
-
-      if (isAdjacent) {
-        const savedSelectedCell = selectedCell; // Save before clearing
-        playSound(swapSoundRef); // Play swap sound
+      if (isAdjacent(selectedCell, idx, boardSize)) {
+        const savedSelectedCell = selectedCell;
+        playSound('swap');
         swapAnimRef.current = {
-          idx1: savedSelectedCell,
-          idx2: idx,
-          startTime: performance.now(),
-          duration: SWAP_DURATION,
+          idx1: savedSelectedCell, idx2: idx,
+          startTime: performance.now(), duration: SWAP_DURATION,
         };
+
+        // Tutorial: user made a swap
+        if (gameStatus === "tutorial" && currentTutorialAction === "make_swap") {
+          setTutorialActionCompleted(true);
+          setTimeout(() => {
+            setTutorialStep(prev => prev + 1);
+            setTutorialActionCompleted(false);
+          }, 500);
+        }
 
         setTimeout(() => {
           const currentBoard = boardRef.current;
-          const newBoard = currentBoard.map((cell, i) => ({ ...cell }));
-
-          // Swap only the type between two cells
+          const newBoard = currentBoard.map(cell => ({ ...cell }));
           const type1 = newBoard[savedSelectedCell].type;
           const type2 = newBoard[idx].type;
           newBoard[savedSelectedCell].type = type2;
           newBoard[idx].type = type1;
-
           swapAnimRef.current = null;
 
-          if (findMatches(newBoard).size > 0) {
+          if (findMatches(newBoard, boardSize).size > 0) {
             setIsAnimating(true);
-            setMoves(prev => prev - 1);
+            if (gameStatus === "playing") {
+              setMoves(prev => prev - 1);
+            }
+            setHintCells(null);
             boardRef.current = newBoard;
             setBoard(newBoard);
             comboRef.current = 0;
-            setTimeout(() => processMatches(), 50);
+            
+            // Tutorial: user made a match
+            if (gameStatus === "tutorial" && currentTutorialAction === "make_match") {
+              setTutorialActionCompleted(true);
+              setTimeout(() => {
+                setTutorialStep(prev => prev + 1);
+                setTutorialActionCompleted(false);
+              }, 800);
+            }
+            
+            setTimeout(() => processMatches(), 200);
           } else {
-            // Invalid swap - swap back with animation
+            // Invalid move - still count as a move (only in playing mode)
+            if (gameStatus === "playing") {
+              setMoves(prev => prev - 1);
+            }
+            setHintCells(null);
             swapAnimRef.current = {
-              idx1: idx,
-              idx2: savedSelectedCell,
-              startTime: performance.now(),
-              duration: SWAP_DURATION,
+              idx1: idx, idx2: savedSelectedCell,
+              startTime: performance.now(), duration: SWAP_DURATION,
             };
             setTimeout(() => { swapAnimRef.current = null; }, SWAP_DURATION);
           }
@@ -422,40 +307,193 @@ const Match3Game = () => {
         setSelectedCell(idx);
       }
     }
-  }, [board, selectedCell, boardSize, isAnimating, gameStatus, findMatches, processMatches, canvasSize]);
+  }, [selectedCell, boardSize, isAnimating, gameStatus, canvasSize, processMatches, playSound, tutorialStep]);
+
+  // Drag handlers
+  const getCanvasCell = useCallback((e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasSize / rect.width;
+    const scaleY = canvasSize / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    const col = Math.floor(x / CELL_SIZE);
+    const row = Math.floor(y / CELL_SIZE);
+    if (col < 0 || col >= boardSize || row < 0 || row >= boardSize) return null;
+    return { idx: row * boardSize + col, row, col, x, y };
+  }, [canvasSize, boardSize]);
+
+  const handleDragStart = useCallback((e) => {
+    if (isAnimating || (gameStatus !== "playing" && gameStatus !== "tutorial")) return;
+    if (swapAnimRef.current || fallingRef.current) return;
+    
+    const cell = getCanvasCell(e);
+    if (!cell) return;
+    
+    dragStartRef.current = cell;
+    isDraggingRef.current = true;
+    lastDragPosRef.current = { x: cell.x, y: cell.y };
+    dragVelocityRef.current = { x: 0, y: 0 };
+    setDragCell(cell.idx);
+    setDragOffset({ x: 0, y: 0 });
+    setSelectedCell(null);
+    
+    if (dragAnimationRef.current) {
+      cancelAnimationFrame(dragAnimationRef.current);
+      dragAnimationRef.current = null;
+    }
+  }, [isAnimating, gameStatus, getCanvasCell]);
+
+  const handleDragMove = useCallback((e) => {
+    if (!isDraggingRef.current || !dragStartRef.current) return;
+    e.preventDefault();
+    
+    const cell = getCanvasCell(e);
+    if (!cell) return;
+    
+    const startCell = dragStartRef.current;
+    const dx = cell.x - (startCell.col * CELL_SIZE + CELL_SIZE / 2);
+    const dy = cell.y - (startCell.row * CELL_SIZE + CELL_SIZE / 2);
+    
+    dragVelocityRef.current = {
+      x: cell.x - lastDragPosRef.current.x,
+      y: cell.y - lastDragPosRef.current.y
+    };
+    lastDragPosRef.current = { x: cell.x, y: cell.y };
+    
+    const maxOffset = CELL_SIZE * 0.7;
+    setDragOffset({
+      x: clampWithElastic(dx, maxOffset),
+      y: clampWithElastic(dy, maxOffset)
+    });
+  }, [getCanvasCell]);
+
+  const handleDragEnd = useCallback(() => {
+    if (!isDraggingRef.current || !dragStartRef.current) {
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+      setDragCell(null);
+      setDragOffset({ x: 0, y: 0 });
+      return;
+    }
+    
+    const startCell = dragStartRef.current;
+    const offset = dragOffset;
+    const velocity = dragVelocityRef.current;
+    
+    const threshold = CELL_SIZE * 0.28;
+    const velocityThreshold = 4;
+    
+    let targetIdx = null;
+
+    // Check velocity first for flick gestures
+    if (Math.abs(velocity.x) > velocityThreshold || Math.abs(velocity.y) > velocityThreshold) {
+      targetIdx = getSwapTarget(startCell.idx, velocity, boardSize, velocityThreshold);
+    }
+    
+    // Fall back to position-based
+    if (targetIdx === null) {
+      targetIdx = getSwapTarget(startCell.idx, offset, boardSize, threshold);
+    }
+    
+    if (targetIdx !== null) {
+      playSound('swap');
+      swapAnimRef.current = {
+        idx1: startCell.idx, idx2: targetIdx,
+        startTime: performance.now(), duration: SWAP_DURATION,
+      };
+      
+      // Tutorial: user made a swap via drag
+      const currentTutorialAction = TUTORIAL_STEPS[tutorialStep]?.action;
+      if (gameStatus === "tutorial" && currentTutorialAction === "make_swap") {
+        setTutorialActionCompleted(true);
+        setTimeout(() => {
+          setTutorialStep(prev => prev + 1);
+          setTutorialActionCompleted(false);
+        }, 500);
+      }
+      
+      const savedStartIdx = startCell.idx;
+      setTimeout(() => {
+        const currentBoard = boardRef.current;
+        const newBoard = currentBoard.map(cell => ({ ...cell }));
+        const type1 = newBoard[savedStartIdx].type;
+        const type2 = newBoard[targetIdx].type;
+        newBoard[savedStartIdx].type = type2;
+        newBoard[targetIdx].type = type1;
+        swapAnimRef.current = null;
+        
+        if (findMatches(newBoard, boardSize).size > 0) {
+          setIsAnimating(true);
+          if (gameStatus === "playing") {
+            setMoves(prev => prev - 1);
+          }
+          setHintCells(null);
+          boardRef.current = newBoard;
+          setBoard(newBoard);
+          comboRef.current = 0;
+          
+          // Tutorial: user made a match via drag
+          if (gameStatus === "tutorial" && currentTutorialAction === "make_match") {
+            setTutorialActionCompleted(true);
+            setTimeout(() => {
+              setTutorialStep(prev => prev + 1);
+              setTutorialActionCompleted(false);
+            }, 800);
+          }
+          
+          setTimeout(() => processMatches(), 150);
+        } else {
+          // Invalid move - still count as a move (only in playing mode)
+          if (gameStatus === "playing") {
+            setMoves(prev => prev - 1);
+          }
+          setHintCells(null);
+          swapAnimRef.current = {
+            idx1: targetIdx, idx2: savedStartIdx,
+            startTime: performance.now(), duration: SWAP_DURATION * 1.2,
+          };
+          setShakeOffset({ x: 4, y: 0 });
+          setTimeout(() => setShakeOffset({ x: -4, y: 0 }), 50);
+          setTimeout(() => setShakeOffset({ x: 0, y: 0 }), 100);
+          setTimeout(() => { swapAnimRef.current = null; }, SWAP_DURATION * 1.2);
+        }
+      }, SWAP_DURATION);
+    } else {
+      // Animate back smoothly
+      const animateBack = () => {
+        setDragOffset(prev => {
+          const newX = prev.x * 0.7;
+          const newY = prev.y * 0.7;
+          if (Math.abs(newX) < 1 && Math.abs(newY) < 1) return { x: 0, y: 0 };
+          dragAnimationRef.current = requestAnimationFrame(animateBack);
+          return { x: newX, y: newY };
+        });
+      };
+      animateBack();
+    }
+    
+    isDraggingRef.current = false;
+    dragStartRef.current = null;
+    setDragCell(null);
+    if (targetIdx !== null) setDragOffset({ x: 0, y: 0 });
+  }, [dragOffset, boardSize, processMatches, playSound, gameStatus, tutorialStep]);
 
   // Render loop with physics
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = canvasSize * dpr;
+    canvas.height = canvasSize * dpr;
     const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
 
     const render = () => {
-      ctx.fillStyle = "#fff8f0";
-      ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-      // Grid
-      ctx.strokeStyle = "rgba(0,0,0,0.03)";
-      for (let i = 0; i <= boardSize; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * CELL_SIZE, 0); ctx.lineTo(i * CELL_SIZE, canvasSize);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i * CELL_SIZE); ctx.lineTo(canvasSize, i * CELL_SIZE);
-        ctx.stroke();
-      }
-
-      // Cell backgrounds
-      for (let i = 0; i < boardSize * boardSize; i++) {
-        const col = i % boardSize;
-        const row = Math.floor(i / boardSize);
-        ctx.fillStyle = (row + col) % 2 === 0 ? "rgba(255,255,255,0.5)" : "rgba(255,240,220,0.3)";
-        ctx.beginPath();
-        ctx.roundRect(col * CELL_SIZE + 2, row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4, 8);
-        ctx.fill();
-      }
-
-      // Swap animation
       const swap = swapAnimRef.current;
       let swapProgress = 0;
       if (swap) {
@@ -463,32 +501,24 @@ const Match3Game = () => {
         swapProgress = Math.min(elapsed / swap.duration, 1);
       }
 
-      // Update falling physics
+      // Update physics
       let stillFalling = false;
       const currentBoard = boardRef.current;
 
-      currentBoard.forEach((candy, idx) => {
+      currentBoard.forEach(candy => {
         if (candy.type === null) return;
-
-        // Physics update
         if (candy.y < candy.targetY) {
           candy.vy = Math.min(candy.vy + GRAVITY, FALL_SPEED_LIMIT);
           candy.y += candy.vy;
-
-          // Check if reached target
           if (candy.y >= candy.targetY) {
             candy.y = candy.targetY;
-            // Bounce effect
             if (candy.vy > 3) {
               candy.vy = -candy.vy * BOUNCE_FACTOR;
-              candy.scale = 0.85; // Squish on impact
-            } else {
-              candy.vy = 0;
-            }
+              candy.scale = 0.85;
+            } else candy.vy = 0;
           }
           stillFalling = true;
         } else if (candy.y > candy.targetY) {
-          // Bouncing back up
           candy.vy += GRAVITY;
           candy.y += candy.vy;
           if (candy.y >= candy.targetY && candy.vy > 0) {
@@ -497,165 +527,62 @@ const Match3Game = () => {
           }
           stillFalling = true;
         }
-
-        // Scale recovery
         if (candy.scale < 1) {
           candy.scale = Math.min(candy.scale + 0.08, 1);
           stillFalling = true;
         }
       });
 
-      // Check if falling finished
       if (fallingRef.current && !stillFalling) {
         fallingRef.current = false;
-        // Check for chain matches
-        setTimeout(() => processMatches(), 100);
+        setTimeout(() => processMatches(), 350);
       }
 
-      // Draw candies
-      const selected = selectedCellRef.current;
+      const dragIdx = isDraggingRef.current ? dragStartRef.current?.idx : null;
 
-      currentBoard.forEach((candy, idx) => {
-        if (candy.type === null || candy.type === undefined) return;
-
-        const col = idx % boardSize;
-        let x = col * CELL_SIZE + CELL_SIZE / 2;
-        let y = candy.y;
-
-        // Swap animation offset
-        if (swap) {
-          const eased = easeInOutCubic(swapProgress);
-          if (idx === swap.idx1) {
-            const col2 = swap.idx2 % boardSize;
-            const row2 = Math.floor(swap.idx2 / boardSize);
-            const targetX = col2 * CELL_SIZE + CELL_SIZE / 2;
-            const targetY = row2 * CELL_SIZE + CELL_SIZE / 2;
-            x = x + (targetX - x) * eased;
-            y = candy.targetY + (targetY - candy.targetY) * eased;
-          } else if (idx === swap.idx2) {
-            const col1 = swap.idx1 % boardSize;
-            const row1 = Math.floor(swap.idx1 / boardSize);
-            const targetX = col1 * CELL_SIZE + CELL_SIZE / 2;
-            const targetY = row1 * CELL_SIZE + CELL_SIZE / 2;
-            x = x + (targetX - x) * eased;
-            y = candy.targetY + (targetY - candy.targetY) * eased;
-          }
-        }
-
-        const isSelected = selected === idx;
-        const baseSize = CELL_SIZE - 10;
-        let drawSize = baseSize * candy.scale;
-
-        // Pulse for selected
-        if (isSelected) {
-          const pulse = Math.sin(performance.now() / 150) * 0.08 + 1.1;
-          drawSize = baseSize * pulse;
-        }
-
-        // Squish effect (wider when compressed)
-        const squishX = candy.scale < 1 ? 1 + (1 - candy.scale) * 0.5 : 1;
-        const squishY = candy.scale;
-
-        // Shadow
-        ctx.fillStyle = "rgba(0,0,0,0.12)";
-        ctx.beginPath();
-        ctx.ellipse(x + 2, y + 3, (drawSize / 2) * squishX, (drawSize / 2) * squishY, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw candy
-        ctx.save();
-        if (isSelected) {
-          ctx.shadowColor = CANDY_COLORS[candy.type];
-          ctx.shadowBlur = 25;
-        }
-
-        ctx.translate(x, y);
-        ctx.scale(squishX, squishY);
-
-        if (imagesLoadedRef.current && imagesRef.current[candy.type]) {
-          ctx.drawImage(imagesRef.current[candy.type], -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-        } else {
-          const gradient = ctx.createRadialGradient(-drawSize * 0.2, -drawSize * 0.2, 0, 0, 0, drawSize / 2);
-          gradient.addColorStop(0, "#fff");
-          gradient.addColorStop(0.4, CANDY_COLORS[candy.type]);
-          gradient.addColorStop(1, CANDY_COLORS[candy.type]);
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.arc(0, 0, drawSize / 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
+      renderBoard(ctx, {
+        canvasSize, boardSize,
+        board: currentBoard,
+        selectedCell: selectedCellRef.current,
+        dragIdx, dragOffset,
+        swap, swapProgress,
+        imagesLoaded: imagesLoadedRef.current,
+        images: imagesRef.current,
+        hintCells,
       });
 
-      // Particles
-      particlesRef.current = particlesRef.current.filter(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.25;
-        p.life -= 0.025;
-        if (p.life <= 0) return false;
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        return true;
-      });
-
-      // Floating texts
-      floatingTextsRef.current = floatingTextsRef.current.filter(t => {
-        t.y -= 1.5;
-        t.life -= 0.018;
-        if (t.life <= 0) return false;
-        const scale = easeOutBack(Math.min(1, (1 - t.life) * 3));
-        ctx.globalAlpha = t.life;
-        ctx.font = `bold ${28 * scale}px sans-serif`;
-        ctx.fillStyle = "#ff6b6b";
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 4;
-        ctx.textAlign = "center";
-        ctx.strokeText(t.text, t.x, t.y);
-        ctx.fillText(t.text, t.x, t.y);
-        ctx.globalAlpha = 1;
-        return true;
-      });
+      particlesRef.current = renderParticles(ctx, particlesRef.current);
+      floatingTextsRef.current = renderFloatingTexts(ctx, floatingTextsRef.current);
 
       animationRef.current = requestAnimationFrame(render);
     };
 
     animationRef.current = requestAnimationFrame(render);
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [boardSize, canvasSize, processMatches]);
+  }, [boardSize, canvasSize, processMatches, dragOffset, hintCells]);
 
   // Check win/lose
   useEffect(() => {
     if (gameStatus === "playing" && !isAnimating && !fallingRef.current) {
       if (score >= targetScore) {
         setGameStatus("win");
-        playSound(victorySoundRef);
-        // Complete session with win
+        playSound('victory');
         if (isAuthenticated) {
           const simplifiedBoard = boardRef.current.map(cell => cell.type);
-          const movesUsed = initialMoves - moves; // Actual moves made
           completeGame({
-            result: 'win',
-            score,
-            moves_count: movesUsed, // Pass actual moves count
+            result: 'win', score,
+            moves_count: initialMoves - moves,
             gameState: { board: simplifiedBoard, score, moves, combo: comboRef.current }
           });
         }
       } else if (moves <= 0) {
         setGameStatus("gameover");
-        playSound(failSoundRef);
-        // Complete session with loss
+        playSound('fail');
         if (isAuthenticated) {
           const simplifiedBoard = boardRef.current.map(cell => cell.type);
-          const movesUsed = initialMoves; // Used all moves
           completeGame({
-            result: 'loss',
-            score,
-            moves_count: movesUsed, // Pass actual moves count
+            result: 'loss', score,
+            moves_count: initialMoves,
             gameState: { board: simplifiedBoard, score, moves, combo: comboRef.current }
           });
         }
@@ -665,7 +592,7 @@ const Match3Game = () => {
 
   // Game controls
   const startGame = async () => {
-    playSound(gameStartSoundRef);
+    playSound('gameStart');
     const newBoard = createBoard(boardSize, candyCount);
     boardRef.current = newBoard;
     setBoard(newBoard);
@@ -681,92 +608,56 @@ const Match3Game = () => {
     fallingRef.current = false;
     setGameStatus("playing");
 
-    // Start session for API tracking
     if (isAuthenticated) {
       const simplifiedBoard = newBoard.map(cell => cell.type);
       await startSession(lobbySettings, { board: simplifiedBoard, score: 0, moves: initialMoves });
     }
   };
 
-  // Save game progress manually
   const handleSaveGame = async () => {
     if (gameStatus !== 'playing') return;
-
-    // Pause is not applicable for Match3, just save
     const simplifiedBoard = boardRef.current.map(cell => cell.type);
-    await saveProgress({
-      board: simplifiedBoard,
-      score,
-      moves,
-      combo: comboRef.current
-    });
+    await saveProgress({ board: simplifiedBoard, score, moves, combo: comboRef.current });
     import('sonner').then(({ toast }) => {
       toast.success('Đã lưu game!', { duration: 2000 });
     });
   };
 
-  // Resume game from session if provided
+  // Resume game from session
   useEffect(() => {
     if (resumeSession?.id && gameStatus === 'idle') {
-      // Set session ID for completing later
       setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
-
-      // If we have saved game_state with board, restore it
-      if (resumeSession.game_state?.board && resumeSession.game_state.board.length > 0) {
+      if (resumeSession.game_state?.board?.length > 0) {
         const { board: savedBoard, score: savedScore, moves: savedMoves, combo: savedCombo } = resumeSession.game_state;
-        // Reconstruct full board from simplified types
         const restoredBoard = savedBoard.map((type, i) => ({
           type: typeof type === 'number' ? type : (type?.type ?? 0),
           key: Date.now() + i,
           y: Math.floor(i / boardSize) * CELL_SIZE + CELL_SIZE / 2,
           targetY: Math.floor(i / boardSize) * CELL_SIZE + CELL_SIZE / 2,
-          vy: 0,
-          scale: 1
+          vy: 0, scale: 1
         }));
         boardRef.current = restoredBoard;
         setBoard(restoredBoard);
         if (savedScore !== undefined) setScore(savedScore);
         if (savedMoves !== undefined) setMoves(savedMoves);
-        if (savedCombo !== undefined) {
-          comboRef.current = savedCombo;
-          setCombo(savedCombo);
-        }
+        if (savedCombo !== undefined) { comboRef.current = savedCombo; setCombo(savedCombo); }
         setGameStatus('playing');
-        playSound(gameStartSoundRef);
+        playSound('gameStart');
       } else {
-        // No game_state saved yet - start fresh game with same session
-        const newBoard = createBoard(boardSize, candyCount);
-        boardRef.current = newBoard;
-        setBoard(newBoard);
-        setScore(0);
-        setMoves(initialMoves);
-        setCombo(0);
-        comboRef.current = 0;
-        setSelectedCell(null);
-        setIsAnimating(false);
-        particlesRef.current = [];
-        floatingTextsRef.current = [];
-        swapAnimRef.current = null;
-        fallingRef.current = false;
-        setGameStatus('playing');
-        playSound(gameStartSoundRef);
+        startGame();
       }
     }
-  }, [resumeSession, boardSize, setResumeSessionId, candyCount, initialMoves]);
+  }, [resumeSession, boardSize, setResumeSessionId]);
 
   // Update game state for beforeunload save
   useEffect(() => {
     if (gameStatus === 'playing') {
       const simplifiedBoard = boardRef.current.map(cell => cell.type);
-      updateGameState({
-        board: simplifiedBoard,
-        score,
-        moves,
-        combo: comboRef.current
-      });
+      updateGameState({ board: simplifiedBoard, score, moves, combo: comboRef.current });
     }
   }, [board, score, moves, gameStatus, updateGameState]);
 
+  // Tutorial
   const startTutorial = () => {
     const newBoard = createBoard(boardSize, candyCount);
     boardRef.current = newBoard;
@@ -778,13 +669,12 @@ const Match3Game = () => {
   };
 
   const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
-
   const nextTutorialStep = () => {
     if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") startGame();
     else setTutorialStep(prev => prev + 1);
   };
 
-  // Typewriter
+  // Typewriter effect
   useEffect(() => {
     if (gameStatus !== "tutorial") return;
     const step = TUTORIAL_STEPS[tutorialStep];
@@ -828,18 +718,23 @@ const Match3Game = () => {
             </>
           )}
         </div>
-        {/* Save Button - only during playing */}
         {gameStatus === 'playing' ? (
-          <button
-            className="w-10 h-10 flex items-center justify-center bg-pink-500/20 rounded-lg text-pink-500 hover:bg-pink-500/30 transition-all"
-            onClick={handleSaveGame}
-            title="Lưu game"
-          >
-            <Save size={20} />
-          </button>
-        ) : (
-          <div className="w-10" />
-        )}
+          <div className="flex items-center gap-2">
+            <button className="w-10 h-10 flex items-center justify-center bg-yellow-500/20 rounded-lg text-yellow-500 hover:bg-yellow-500/30 transition-all" onClick={() => {
+              const hint = findHint(boardRef.current, boardSize);
+              if (hint) {
+                setHintCells(hint);
+                if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+                hintTimeoutRef.current = setTimeout(() => setHintCells(null), 3000);
+              }
+            }} title="Gợi ý">
+              <Lightbulb size={20} />
+            </button>
+            <button className="w-10 h-10 flex items-center justify-center bg-pink-500/20 rounded-lg text-pink-500 hover:bg-pink-500/30 transition-all" onClick={handleSaveGame} title="Lưu game">
+              <Save size={20} />
+            </button>
+          </div>
+        ) : <div className="w-10" />}
       </div>
 
       {/* Score */}
@@ -872,7 +767,20 @@ const Match3Game = () => {
         <div className="relative bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/30 dark:to-amber-900/30 rounded-2xl p-3"
           style={{ boxShadow: '8px 8px 20px rgba(0,0,0,0.12), -8px -8px 20px rgba(255,255,255,0.9)', transform: `translate(${shakeOffset.x}px, ${shakeOffset.y}px)` }}>
           <div className="rounded-xl overflow-hidden cursor-pointer" style={{ boxShadow: 'inset 4px 4px 10px rgba(0,0,0,0.08), inset -4px -4px 10px rgba(255,255,255,0.6)' }}>
-            <canvas ref={canvasRef} width={canvasSize} height={canvasSize} onClick={handleCanvasClick} style={{ display: 'block', maxWidth: '100%', height: 'auto' }} />
+            <canvas 
+              ref={canvasRef} 
+              width={canvasSize} 
+              height={canvasSize} 
+              onClick={handleCanvasClick}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              onTouchStart={handleDragStart}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd}
+              style={{ display: 'block', width: canvasSize, height: canvasSize, touchAction: 'none' }} 
+            />
           </div>
 
           {(gameStatus === "idle" || gameStatus === "win" || gameStatus === "gameover") && (
@@ -927,9 +835,34 @@ const Match3Game = () => {
               <div className="text-lg font-bold text-foreground mb-2">{displayedTitle}{isTyping && !displayedText && <span className="animate-pulse">|</span>}</div>
               <div className="text-sm text-muted-foreground min-h-[3rem]">{displayedText}{isTyping && displayedText && <span className="animate-pulse text-orange-400">|</span>}</div>
             </div>
-            {!isTyping && <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-xl hover:bg-orange-600" onClick={nextTutorialStep}>
-              {currentStep.action === "finish" ? "🎮 Bắt đầu" : "Tiếp tục"} <ChevronRight size={16} />
-            </button>}
+            
+            {/* Show different UI based on action type */}
+            {!isTyping && (
+              <>
+                {/* Welcome and finish steps - show button */}
+                {(currentStep.action === "welcome" || currentStep.action === "finish") && (
+                  <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-orange-500 text-white text-sm font-semibold rounded-xl hover:bg-orange-600" onClick={nextTutorialStep}>
+                    {currentStep.action === "finish" ? "🎮 Bắt đầu chơi!" : "Tiếp tục"} <ChevronRight size={16} />
+                  </button>
+                )}
+                
+                {/* Interactive steps - show action indicator */}
+                {(currentStep.action === "select_candy" || currentStep.action === "make_swap" || currentStep.action === "make_match") && (
+                  <div className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold ${tutorialActionCompleted ? 'bg-green-500 text-white' : 'bg-secondary text-muted-foreground border-2 border-dashed border-orange-400'}`}>
+                    {tutorialActionCompleted ? (
+                      <>✅ Hoàn thành!</>
+                    ) : (
+                      <>
+                        <span className="animate-pulse">👆</span>
+                        {currentStep.action === "select_candy" && "Hãy click vào 1 viên kẹo"}
+                        {currentStep.action === "make_swap" && "Đổi chỗ 2 viên kẹo"}
+                        {currentStep.action === "make_match" && "Ghép 3+ cùng màu"}
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>

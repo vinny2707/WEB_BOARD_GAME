@@ -229,7 +229,7 @@ const GameCard = ({ game, onClick }) => {
         ${isClickable 
           ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10' 
           : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
-      onClick={() => isClickable && onClick(path)}
+      onClick={() => isClickable && onClick(path, game)}
     >
       {/* Coming Soon Overlay - only shows when game is disabled */}
       {!isEnabled && <ComingSoonOverlay />}
@@ -309,10 +309,11 @@ const Games = () => {
     fetchGames(1, newLimit)
   }
 
-  const handleGameClick = (path) => {
+  const handleGameClick = (path, game) => {
     if (path) {
       playClick()
-      navigate(path)
+      // Pass game data to lobby including id, type, name, settings
+      navigate(path, { state: { game } })
     }
   }
 
