@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/pagination";
 import { getInitials } from "@/utils/Username";
 import { Progress } from "@/components/ui/progress";
+import { useUser } from "@/contexts/UserProvider";
 
 export default function Ranking() {
   const [games, setGames] = useState([]);
@@ -42,7 +43,30 @@ export default function Ranking() {
     total: 0,
   });
   const itemsPerPage = 10;
+  const { isAuthenticated } = useUser();
 
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+            Vui lòng đăng nhập để xem danh sách xếp hạng
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+  
   // Fetch games list
   useEffect(() => {
     const fetchGames = async () => {

@@ -89,8 +89,7 @@ const Sidebar = () => {
       icon: Users,
       label: "Social",
       page: "social",
-      active: currentPage === "social",
-      badge: 3,
+      active: currentPage === "social" || currentPage === "messages",
     },
     {
       icon: User,
@@ -433,7 +432,8 @@ const Sidebar = () => {
                     <div
                       className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-xl"
                       style={{
-                        background: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
+                        background:
+                          "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
                       }}
                     >
                       <User className="w-5 h-5 text-white" />
