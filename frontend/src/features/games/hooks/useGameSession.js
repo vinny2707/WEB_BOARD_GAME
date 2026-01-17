@@ -137,13 +137,15 @@ export const useGameSession = (gameId, options = {}) => {
                 };
 
                 // Show elo change notification
-                const eloChange = response.data?.session?.elo_change;
+                const eloChange = response.data?.session?.elo_change_details;
                 if (eloChange && eloChange.change !== 0) {
                     playNotificationSound();
                     const isPositive = eloChange.change > 0;
+                    const sign = isPositive ? '+' : '';
                     toast(isPositive ? '📈 Điểm ELO tăng!' : '📉 Điểm ELO giảm', {
-                        description: `${isPositive ? '+' : ''}${eloChange.change} (${eloChange.previous} → ${eloChange.current})`,
+                        description: `${sign}${eloChange.change} điểm (${eloChange.previous} → ${eloChange.current})`,
                         duration: 4000,
+                        type: 'complete',
                     });
                 }
 
@@ -154,9 +156,10 @@ export const useGameSession = (gameId, options = {}) => {
                         // Stagger the toasts so they don't overlap
                         setTimeout(() => {
                             playNotificationSound();
-                            toast.success('🎉 Mở khóa thành tựu mới!', {
+                            toast('🎉 Mở khóa thành tựu mới!', {
                                 description: item.name || item.title || item,
                                 duration: 5000,
+                                type: 'complete',
                             });
                         }, index * 1200);
                     });

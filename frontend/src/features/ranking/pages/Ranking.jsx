@@ -281,9 +281,9 @@ export default function Ranking() {
   const currentScopeOption = scopeOptions.find((opt) => opt.value === scope);
 
   return (
-    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6 dark:bg-zinc-900/50">
+    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:!bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl">
@@ -310,15 +310,15 @@ export default function Ranking() {
                 value={selectedGame?.toString()}
                 onValueChange={(val) => setSelectedGame(parseInt(val))}
               >
-                <SelectTrigger className="w-full bg-white dark:!bg-zinc-800 dark:border-zinc-700">
+                <SelectTrigger className="w-full bg-white dark:bg-slate-800 dark:border-slate-600">
                   <SelectValue placeholder="Choose a game" />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
                   {games.map((game) => (
                     <SelectItem
                       key={game.id}
                       value={game.id.toString()}
-                      className="dark:hover:bg-zinc-700 cursor-pointer"
+                      className="dark:hover:bg-slate-700 cursor-pointer"
                     >
                       {game.name}
                     </SelectItem>
@@ -333,15 +333,15 @@ export default function Ranking() {
                 Ranking Scope
               </label>
               <Select value={scope} onValueChange={setScope}>
-                <SelectTrigger className="w-full bg-white dark:!bg-zinc-800 dark:border-zinc-700">
+                <SelectTrigger className="w-full bg-white dark:bg-slate-800 dark:border-slate-600">
                   <SelectValue placeholder="Choose scope" />
                 </SelectTrigger>
-                <SelectContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
                   {scopeOptions.map((option) => (
                     <SelectItem
                       key={option.value}
                       value={option.value}
-                      className="dark:hover:bg-zinc-700 cursor-pointer"
+                      className="dark:hover:bg-slate-700 cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <option.icon className="w-4 h-4" />
@@ -413,9 +413,9 @@ export default function Ranking() {
       )}
 
       {/* Rankings List */}
-      <div className="bg-zinc-50 border-gray-200 dark:!bg-zinc-900/50 dark:border-zinc-800 rounded-2xl border shadow-lg overflow-hidden">
+      <div className="bg-white/50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl border shadow-lg overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b dark:border-zinc-800">
+        <div className="p-4 sm:p-6 border-b dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {currentScopeOption && (
@@ -452,11 +452,11 @@ export default function Ranking() {
               {rankings.map((ranking) => (
                 <div
                   key={ranking.rank}
-                  className="bg-white dark:!bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 hover:shadow-lg transition-all"
+                  className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center">
                       {getRankIcon(ranking.rank)}
                     </div>
 

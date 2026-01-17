@@ -67,11 +67,11 @@ const Admin_Sidebar = () => {
       className={`border-r transition-all duration-300 ease-in-out ${
         isCollapsed ? "w-20" : "w-64 md:min-w-[250px] md:max-w-1/5"
       } ${
-        isDarkMode ? "border-zinc-800" : "border-gray-200"
+        isDarkMode ? "border-slate-700" : "border-gray-200"
       } relative overflow-hidden flex flex-col hidden md:flex`}
       style={{
         background: isDarkMode
-          ? "rgba(24, 24, 27, 0.6)"
+          ? "rgba(30, 41, 59, 0.7)"
           : "rgba(249, 250, 251, 0.8)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
@@ -80,7 +80,7 @@ const Admin_Sidebar = () => {
       <div className="p-4">
         {/* Top Section: Theme Toggle & Collapse Button */}
         <div
-          className={`mb-6 pb-6 border-b border-gray-200 dark:border-zinc-800 flex items-center ${
+          className={`mb-6 pb-6 border-b border-gray-200 dark:border-slate-700 flex items-center ${
             isCollapsed ? "flex-col gap-3 justify-center" : "justify-between"
           }`}
         >
@@ -89,7 +89,7 @@ const Admin_Sidebar = () => {
             onClick={toggleSidebar}
             className={`p-2 rounded-lg transition-all flex-shrink-0 ${
               isDarkMode
-                ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
+                ? "hover:bg-slate-700/50 text-slate-400 hover:text-slate-200"
                 : "hover:bg-gray-200/50 text-gray-600 hover:text-gray-900"
             }`}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -105,7 +105,7 @@ const Admin_Sidebar = () => {
           <button
             onClick={() => navigate("/games")}
             className={`p-2 rounded-lg transition-all flex-shrink-0 cursor-pointer ${isDarkMode
-                ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
+                ? "hover:bg-slate-700/50 text-slate-400 hover:text-blue-400"
                 : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"
               }`}
             title="Go to Home"
@@ -116,12 +116,12 @@ const Admin_Sidebar = () => {
 
         {/* Admin Badge */}
         <div className={`mb-8 text-center ${isCollapsed ? "hidden" : ""}`}>
-          <div className="inline-block px-4 py-2 rounded-xl dark:bg-emerald-500/20 border-2 dark:border-emerald-500/30 mb-4 bg-blue-500/20 text-blue-600 border-blue-500/30">
-            <h1 className="dark:text-emerald-400 text-blue-600 tracking-[0.2em] text-sm">
+          <div className="inline-block px-4 py-2 rounded-xl dark:bg-blue-500/20 border-2 dark:border-blue-500/30 mb-4 bg-blue-500/20 text-blue-600 border-blue-500/30">
+            <h1 className="dark:text-blue-400 text-blue-600 tracking-[0.2em] text-sm">
               ADMIN PANEL
             </h1>
           </div>
-          <p className="text-zinc-400 text-sm">Administrator Access</p>
+          <p className="text-slate-400 text-sm">Administrator Access</p>
         </div>
 
         {/* Navigation */}
@@ -133,10 +133,10 @@ const Admin_Sidebar = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all relative group cursor-pointer ${
                 activeSection === item.page
                   ? isDarkMode
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                     : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                   : isDarkMode
-                  ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                  ? "text-slate-400 hover:bg-slate-700/50 hover:text-slate-200"
                   : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
               } ${isCollapsed ? "justify-center" : "justify-start"}`}
               title={isCollapsed ? item.label : ""}
@@ -152,7 +152,7 @@ const Admin_Sidebar = () => {
                       ? "right-0 w-1 h-6 rounded-l-full"
                       : "left-0 w-1 h-8 rounded-r-full"
                   } top-1/2 -translate-y-1/2 ${
-                    isDarkMode ? "bg-emerald-500" : "bg-blue-500"
+                    isDarkMode ? "bg-blue-500" : "bg-blue-500"
                   }`}
                 ></div>
               )}

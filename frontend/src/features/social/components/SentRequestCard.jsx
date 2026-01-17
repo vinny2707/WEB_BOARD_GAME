@@ -28,7 +28,7 @@ const SentRequestCard = ({ recipient, createdAt, onCancel }) => {
   };
 
   return (
-    <div className="bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
+    <div className="bg-white/70 dark:bg-slate-800/70 border-2 border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">

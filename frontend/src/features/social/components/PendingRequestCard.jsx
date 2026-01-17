@@ -28,7 +28,7 @@ const PendingRequestCard = ({ requester, createdAt, onAccept, onReject }) => {
   };
 
   return (
-    <div className="bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border-2 border-amber-200 dark:border-amber-800/50 rounded-xl p-4 hover:border-amber-500 dark:hover:border-amber-500 transition-all">
+    <div className="bg-white/70 dark:bg-slate-800/70 border-2 border-amber-200 dark:border-amber-800/50 rounded-xl p-4 hover:border-amber-500 dark:hover:border-amber-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">

@@ -80,6 +80,9 @@ class AuthService {
             throw error;
         }
 
+        // Generate random avatar_id from 1 to 40
+        const randomAvatarId = Math.floor(Math.random() * 40) + 1;
+
         // Create user with verified data
         const user = await User.create({
             username: verifiedData.registrationData.username,
@@ -88,7 +91,8 @@ class AuthService {
             full_name: verifiedData.registrationData.full_name,
             dob: verifiedData.registrationData.dob,
             role: 'user',
-            status: 'active'
+            status: 'active',
+            avatar_id: randomAvatarId
         });
 
         // Clean up OTP session

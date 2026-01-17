@@ -313,8 +313,16 @@ const ReviewItem = ({ review, onEditSuccess, onDeleteSuccess }) => {
             {/* Header - User info & Rating */}
             <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary/40 rounded-full flex items-center justify-center">
-                        <User size={18} className="text-primary" />
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                        {review.avatar_url ? (
+                            <img
+                                src={review.avatar_url}
+                                alt={review.username}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <User size={18} className="text-primary" />
+                        )}
                     </div>
                     <div>
                         <div className="font-semibold text-foreground">

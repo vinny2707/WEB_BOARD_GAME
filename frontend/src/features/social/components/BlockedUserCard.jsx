@@ -23,7 +23,7 @@ export default function BlockedUserCard({ user, onUnblock }) {
 
   return (
     <>
-      <div className="bg-zinc-50 border border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-xl p-4 hover:shadow-lg transition-all">
+      <div className="bg-white/70 border border-gray-200 dark:bg-slate-800/70 dark:border-slate-700 rounded-xl p-4 hover:shadow-lg transition-all">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Avatar */}
@@ -40,7 +40,7 @@ export default function BlockedUserCard({ user, onUnblock }) {
                 )}
               </div>
               {/* Blocked indicator */}
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-900">
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800">
                 <Shield className="w-3 h-3 text-white" />
               </div>
             </div>
@@ -71,7 +71,7 @@ export default function BlockedUserCard({ user, onUnblock }) {
 
       {/* Unblock confirmation dialog */}
       <AlertDialog open={showUnblockDialog} onOpenChange={setShowUnblockDialog}>
-        <AlertDialogContent className="dark:bg-zinc-900 dark:border-zinc-800">
+        <AlertDialogContent className="dark:bg-slate-800 dark:border-slate-700">
           <AlertDialogHeader>
             <AlertDialogTitle className="dark:text-white">
               Unblock User
@@ -85,7 +85,7 @@ export default function BlockedUserCard({ user, onUnblock }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
+            <AlertDialogCancel className="cursor-pointer dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

@@ -77,9 +77,9 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 transition-colors duration-300">
+    <div className="w-full min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors duration-300">
       {/* Navigation Bar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-gray-200/50 dark:border-zinc-800/50 bg-white/80 dark:bg-zinc-900/80">
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b border-gray-200/50 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -97,7 +97,7 @@ const LandingPage = () => {
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className="p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="p-2 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                 title={isDarkMode ? "Light mode" : "Dark mode"}
               >
                 {isDarkMode ? (
@@ -165,7 +165,7 @@ const LandingPage = () => {
               </button>
               <button
                 onClick={() => navigate("/games")}
-                className="px-8 py-4 cursor-pointer rounded-xl bg-white dark:!bg-zinc-800 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-200 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all duration-300"
+                className="px-8 py-4 cursor-pointer rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-200 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300"
               >
                 View Games
               </button>
@@ -175,13 +175,13 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/50 dark:bg-zinc-950">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/50 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-4xl font-bold text-gray-900 dark:text-white">
               Why Choose Us?
             </h2>
-            <p className="text-lg text-gray-600 dark:text-zinc-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
               We provide the best gaming experience with modern features and
               classic gameplay
             </p>
@@ -191,7 +191,7 @@ const LandingPage = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group p-6 rounded-2xl bg-white dark:!bg-zinc-900/90 border border-gray-200 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-xl dark:hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1 backdrop-blur-sm"
+                className="group p-6 rounded-2xl bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-xl dark:hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1"
               >
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}
@@ -201,7 +201,7 @@ const LandingPage = () => {
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 dark:text-zinc-400">
+                <p className="text-gray-600 dark:text-slate-400">
                   {feature.description}
                 </p>
               </div>
@@ -217,7 +217,7 @@ const LandingPage = () => {
             <h2 className="text-4xl font-bold text-gray-900 dark:text-white">
               Popular Games
             </h2>
-            <p className="text-lg text-gray-600 dark:text-zinc-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
               Choose from our collection of classic board games
             </p>
           </div>
@@ -227,7 +227,7 @@ const LandingPage = () => {
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-64 rounded-2xl bg-gray-200 dark:!bg-zinc-800 animate-pulse"
+                  className="h-64 rounded-2xl bg-gray-200 dark:bg-slate-800 animate-pulse"
                 />
               ))}
             </div>
@@ -236,12 +236,12 @@ const LandingPage = () => {
               {games.map((game) => (
                 <div
                   key={game.id}
-                  className="group relative rounded-2xl overflow-hidden bg-white dark:!bg-zinc-900/90 border border-gray-200 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-2xl dark:hover:shadow-emerald-500/20 transition-all duration-300 hover:-translate-y-2 cursor-pointer backdrop-blur-sm"
+                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-2xl dark:hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 cursor-pointer"
                   onClick={handleGetStarted}
                 >
                   {/* Game Icon/Image */}
-                  <div className="h-48 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 dark:from-emerald-500/10 dark:to-cyan-500/10 flex items-center justify-center border-b border-gray-200 dark:border-zinc-800">
-                    <Gamepad2 className="w-20 h-20 text-emerald-600 dark:text-emerald-400" />
+                  <div className="h-48 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 dark:from-blue-500/10 dark:to-cyan-500/10 flex items-center justify-center border-b border-gray-200 dark:border-slate-700">
+                    <Gamepad2 className="w-20 h-20 text-blue-600 dark:text-blue-400" />
                   </div>
 
                   {/* Game Info */}
@@ -259,7 +259,7 @@ const LandingPage = () => {
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-zinc-400 line-clamp-2">
+                    <p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
                       {game.description || "Experience classic board game fun"}
                     </p>
 
@@ -299,7 +299,7 @@ const LandingPage = () => {
           </p>
           <button
             onClick={handleGetStarted}
-            className="inline-flex cursor-pointer items-center gap-2 px-8 py-4 rounded-xl bg-white dark:!bg-zinc-900 text-emerald-600 dark:text-emerald-400 font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-transparent dark:border-zinc-800"
+            className="inline-flex cursor-pointer items-center gap-2 px-8 py-4 rounded-xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-cyan-400 font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-transparent dark:border-slate-700"
           >
             <Zap className="w-5 h-5" />
             Get Started Free
@@ -308,7 +308,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:!bg-zinc-900 border-t border-gray-200 dark:border-zinc-800">
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Brand */}

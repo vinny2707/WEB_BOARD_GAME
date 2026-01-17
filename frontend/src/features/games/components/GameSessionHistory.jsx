@@ -592,7 +592,7 @@ const GameSessionHistory = ({ gameId, limit = 5, gamePath, onInProgressChange })
                                 </div>
 
                                 {/* Modal Content */}
-                                <div className="px-6 py-5 space-y-4">
+                                <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
                                     {/* Stats Grid */}
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="flex flex-col items-center p-3 bg-secondary/50 rounded-xl">

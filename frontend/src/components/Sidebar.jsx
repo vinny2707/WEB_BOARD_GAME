@@ -127,7 +127,7 @@ const Sidebar = () => {
           } relative overflow-hidden flex flex-col`}
         style={{
           background: isDarkMode
-            ? "rgba(24, 24, 27, 0.6)"
+            ? "rgba(30, 41, 59, 0.7)"
             : "rgba(249, 250, 251, 0.8)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -147,7 +147,7 @@ const Sidebar = () => {
         } relative overflow-visible flex flex-col hidden md:flex z-40`}
       style={{
         background: isDarkMode
-          ? "rgba(24, 24, 27, 0.6)"
+          ? "rgba(30, 41, 59, 0.7)"
           : "rgba(249, 250, 251, 0.8)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
@@ -158,7 +158,7 @@ const Sidebar = () => {
         className="absolute inset-0 pointer-events-none"
         style={{
           background: isDarkMode
-            ? "linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)"
+            ? "linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%)"
             : "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(147, 51, 234, 0.05) 100%)",
         }}
       ></div>
@@ -344,10 +344,10 @@ const Sidebar = () => {
             className="w-full rounded-2xl overflow-hidden backdrop-blur-xl"
             style={{
               background: isDarkMode
-                ? "linear-gradient(135deg, rgba(39, 39, 42, 0.8) 0%, rgba(24, 24, 27, 0.9) 100%)"
+                ? "linear-gradient(135deg, rgba(51, 65, 85, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%)"
                 : "linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.95) 100%)",
               border: `1px solid ${isDarkMode
-                ? "rgba(82, 82, 91, 0.4)"
+                ? "rgba(71, 85, 105, 0.5)"
                 : "rgba(229, 231, 235, 0.6)"
                 }`,
               boxShadow: isDarkMode

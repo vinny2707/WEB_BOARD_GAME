@@ -168,13 +168,11 @@ const Profile = () => {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
-          <User className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold dark:text-white mb-2">
-            Bạn chưa đăng nhập
-          </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/50 dark:bg-slate-800/50  rounded-2xl p-8 border border-gray-200 dark:border-slate-700 shadow-lg">
+          <User className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
             Vui lòng đăng nhập để xem profile của bạn
           </p>
           <a
@@ -191,7 +189,7 @@ const Profile = () => {
   return (
     <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Profile Card */}
-      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/50 dark:bg-slate-800/50  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
           {/* Avatar with Image or Initials */}
           <div className="relative group">
@@ -221,15 +219,15 @@ const Profile = () => {
               {user?.username}
             </h1>
             {user?.full_name && (
-              <p className="text-lg text-zinc-600 dark:text-zinc-300">
+              <p className="text-lg text-slate-600 dark:text-slate-300">
                 {user.full_name}
               </p>
             )}
-            <p className="text-sm dark:text-zinc-400 text-gray-500 break-all">
+            <p className="text-sm dark:text-slate-400 text-gray-500 break-all">
               {user?.email}
             </p>
             {user?.dob && (
-              <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
                 📅 {new Date(user.dob).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
@@ -267,21 +265,21 @@ const Profile = () => {
                 </div>
 
                 {/* Divider */}
-                <div className="border-t border-zinc-200 dark:border-zinc-700" />
+                <div className="border-t border-slate-200 dark:border-slate-700" />
 
                 {/* Form Fields */}
                 <div className="space-y-4">
                   {/* Full Name */}
                   <div>
-                    <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
                       Full Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                       <input
                         type="text"
                         {...register("full_name")}
-                        className="w-full pl-12 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -294,7 +292,7 @@ const Profile = () => {
 
                   {/* Date of Birth */}
                   <div>
-                    <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
                       Date of Birth
                     </label>
                     <Controller
@@ -310,7 +308,7 @@ const Profile = () => {
                             <PopoverTrigger asChild>
                               <button
                                 type="button"
-                                className="flex justify-between items-center w-full py-3 px-4 bg-zinc-100 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl text-left text-zinc-900 dark:text-white focus:border-emerald-500 outline-none transition-colors"
+                                className="flex justify-between items-center w-full py-3 px-4 bg-slate-100 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-left text-slate-900 dark:text-white focus:border-emerald-500 outline-none transition-colors"
                               >
                                 {field.value
                                   ? new Date(
@@ -320,8 +318,8 @@ const Profile = () => {
                                       month: "long",
                                       day: "numeric",
                                     })
-                                  : <span className="text-zinc-400">Pick a date</span>}
-                                <CalendarIcon className="w-5 h-5 text-zinc-400" />
+                                  : <span className="text-slate-400">Pick a date</span>}
+                                <CalendarIcon className="w-5 h-5 text-slate-400" />
                               </button>
                             </PopoverTrigger>
 
@@ -385,7 +383,7 @@ const Profile = () => {
       </div>
 
       {/* Achievements Section */}
-      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/50 dark:bg-slate-800/50  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl">
@@ -393,7 +391,7 @@ const Profile = () => {
           </div>
           <div>
             <h2 className="text-2xl font-bold dark:text-white">Achievements</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Track your progress and unlock rewards
             </p>
           </div>
@@ -411,7 +409,7 @@ const Profile = () => {
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Unlocked
                     </p>
                     <p className="text-2xl font-bold dark:text-white">
@@ -425,7 +423,7 @@ const Profile = () => {
                 <div className="flex items-center gap-3">
                   <Trophy className="w-8 h-8 text-amber-500" />
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       Total Points
                     </p>
                     <p className="text-2xl font-bold dark:text-white">
@@ -439,7 +437,7 @@ const Profile = () => {
                 <div className="flex items-center gap-3">
                   <TrendingUp className="w-8 h-8 text-blue-500" />
                   <div>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
                       In Progress
                     </p>
                     <p className="text-2xl font-bold dark:text-white">
@@ -464,7 +462,7 @@ const Profile = () => {
                   className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? "bg-emerald-500 text-white"
-                      : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700"
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -481,14 +479,14 @@ const Profile = () => {
                   className={`relative overflow-hidden rounded-xl border-2 p-4 transition-all ${
                     achievement.is_unlocked
                       ? "bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 dark:from-emerald-500/20 dark:to-cyan-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/20"
-                      : "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700"
+                      : "bg-slate-100/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-700"
                   }`}
                 >
                   {/* Locked Overlay */}
                   {!achievement.is_unlocked &&
                     achievement.progress?.percentage === 0 && (
-                      <div className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center z-10">
-                        <Lock className="w-12 h-12 text-zinc-400" />
+                      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-10">
+                        <Lock className="w-12 h-12 text-slate-400" />
                       </div>
                     )}
 
@@ -498,7 +496,7 @@ const Profile = () => {
                       className={`text-4xl p-3 rounded-xl ${
                         achievement.is_unlocked
                           ? "bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-lg"
-                          : "bg-zinc-300 dark:bg-zinc-700"
+                          : "bg-slate-300 dark:bg-slate-700"
                       }`}
                     >
                       {achievement.icon || "🏆"}
@@ -518,7 +516,7 @@ const Profile = () => {
                       </div>
 
                       {achievement.description && (
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3 line-clamp-2">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
                           {achievement.description}
                         </p>
                       )}
@@ -538,7 +536,7 @@ const Profile = () => {
                       {achievement.progress && (
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-zinc-600 dark:text-zinc-400">
+                            <span className="text-slate-600 dark:text-slate-400">
                               Progress: {achievement.progress.current}/
                               {achievement.progress.required}
                             </span>
@@ -546,7 +544,7 @@ const Profile = () => {
                               {achievement.progress.percentage}%
                             </span>
                           </div>
-                          <div className="h-2 bg-zinc-300 dark:bg-zinc-700 rounded-full overflow-hidden">
+                          <div className="h-2 bg-slate-300 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500"
                               style={{
@@ -559,7 +557,7 @@ const Profile = () => {
 
                       {/* Unlocked Date */}
                       {achievement.unlocked_at && (
-                        <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-2">
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
                           Unlocked{" "}
                           {new Date(
                             achievement.unlocked_at
@@ -574,8 +572,8 @@ const Profile = () => {
 
             {getFilteredAchievements().length === 0 && (
               <div className="text-center py-12">
-                <Lock className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                <p className="text-zinc-500 dark:text-zinc-400">
+                <Lock className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-500 dark:text-slate-400">
                   No achievements in this category yet
                 </p>
               </div>
@@ -583,8 +581,8 @@ const Profile = () => {
           </>
         ) : (
           <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-            <p className="text-zinc-500 dark:text-zinc-400">
+            <Trophy className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400">
               Failed to load achievements
             </p>
           </div>

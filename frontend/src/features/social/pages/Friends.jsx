@@ -459,8 +459,8 @@ const Friends = () => {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/50 dark:bg-slate-800/50  rounded-2xl p-8 border border-gray-200 dark:border-slate-700 shadow-lg">
           <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold dark:text-white mb-2">
             Bạn chưa đăng nhập
@@ -482,7 +482,7 @@ const Friends = () => {
   return (
     <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/50 dark:bg-slate-800/50  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl">
@@ -523,13 +523,13 @@ const Friends = () => {
 
         {/* Search Bar */}
         <div className="mt-6 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search friends..."
-            className="w-full pl-12 pr-4 py-3 bg-white dark:!bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-400 focus:border-blue-500 dark:focus:border-blue-500 outline-none transition-colors"
+            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl dark:text-white placeholder-slate-400 focus:border-blue-500 dark:focus:border-blue-500 outline-none transition-colors"
           />
         </div>
 
@@ -542,7 +542,7 @@ const Friends = () => {
               className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-blue-500 text-white"
-                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                  : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700"
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -552,7 +552,7 @@ const Friends = () => {
                   className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                     activeTab === tab.id
                       ? "bg-white/20"
-                      : "bg-zinc-300 dark:bg-zinc-700"
+                      : "bg-slate-300 dark:bg-slate-700"
                   }`}
                 >
                   {tab.count}
@@ -564,7 +564,7 @@ const Friends = () => {
       </div>
 
       {/* Content */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-slate-800/70  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

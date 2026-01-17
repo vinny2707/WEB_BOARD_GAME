@@ -135,14 +135,58 @@
     background-repeat: repeat;
     background-size: 350px 350px;
     background-attachment: fixed;
-    opacity: 0.9;
+    opacity: 0.95;
     pointer-events: none;
     z-index: 0;
+  }
+
+  /* Dark mode: invert pattern colors and reduce opacity */
+  .dark body::before {
+    filter: invert(1);
   }
 }
 
 #root {
   @apply flex w-screen min-h-screen;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 10px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Dark/Light mode scrollbar colors */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 /* Golden Sparkle Toast Notification */
@@ -155,6 +199,16 @@
 
   50% {
     background-position: 200% center;
+  }
+}
+
+/* Shimmer effect for Coming Soon badge */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -195,8 +249,8 @@
   color: #333333 !important;
 }
 
-/* Success toast override for newly_unlocked */
-[data-sonner-toast][data-type="success"] {
+/* Complete toast (ELO/Achievement) - golden sparkle style */
+[data-sonner-toast][data-type="complete"] {
   background: linear-gradient(135deg,
       rgba(255, 215, 0, 0.1) 0%,
       rgba(255, 193, 7, 0.2) 50%,
@@ -206,7 +260,162 @@
   animation: sparkle 2s ease-in-out infinite, glow 1.5s ease-in-out infinite !important;
 }
 
-[data-sonner-toast][data-type="success"] [data-title],
-[data-sonner-toast][data-type="success"] [data-description] {
+[data-sonner-toast][data-type="complete"] [data-title],
+[data-sonner-toast][data-type="complete"] [data-description] {
   color: #1a1a1a !important;
+}
+
+/* Success toast styles - green */
+[data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg,
+      rgba(34, 197, 94, 0.08) 0%,
+      rgba(22, 163, 74, 0.15) 50%,
+      rgba(34, 197, 94, 0.08) 100%) !important;
+  border: 1.5px solid rgba(22, 163, 74, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: #166534 !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: #15803d !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] svg {
+  color: #16a34a !important;
+}
+
+/* Error/Warning toast styles */
+[data-sonner-toast][data-type="error"] {
+  background: linear-gradient(135deg,
+      rgba(239, 68, 68, 0.08) 0%,
+      rgba(220, 38, 38, 0.15) 50%,
+      rgba(239, 68, 68, 0.08) 100%) !important;
+  border: 1.5px solid rgba(220, 38, 38, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: #991b1b !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: #b91c1c !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] svg {
+  color: #dc2626 !important;
+}
+
+/* Warning toast styles (for info/warnings) */
+[data-sonner-toast][data-type="warning"] {
+  background: linear-gradient(135deg,
+      rgba(251, 146, 60, 0.1) 0%,
+      rgba(234, 88, 12, 0.18) 50%,
+      rgba(251, 146, 60, 0.1) 100%) !important;
+  border: 1.5px solid rgba(234, 88, 12, 0.5) !important;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-title] {
+  color: #9a3412 !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-description] {
+  color: #c2410c !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] svg {
+  color: #ea580c !important;
+}
+
+/* ===== DARK MODE TOAST OVERRIDES ===== */
+.dark .toast-notification [data-title] {
+  color: #f5f5f5 !important;
+}
+
+.dark .toast-notification [data-description] {
+  color: #e5e5e5 !important;
+}
+
+/* Dark mode - Complete (ELO/Achievement) */
+.dark [data-sonner-toast][data-type="complete"] {
+  background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.15) 0%,
+      rgba(255, 193, 7, 0.25) 50%,
+      rgba(255, 215, 0, 0.15) 100%) !important;
+  border: 2px solid rgba(255, 193, 7, 0.7) !important;
+}
+
+.dark [data-sonner-toast][data-type="complete"] [data-title],
+.dark [data-sonner-toast][data-type="complete"] [data-description] {
+  color: #fef3c7 !important;
+}
+
+/* Dark mode - Success */
+.dark [data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg,
+      rgba(34, 197, 94, 0.12) 0%,
+      rgba(22, 163, 74, 0.2) 50%,
+      rgba(34, 197, 94, 0.12) 100%) !important;
+  border: 1.5px solid rgba(34, 197, 94, 0.6) !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-title] {
+  color: #86efac !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-description] {
+  color: #bbf7d0 !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] [data-icon] svg {
+  color: #4ade80 !important;
+}
+
+/* Dark mode - Error */
+.dark [data-sonner-toast][data-type="error"] {
+  background: linear-gradient(135deg,
+      rgba(239, 68, 68, 0.12) 0%,
+      rgba(220, 38, 38, 0.2) 50%,
+      rgba(239, 68, 68, 0.12) 100%) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.6) !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-title] {
+  color: #fca5a5 !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-description] {
+  color: #fecaca !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] [data-icon] svg {
+  color: #f87171 !important;
+}
+
+/* Dark mode - Warning */
+.dark [data-sonner-toast][data-type="warning"] {
+  background: linear-gradient(135deg,
+      rgba(251, 146, 60, 0.15) 0%,
+      rgba(234, 88, 12, 0.25) 50%,
+      rgba(251, 146, 60, 0.15) 100%) !important;
+  border: 1.5px solid rgba(251, 146, 60, 0.6) !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-title] {
+  color: #fed7aa !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-description] {
+  color: #ffedd5 !important;
+}
+
+.dark [data-sonner-toast][data-type="warning"] [data-icon] svg {
+  color: #fb923c !important;
 }

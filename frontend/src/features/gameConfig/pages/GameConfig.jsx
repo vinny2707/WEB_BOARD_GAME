@@ -263,7 +263,7 @@ const GameConfig = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden bg-transparent">
       {/* Header */}
-      <div className="flex-none px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b border-gray-200 dark:border-zinc-800">
+      <div className="flex-none px-4 sm:px-6 md:px-8 py-4 sm:py-6 border-b border-gray-200 dark:border-slate-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
@@ -271,7 +271,7 @@ const GameConfig = () => {
             </h1>
             <p
               className={`text-sm mt-1 ${
-                isDarkMode ? "text-zinc-400" : "text-gray-500"
+                isDarkMode ? "text-slate-400" : "text-gray-500"
               }`}
             >
               {totalGames} games total
@@ -281,7 +281,7 @@ const GameConfig = () => {
             onClick={handleCreate}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all cursor-pointer ${
               isDarkMode
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                ? "bg-emerald-600 hover:bg-blue-500 text-white"
                 : "bg-blue-600 hover:bg-blue-700 text-white"
             }`}
           >
@@ -301,7 +301,7 @@ const GameConfig = () => {
               onChange={handleSearch}
               className={`w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base rounded-lg border transition-colors ${
                 isDarkMode
-                  ? "bg-zinc-800 border-zinc-700 text-white placeholder-zinc-500 focus:border-emerald-500"
+                  ? "bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
                   : "bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500"
               } focus:outline-none`}
             />
@@ -320,10 +320,10 @@ const GameConfig = () => {
                 className={`px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer text-sm whitespace-nowrap ${
                   enabledFilter === filter.value
                     ? isDarkMode
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                       : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                     : isDarkMode
-                    ? "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                    ? "bg-slate-700 text-slate-400 hover:bg-slate-600"
                     : "bg-gray-200 text-gray-600 hover:bg-gray-300"
                 }`}
               >
@@ -347,7 +347,7 @@ const GameConfig = () => {
         ) : games.length === 0 ? (
           <div
             className={`flex flex-col items-center justify-center h-full gap-4 ${
-              isDarkMode ? "text-zinc-400" : "text-gray-500"
+              isDarkMode ? "text-slate-400" : "text-gray-500"
             }`}
           >
             <div className="text-6xl">🎮</div>
@@ -356,7 +356,7 @@ const GameConfig = () => {
               onClick={handleCreate}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all cursor-pointer ${
                 isDarkMode
-                  ? "bg-emerald-600 hover:bg-emerald-500 text-white"
+                  ? "bg-emerald-600 hover:bg-blue-500 text-white"
                   : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
             >
@@ -381,7 +381,7 @@ const GameConfig = () => {
             </div>
 
             {/* Pagination - Inside scrollable content */}
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -400,7 +400,7 @@ const GameConfig = () => {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent
           className={`max-w-2xl max-h-[90vh] overflow-y-auto ${
-            isDarkMode ? "bg-zinc-900 border-zinc-800" : ""
+            isDarkMode ? "bg-slate-800 border-slate-700" : ""
           }`}
         >
           <DialogHeader>
@@ -412,7 +412,7 @@ const GameConfig = () => {
               <div
                 className={`p-2 rounded-lg ${
                   isDarkMode
-                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                     : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                 }`}
               >
@@ -436,7 +436,7 @@ const GameConfig = () => {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent
           className={`max-w-2xl max-h-[90vh] overflow-y-auto ${
-            isDarkMode ? "bg-zinc-900 border-zinc-800" : ""
+            isDarkMode ? "bg-slate-800 border-slate-700" : ""
           }`}
         >
           <DialogHeader>

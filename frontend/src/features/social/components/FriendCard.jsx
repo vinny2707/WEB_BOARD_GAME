@@ -38,7 +38,7 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
   };
 
   return (
-    <div className="bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
+    <div className="bg-white/70 dark:bg-slate-800/70 border-2 border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">
@@ -89,7 +89,7 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
           {/* More Options */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="p-2 cursor-pointer rounded-lg bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-700 dark:text-zinc-300 transition-colors">
+              <button className="p-2 cursor-pointer rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 transition-colors">
                 <MoreVertical className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 
 /**
- * GameDetailDialog Component - Shows full game details
+ * GameDetailDialog Component - Shows full game details with scroll support
  */
 const GameDetailDialog = ({ open, onOpenChange, game }) => {
   const { theme } = useTheme();
@@ -27,9 +27,11 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`max-w-2xl ${isDarkMode ? "bg-zinc-900 border-zinc-800" : ""}`}
+        className={`max-w-2xl max-h-[85vh] overflow-hidden flex flex-col ${
+          isDarkMode ? "bg-slate-800 border-slate-700" : ""
+        }`}
       >
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle
             className={`flex items-center gap-3 text-xl ${
               isDarkMode ? "text-white" : "text-gray-900"
@@ -38,7 +40,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
             <div
               className={`p-2 rounded-lg ${
                 isDarkMode
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                   : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
               }`}
             >
@@ -48,12 +50,13 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4">
           {/* Header with Icon */}
           <div className="flex items-center gap-4">
             <div
               className={`w-20 h-20 rounded-xl flex items-center justify-center overflow-hidden ${
-                isDarkMode ? "bg-zinc-800" : "bg-gray-100"
+                isDarkMode ? "bg-slate-700" : "bg-gray-100"
               }`}
             >
               {game.icon ? (
@@ -81,7 +84,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
               </h3>
               <p
                 className={`text-sm font-mono ${
-                  isDarkMode ? "text-zinc-400" : "text-gray-500"
+                  isDarkMode ? "text-slate-400" : "text-gray-500"
                 }`}
               >
                 {game.type}
@@ -99,13 +102,13 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
           {/* Info Grid */}
           <div
             className={`grid grid-cols-2 gap-4 p-4 rounded-lg ${
-              isDarkMode ? "bg-zinc-800/50" : "bg-gray-100"
+              isDarkMode ? "bg-slate-700/50" : "bg-gray-100"
             }`}
           >
             <div>
               <p
                 className={`text-xs ${
-                  isDarkMode ? "text-zinc-500" : "text-gray-500"
+                  isDarkMode ? "text-slate-400" : "text-gray-500"
                 }`}
               >
                 Board Size
@@ -121,7 +124,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
             <div>
               <p
                 className={`text-xs ${
-                  isDarkMode ? "text-zinc-500" : "text-gray-500"
+                  isDarkMode ? "text-slate-400" : "text-gray-500"
                 }`}
               >
                 Created
@@ -140,7 +143,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
               <div className="col-span-2">
                 <p
                   className={`text-xs ${
-                    isDarkMode ? "text-zinc-500" : "text-gray-500"
+                    isDarkMode ? "text-slate-400" : "text-gray-500"
                   }`}
                 >
                   Icon URL
@@ -161,14 +164,14 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
             <div>
               <h4
                 className={`text-sm font-semibold mb-1 ${
-                  isDarkMode ? "text-zinc-300" : "text-gray-700"
+                  isDarkMode ? "text-slate-300" : "text-gray-700"
                 }`}
               >
                 Description
               </h4>
               <p
                 className={`text-sm ${
-                  isDarkMode ? "text-zinc-400" : "text-gray-600"
+                  isDarkMode ? "text-slate-400" : "text-gray-600"
                 }`}
               >
                 {game.description}
@@ -181,14 +184,14 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
             <div>
               <h4
                 className={`text-sm font-semibold mb-1 ${
-                  isDarkMode ? "text-zinc-300" : "text-gray-700"
+                  isDarkMode ? "text-slate-300" : "text-gray-700"
                 }`}
               >
                 Rules
               </h4>
               <p
                 className={`text-sm whitespace-pre-wrap ${
-                  isDarkMode ? "text-zinc-400" : "text-gray-600"
+                  isDarkMode ? "text-slate-400" : "text-gray-600"
                 }`}
               >
                 {game.rules}
@@ -201,7 +204,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
             <div>
               <h4
                 className={`text-sm font-semibold mb-1 ${
-                  isDarkMode ? "text-zinc-300" : "text-gray-700"
+                  isDarkMode ? "text-slate-300" : "text-gray-700"
                 }`}
               >
                 Settings
@@ -209,7 +212,7 @@ const GameDetailDialog = ({ open, onOpenChange, game }) => {
               <pre
                 className={`text-sm p-3 rounded-lg overflow-x-auto ${
                   isDarkMode
-                    ? "bg-zinc-800 text-zinc-300"
+                    ? "bg-slate-700 text-slate-300"
                     : "bg-gray-100 text-gray-700"
                 }`}
               >

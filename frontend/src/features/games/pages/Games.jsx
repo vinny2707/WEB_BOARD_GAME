@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getGames } from '../../../api/gamesApi'
 import { Loader2 } from 'lucide-react'
 import useClickSound from '../hooks/useClickSound'
+import { Pagination } from '@/components/ui/pagination'
 
 // Game board preview components - map by game type
 const TicTacToePreview = () => (
@@ -26,7 +27,7 @@ const TicTacToePreview = () => (
 )
 
 const GomokuPreview = () => (
-  <div className="w-full h-full relative bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded border border-gray-200 dark:border-zinc-700">
+  <div className="w-full h-full relative bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded border border-gray-200 dark:border-slate-700">
     {/* Grid */}
     <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
       {[20, 40, 60, 80].map(pos => (
@@ -184,12 +185,52 @@ const GameCard = ({ game, onClick }) => {
     return <IconPreview icon={game.icon} />
   }
 
+  // Coming soon overlay component
+  const ComingSoonOverlay = () => (
+    <div className="absolute inset-0 z-10 overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-purple-900/40 to-transparent" />
+      
+      {/* Floating particles */}
+      <div className="absolute inset-0">
+        <div className="absolute w-1 h-1 bg-white/60 rounded-full animate-ping" style={{ top: '20%', left: '20%', animationDuration: '2s' }} />
+        <div className="absolute w-1.5 h-1.5 bg-fuchsia-400/50 rounded-full animate-ping" style={{ top: '30%', right: '25%', animationDuration: '2.5s', animationDelay: '0.5s' }} />
+        <div className="absolute w-1 h-1 bg-violet-400/60 rounded-full animate-ping" style={{ top: '50%', left: '15%', animationDuration: '3s', animationDelay: '1s' }} />
+        <div className="absolute w-0.5 h-0.5 bg-pink-300/70 rounded-full animate-ping" style={{ top: '40%', right: '15%', animationDuration: '2.3s', animationDelay: '0.3s' }} />
+      </div>
+      
+      {/* Badge container */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative group">
+          {/* Outer glow ring */}
+          <div className="absolute -inset-2 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 rounded-2xl blur-lg opacity-60 animate-pulse" />
+          
+          {/* Badge */}
+          <div className="relative px-4 py-2 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 rounded-xl shadow-2xl overflow-hidden">
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+            
+            {/* Text with glow */}
+            <span className="relative text-white text-xs font-bold tracking-[0.2em] uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+              Coming Soon
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div
-      className={`flex flex-col bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
-        ${isAvailable ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+      className={`relative flex flex-col bg-card rounded-2xl border overflow-hidden transition-all duration-300
+        ${isAvailable 
+          ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10' 
+          : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
       onClick={() => isAvailable && onClick(path)}
     >
+      {/* Coming Soon Overlay */}
+      {!isAvailable && <ComingSoonOverlay />}
+
       {/* Preview Area */}
       <div className="flex-1 p-4 flex items-center justify-center aspect-square">
         {renderPreview()}
@@ -202,16 +243,14 @@ const GameCard = ({ game, onClick }) => {
       </div>
 
       {/* Title Bar */}
-      <div className="text-center py-3 px-4 bg-secondary/80 border-t border-border">
+      <div className={`text-center py-3 px-3 border-t transition-colors
+        ${isAvailable ? 'bg-secondary/80 border-border' : 'bg-muted/50 border-muted'}`}>
         <span 
-          className="text-sm tracking-wide text-foreground"
+          className={`text-sm tracking-wide ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
           style={{ fontFamily: "'Bungee', cursive" }}
         >
           {game.name.toUpperCase()}
         </span>
-        {!isAvailable && (
-          <span className="text-[10px] text-muted-foreground ml-1">(Soon)</span>
-        )}
       </div>
     </div>
   )
@@ -223,28 +262,49 @@ const Games = () => {
   const [games, setGames] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalGames, setTotalGames] = useState(0)
+  const [limit, setLimit] = useState(10)
+
+  const fetchGames = async (page = 1, itemsPerPage = limit) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await getGames({ page, limit: itemsPerPage })
+      if (response.success && response.data?.games) {
+        setGames(response.data.games)
+        setTotalPages(response.data.pagination?.totalPages || 1)
+        setTotalGames(response.data.pagination?.total || 0)
+        setCurrentPage(page)
+      } else {
+        setError('Failed to load games')
+      }
+    } catch (err) {
+      console.error('Error fetching games:', err)
+      setError(err.message || 'Failed to load games')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await getGames(1, 20)
-        if (response.success && response.data?.games) {
-          setGames(response.data.games)
-        } else {
-          setError('Failed to load games')
-        }
-      } catch (err) {
-        console.error('Error fetching games:', err)
-        setError(err.message || 'Failed to load games')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchGames()
+    fetchGames(1)
   }, [])
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchGames(page, limit)
+    }
+  }
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit)
+    setCurrentPage(1)
+    fetchGames(1, newLimit)
+  }
 
   const handleGameClick = (path) => {
     if (path) {
@@ -283,17 +343,34 @@ const Games = () => {
   }
 
   return (
-    <div className="flex-1 w-full h-full p-8">
-      {/* Games Grid */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6 max-w-5xl mx-auto">
-        {games.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            onClick={handleGameClick}
-          />
-        ))}
+    <div className="flex-1 w-full h-full p-8 flex flex-col">
+      {/* Games Grid - 5 columns on large screens */}
+      <div className="flex-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 max-w-6xl mx-auto">
+          {games.map((game) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              onClick={handleGameClick}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Pagination */}
+      {totalGames > 0 && (
+        <div className="mt-6 pt-4 border-t border-border max-w-6xl mx-auto w-full">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalGames}
+            limit={limit}
+            onPageChange={handlePageChange}
+            onLimitChange={handleLimitChange}
+            limitOptions={[10, 15, 20, 25]}
+          />
+        </div>
+      )}
     </div>
   )
 }

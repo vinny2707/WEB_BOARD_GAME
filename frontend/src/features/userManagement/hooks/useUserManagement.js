@@ -1,0 +1,152 @@
+import { useState, useEffect } from "react";
+import api from "../../../api/axios";
+import { toast } from "sonner";
+
+/**
+ * Custom hook for User Management state and API logic
+ */
+export const useUserManagement = () => {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const limit = 10;
+
+  // Fetch users
+  const fetchUsers = async (page = 1, search = "", status = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page,
+        limit,
+        ...(search && { search }),
+        ...(status && { status }),
+      });
+
+      const response = await api.get(`/api/users/admin?${params}`);
+      const data = response.data?.data;
+
+      setUsers(data.users || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+      setCurrentPage(page);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchUsers(1, searchTerm, statusFilter);
+  }, [searchTerm, statusFilter]);
+
+  // Handle search
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setCurrentPage(1);
+    fetchUsers(1, value, statusFilter);
+  };
+
+  // Handle status filter
+  const handleStatusFilter = (status) => {
+    setStatusFilter(status);
+    setCurrentPage(1);
+    fetchUsers(1, searchTerm, status);
+  };
+
+  // Handle delete
+  const handleDelete = (user) => {
+    setUserToDelete(user);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await api.delete(`/api/users/${userToDelete.id}`);
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+      toast.success("User deleted successfully");
+      fetchUsers(currentPage, searchTerm, statusFilter);
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      toast.error(err.response?.data?.message || "Failed to delete user");
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (userId, newStatus) => {
+    try {
+      await api.patch(`/api/users/${userId}/status`, { status: newStatus });
+      toast.success("User status updated successfully");
+      fetchUsers(currentPage, searchTerm, statusFilter);
+    } catch (err) {
+      console.error("Error updating status:", err);
+      toast.error(err.response?.data?.message || "Failed to update status");
+    }
+  };
+
+  // Handle role change
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await api.patch(`/api/users/${userId}/role`, { role: newRole });
+      toast.success("User role updated successfully");
+      fetchUsers(currentPage, searchTerm, statusFilter);
+    } catch (err) {
+      console.error("Error updating role:", err);
+      toast.error(err.response?.data?.message || "Failed to update role");
+    }
+  };
+
+  // Handle view user details
+  const handleViewDetails = async (user) => {
+    try {
+      const response = await api.get(`/api/users/${user.id}`);
+      setSelectedUser(response.data?.data);
+      setShowDetailDialog(true);
+    } catch (err) {
+      console.error("Error fetching user details:", err);
+      toast.error(err.response?.data?.message || "Failed to load user details");
+    }
+  };
+
+  return {
+    // State
+    users,
+    loading,
+    error,
+    currentPage,
+    totalPages,
+    searchTerm,
+    statusFilter,
+    showDetailDialog,
+    selectedUser,
+    showDeleteDialog,
+    userToDelete,
+    limit,
+    // Setters
+    setShowDetailDialog,
+    setShowDeleteDialog,
+    // Handlers
+    fetchUsers,
+    handleSearch,
+    handleStatusFilter,
+    handleDelete,
+    confirmDelete,
+    handleStatusChange,
+    handleRoleChange,
+    handleViewDetails,
+  };
+};
