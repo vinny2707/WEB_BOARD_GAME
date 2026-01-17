@@ -10,50 +10,55 @@ class GameSession {
     /**
      * Complete a game session and update rankings with Elo
      * @param {number} userId 
-     * @param {Object} data - { game_id, result, score, moves_count, time_elapsed, game_state, settings }
+     * @param {Object} data - { session_id, game_id, result, score, moves_count, time_elapsed, game_state, settings }
+     *   - session_id: UUID of existing session (optional - if provided, updates existing session)
+     *   - game_id: required if no session_id
      *   - settings.difficulty: 'EASY' | 'NORMAL' | 'HARD' (for Elo calculation)
      *   - For memory_cards: score = wrong_flips count
-     * @returns {Promise<Object>} - Created session with elo_change
+     * @returns {Promise<Object>} - Created/updated session with elo_change stored
      */
     static async complete(userId, data) {
         const trx = await db.transaction();
 
         try {
+            let gameId = data.game_id;
+            let existingSession = null;
+
+            // If session_id provided, get the existing session
+            if (data.session_id) {
+                existingSession = await trx('game_sessions')
+                    .where({ id: data.session_id, user_id: userId, status: 'in_progress' })
+                    .first();
+                
+                if (!existingSession) {
+                    throw { code: 'SESSION_NOT_FOUND', message: 'Session not found or already completed' };
+                }
+                
+                gameId = existingSession.game_id;
+            }
+
+            if (!gameId) {
+                throw { code: 'VALIDATION_ERROR', message: 'game_id is required' };
+            }
+
             // 1. Get game type for Elo calculation
             const game = await trx('games')
-                .where({ id: data.game_id })
+                .where({ id: gameId })
                 .select('type')
                 .first();
             
             const gameType = game?.type;
             const difficulty = data.settings?.difficulty || 'NORMAL';
 
-            // 2. Insert completed session
-            const [session] = await trx('game_sessions')
-                .insert({
-                    user_id: userId,
-                    game_id: data.game_id,
-                    game_state: JSON.stringify(data.game_state || {}),
-                    result: data.result,
-                    score: data.score || 0,
-                    moves_count: data.moves_count || 0,
-                    time_elapsed: data.time_elapsed || 0,
-                    status: 'completed',
-                    settings: data.settings ? JSON.stringify(data.settings) : null,
-                    started_at: data.started_at || trx.fn.now(),
-                    ended_at: trx.fn.now()
-                })
-                .returning('*');
-
-            // 3. Get or create ranking record
+            // 2. Get or create ranking record
             let existingRanking = await trx('rankings')
-                .where({ user_id: userId, game_id: data.game_id })
+                .where({ user_id: userId, game_id: gameId })
                 .first();
 
             // Current Elo (total_score is used as Elo, default 1000)
             const currentElo = existingRanking?.total_score || 1000;
 
-            // 4. Calculate Elo change
+            // 3. Calculate Elo change
             const eloResult = eloService.calculateGameElo({
                 playerElo: currentElo,
                 gameType: gameType,
@@ -63,9 +68,49 @@ class GameSession {
                 wrongFlips: data.score || 0  // For memory_cards, score = wrong_flips
             });
 
-            // Elo change info to return
+            // Elo change value to store in score field
+            const eloChangeValue = eloResult ? eloResult.change : 0;
             let eloChange = null;
+            let session;
 
+            // 4. Insert new session or update existing session
+            if (existingSession) {
+                // Update existing in-progress session to completed
+                const [updatedSession] = await trx('game_sessions')
+                    .where({ id: data.session_id })
+                    .update({
+                        game_state: JSON.stringify(data.game_state || existingSession.game_state),
+                        result: data.result,
+                        score: eloChangeValue,  // score = elo change (+/-)
+                        moves_count: data.moves_count || 0,
+                        time_elapsed: data.time_elapsed || 0,
+                        status: 'completed',
+                        settings: data.settings ? JSON.stringify(data.settings) : existingSession.settings,
+                        ended_at: trx.fn.now()
+                    })
+                    .returning('*');
+                session = updatedSession;
+            } else {
+                // Insert new completed session
+                const [newSession] = await trx('game_sessions')
+                    .insert({
+                        user_id: userId,
+                        game_id: gameId,
+                        game_state: JSON.stringify(data.game_state || {}),
+                        result: data.result,
+                        score: eloChangeValue,  // score = elo change (+/-)
+                        moves_count: data.moves_count || 0,
+                        time_elapsed: data.time_elapsed || 0,
+                        status: 'completed',
+                        settings: data.settings ? JSON.stringify(data.settings) : null,
+                        started_at: data.started_at || trx.fn.now(),
+                        ended_at: trx.fn.now()
+                    })
+                    .returning('*');
+                session = newSession;
+            }
+
+            // 5. Update or create ranking record
             if (existingRanking) {
                 // Update existing ranking
                 const newTotalGames = existingRanking.total_games + 1;
@@ -94,7 +139,7 @@ class GameSession {
                 }
 
                 await trx('rankings')
-                    .where({ user_id: userId, game_id: data.game_id })
+                    .where({ user_id: userId, game_id: gameId })
                     .update({
                         total_games: newTotalGames,
                         total_wins: newTotalWins,
@@ -123,7 +168,7 @@ class GameSession {
                 await trx('rankings')
                     .insert({
                         user_id: userId,
-                        game_id: data.game_id,
+                        game_id: gameId,
                         total_games: 1,
                         total_wins: data.result === 'win' ? 1 : 0,
                         total_losses: data.result === 'loss' ? 1 : 0,
@@ -136,8 +181,8 @@ class GameSession {
                     });
             }
 
-            // 5. Recalculate global rank for this game
-            await this.recalculateRanks(trx, data.game_id);
+            // 6. Recalculate global rank for this game
+            await this.recalculateRanks(trx, gameId);
 
             await trx.commit();
 
@@ -149,8 +194,8 @@ class GameSession {
                 session.settings = JSON.parse(session.settings);
             }
 
-            // Add elo_change to response
-            session.elo_change = eloChange;
+            // Add elo_change details to response (for frontend display)
+            session.elo_change_details = eloChange;
 
             return session;
         } catch (error) {
@@ -205,7 +250,8 @@ class GameSession {
                 'gs.time_elapsed',
                 'gs.status',
                 'gs.started_at',
-                'gs.ended_at'
+                'gs.ended_at',
+                'gs.saved_at'
             );
 
         let countQuery = db('game_sessions')

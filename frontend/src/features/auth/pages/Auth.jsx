@@ -72,8 +72,8 @@ const Auth = () => {
       const { token, user } = response.data.data;
       login(token, user);
 
-      // All users (including admin) go to home page
-      navigate("/");
+      // All users (including admin) go to games page after login
+      navigate("/games");
     } catch (error) {
       console.error("Login error:", error);
 

@@ -55,14 +55,22 @@ const { authenticateJWT } = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/sessions/complete:
- *   post:
- *     summary: Complete a game and record results
- *     description: Submit a completed game session. This will update the user's ranking automatically.
+ * /api/sessions/{id}/complete:
+ *   put:
+ *     summary: Complete an existing game session
+ *     description: Mark an in-progress session as completed and update Elo. Score field stores the Elo change (+/-).
  *     tags: [Sessions]
  *     security:
  *       - apiKeyAuth: []
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Session UUID from /start
  *     requestBody:
  *       required: true
  *       content:
@@ -70,19 +78,12 @@ const { authenticateJWT } = require('../middleware/auth');
  *           schema:
  *             type: object
  *             required:
- *               - game_id
  *               - result
  *             properties:
- *               game_id:
- *                 type: integer
- *                 example: 1
  *               result:
  *                 type: string
  *                 enum: [win, loss, draw]
  *                 example: "win"
- *               score:
- *                 type: integer
- *                 example: 100
  *               moves_count:
  *                 type: integer
  *                 example: 15
@@ -92,36 +93,18 @@ const { authenticateJWT } = require('../middleware/auth');
  *                 example: 120
  *               game_state:
  *                 type: object
- *                 description: Final game state (optional)
+ *                 description: Final game state
  *               settings:
  *                 type: object
- *                 description: Game settings used
- *               started_at:
- *                 type: string
- *                 format: date-time
- *                 description: When game actually started (optional)
+ *                 description: Game settings (includes difficulty for Elo calc)
  *     responses:
  *       201:
- *         description: Game completed and ranking updated
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Game completed successfully
- *                 data:
- *                   $ref: '#/components/schemas/GameSession'
- *       400:
- *         description: Validation error
+ *         description: Game completed, score field contains Elo change (+/-)
  *       404:
- *         description: Game not found
+ *         description: Session not found or already completed
  */
-router.post('/complete', authenticateJWT, sessionController.completeGame);
+// New route: PUT /:id/complete with session_id in URL
+router.put('/:id/complete', authenticateJWT, sessionController.completeGame);
 
 /**
  * @swagger
