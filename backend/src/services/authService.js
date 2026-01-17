@@ -84,7 +84,7 @@ class AuthService {
         const randomAvatarId = Math.floor(Math.random() * 40) + 1;
 
         // Create user with verified data
-        const user = await User.create({
+        const createdUser = await User.create({
             username: verifiedData.registrationData.username,
             email: verifiedData.email,
             password_hash: verifiedData.registrationData.password_hash,
@@ -94,6 +94,9 @@ class AuthService {
             status: 'active',
             avatar_id: randomAvatarId
         });
+
+        // Fetch user with avatar_url
+        const user = await User.findById(createdUser.id);
 
         // Clean up OTP session
         otpService.delete(otpSessionId);
@@ -208,8 +211,11 @@ class AuthService {
         }
 
         // Reactivate user
-        const user = await User.update(verifiedData.userId, { status: 'active' });
+        await User.update(verifiedData.userId, { status: 'active' });
         await User.updateLastLogin(verifiedData.userId);
+
+        // Fetch user with avatar_url
+        const user = await User.findById(verifiedData.userId);
 
         // Clean up OTP session
         otpService.delete(otpSessionId);

@@ -101,7 +101,7 @@ const LandingPage = () => {
                 title={isDarkMode ? "Light mode" : "Dark mode"}
               >
                 {isDarkMode ? (
-                  <Sun className="w-5 h-5 text-gray-600 dark:text-zinc-400" />
+                  <Sun className="w-5 h-5 text-gray-600 dark:text-slate-400" />
                 ) : (
                   <Moon className="w-5 h-5 text-gray-600" />
                 )}
@@ -146,7 +146,7 @@ const LandingPage = () => {
                   Anytime, Anywhere
                 </span>
               </h1>
-              <p className="max-w-2xl mx-auto text-xl text-gray-600 dark:text-zinc-400">
+              <p className="max-w-2xl mx-auto text-xl text-gray-600 dark:text-slate-400">
                 Experience the nostalgia of classic board games with modern
                 features. Compete with friends, climb the ranks, and become the
                 ultimate champion.
@@ -321,7 +321,7 @@ const LandingPage = () => {
                   RetroGames
                 </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-zinc-400">
+              <p className="text-sm text-gray-600 dark:text-slate-400">
                 The ultimate platform for classic board games
               </p>
             </div>
@@ -331,7 +331,7 @@ const LandingPage = () => {
               <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                 Games
               </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-zinc-400">
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
                 <li>
                   <a
                     href="#"
@@ -363,7 +363,7 @@ const LandingPage = () => {
               <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                 Community
               </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-zinc-400">
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
                 <li>
                   <a
                     href="#"
@@ -395,7 +395,7 @@ const LandingPage = () => {
               <h4 className="font-semibold text-gray-900 dark:text-white mb-4">
                 Support
               </h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-zinc-400">
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-slate-400">
                 <li>
                   <a
                     href="#"
@@ -425,7 +425,7 @@ const LandingPage = () => {
           </div>
 
           {/* Copyright */}
-          <div className="pt-8 border-t border-gray-200 dark:border-zinc-800 text-center text-sm text-gray-600 dark:text-zinc-400">
+          <div className="pt-8 border-t border-gray-200 dark:border-slate-800 text-center text-sm text-gray-600 dark:text-slate-400">
             <p>© 2026 RetroGames. All rights reserved.</p>
           </div>
         </div>

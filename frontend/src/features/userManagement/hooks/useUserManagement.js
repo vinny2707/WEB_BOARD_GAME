@@ -19,6 +19,14 @@ export const useUserManagement = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const limit = 10;
 
+  // Status change confirmation
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState(null);
+
+  // Role change confirmation
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState(null);
+
   // Fetch users
   const fetchUsers = async (page = 1, search = "", status = "") => {
     try {
@@ -86,27 +94,51 @@ export const useUserManagement = () => {
     }
   };
 
-  // Handle status change
-  const handleStatusChange = async (userId, newStatus) => {
+  // Handle status change - show confirmation dialog
+  const handleStatusChange = (userId, newStatus, user) => {
+    setPendingStatusChange({ userId, newStatus, user });
+    setShowStatusDialog(true);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!pendingStatusChange) return;
+
     try {
-      await api.patch(`/api/users/${userId}/status`, { status: newStatus });
+      await api.patch(`/api/users/${pendingStatusChange.userId}/status`, { 
+        status: pendingStatusChange.newStatus 
+      });
       toast.success("User status updated successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
     } catch (err) {
       console.error("Error updating status:", err);
       toast.error(err.response?.data?.message || "Failed to update status");
+    } finally {
+      setShowStatusDialog(false);
+      setPendingStatusChange(null);
     }
   };
 
-  // Handle role change
-  const handleRoleChange = async (userId, newRole) => {
+  // Handle role change - show confirmation dialog
+  const handleRoleChange = (userId, newRole, user) => {
+    setPendingRoleChange({ userId, newRole, user });
+    setShowRoleDialog(true);
+  };
+
+  const confirmRoleChange = async () => {
+    if (!pendingRoleChange) return;
+
     try {
-      await api.patch(`/api/users/${userId}/role`, { role: newRole });
+      await api.patch(`/api/users/${pendingRoleChange.userId}/role`, { 
+        role: pendingRoleChange.newRole 
+      });
       toast.success("User role updated successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
     } catch (err) {
       console.error("Error updating role:", err);
       toast.error(err.response?.data?.message || "Failed to update role");
+    } finally {
+      setShowRoleDialog(false);
+      setPendingRoleChange(null);
     }
   };
 
@@ -136,6 +168,14 @@ export const useUserManagement = () => {
     showDeleteDialog,
     userToDelete,
     limit,
+    // Status change dialog
+    showStatusDialog,
+    pendingStatusChange,
+    setShowStatusDialog,
+    // Role change dialog
+    showRoleDialog,
+    pendingRoleChange,
+    setShowRoleDialog,
     // Setters
     setShowDetailDialog,
     setShowDeleteDialog,
@@ -146,7 +186,9 @@ export const useUserManagement = () => {
     handleDelete,
     confirmDelete,
     handleStatusChange,
+    confirmStatusChange,
     handleRoleChange,
+    confirmRoleChange,
     handleViewDetails,
   };
 };

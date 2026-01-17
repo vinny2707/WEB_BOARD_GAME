@@ -1,6 +1,7 @@
 import React from "react";
 import Sidebar from "../components/Sidebar.jsx";
 import MobileNav from "../components/MobileNav.jsx";
+import AppFooter from "../components/AppFooter.jsx";
 import { Outlet } from "react-router-dom";
 import { Gamepad2, Trophy, Users, User } from "lucide-react";
 
@@ -32,10 +33,15 @@ const UserLayout = () => {
   return (
     <div className="w-full h-screen flex overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <MobileNav navItems={navItems} />
-        <div className="flex-1 overflow-auto">
-          <Outlet />
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="min-h-full flex flex-col">
+            <div className="flex-1">
+              <Outlet />
+            </div>
+            <AppFooter />
+          </div>
         </div>
       </div>
     </div>

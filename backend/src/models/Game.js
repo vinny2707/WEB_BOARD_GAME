@@ -45,8 +45,9 @@ class Game {
         const [{ count }] = await countQuery.count('id as count');
         const total = parseInt(count);
 
-        // Get paginated games
+        // Get paginated games - enabled games first, then by id
         const games = await query
+            .orderBy('enabled', 'desc')
             .orderBy('id', 'asc')
             .limit(limit)
             .offset(offset);

@@ -17,6 +17,7 @@ import {
   GameForm,
   GameDetailDialog,
   GameDeleteDialog,
+  GameToggleDialog,
 } from "../components";
 import { Pagination } from "@/components/ui/pagination";
 
@@ -40,6 +41,8 @@ const GameConfig = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showToggleDialog, setShowToggleDialog] = useState(false);
+  const [gameToToggle, setGameToToggle] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -189,19 +192,30 @@ const GameConfig = () => {
     }
   };
 
-  // Handle toggle status
-  const handleToggleStatus = async (game) => {
+  // Handle toggle status - show confirmation dialog
+  const handleToggleStatus = (game) => {
+    setGameToToggle(game);
+    setShowToggleDialog(true);
+  };
+
+  // Confirm toggle status
+  const confirmToggle = async () => {
+    if (!gameToToggle) return;
+
     try {
-      await api.patch(`/api/games/${game.id}/status`, {
-        enabled: !game.enabled,
+      await api.patch(`/api/games/${gameToToggle.id}/status`, {
+        enabled: !gameToToggle.enabled,
       });
       toast.success(
-        `Game ${game.enabled ? "disabled" : "enabled"} successfully`
+        `Game ${gameToToggle.enabled ? "disabled" : "enabled"} successfully`
       );
       fetchGames(currentPage, searchTerm, enabledFilter);
     } catch (err) {
       console.error("Error toggling game status:", err);
       toast.error(err.response?.data?.message || "Failed to toggle status");
+    } finally {
+      setShowToggleDialog(false);
+      setGameToToggle(null);
     }
   };
 
@@ -481,6 +495,15 @@ const GameConfig = () => {
         onOpenChange={setShowDeleteDialog}
         game={selectedGame}
         onConfirm={confirmDelete}
+      />
+
+      {/* Toggle Status Dialog */}
+      <GameToggleDialog
+        open={showToggleDialog}
+        onOpenChange={setShowToggleDialog}
+        game={gameToToggle}
+        onConfirm={confirmToggle}
+        isDarkMode={isDarkMode}
       />
     </div>
   );

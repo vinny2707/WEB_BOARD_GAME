@@ -16,20 +16,12 @@ import PendingRequestCard from "../components/PendingRequestCard";
 import SentRequestCard from "../components/SentRequestCard";
 import BlockedUserCard from "../components/BlockedUserCard";
 import AddFriendDialog from "../components/AddFriendDialog";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { useUser } from "@/contexts/UserProvider";
 
 const Friends = () => {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, isAuthenticated } = useUser();
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -188,6 +180,29 @@ const Friends = () => {
     return () => window.removeEventListener("focus", handleFocus);
   }, [user]);
 
+  // Check authentication - AFTER all hooks
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
+          <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
+            Vui lòng đăng nhập để xem danh sách bạn bè
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // Handle unfriend
   const handleUnfriend = async (friendId) => {
     try {
@@ -299,94 +314,18 @@ const Friends = () => {
     const currentPagination = pagination[activeTab];
     const { page, totalPages, total } = currentPagination;
 
-    const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, page - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
+    if (totalPages <= 1) return null;
 
     return (
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-zinc-200 dark:border-zinc-700">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(page - 1)}
-                className={
-                  page === 1
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-
-            {startPage > 1 && (
-              <>
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => handlePageChange(1)}
-                    className="cursor-pointer"
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                {startPage > 2 && (
-                  <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                )}
-              </>
-            )}
-
-            {pages.map((pageNum) => (
-              <PaginationItem key={pageNum}>
-                <PaginationLink
-                  onClick={() => handlePageChange(pageNum)}
-                  isActive={pageNum === page}
-                  className="cursor-pointer"
-                >
-                  {pageNum}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-            {endPage < totalPages && (
-              <>
-                {endPage < totalPages - 1 && (
-                  <PaginationItem>
-                    <PaginationEllipsis />
-                  </PaginationItem>
-                )}
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => handlePageChange(totalPages)}
-                    className="cursor-pointer"
-                  >
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              </>
-            )}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => handlePageChange(page + 1)}
-                className={
-                  page === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={total}
+          limit={itemsPerPage}
+          onPageChange={handlePageChange}
+          limitOptions={[10, 20, 50]}
+        />
       </div>
     );
   };
@@ -461,11 +400,11 @@ const Friends = () => {
     return (
       <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-center bg-white/50 dark:bg-slate-800/50  rounded-2xl p-8 border border-gray-200 dark:border-slate-700 shadow-lg">
-          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold dark:text-white mb-2">
             Bạn chưa đăng nhập
           </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
             Vui lòng đăng nhập để xem danh sách bạn bè
           </p>
           <a
@@ -492,7 +431,7 @@ const Friends = () => {
               <h1 className="text-2xl font-semibold dark:text-white">
                 Friends
               </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Manage your connections
               </p>
             </div>
@@ -501,10 +440,10 @@ const Friends = () => {
           <div className="flex gap-2">
             <button
               onClick={() => navigate("/messages")}
-              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white dark:!bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors relative"
+              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors relative"
             >
               <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline text-zinc-700 dark:text-zinc-300 font-medium">
+              <span className="hidden sm:inline text-slate-700 dark:text-slate-300 font-medium">
                 Messages
               </span>
               {unreadCount > 0 && (
@@ -585,8 +524,8 @@ const Friends = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                    <p className="text-zinc-500 dark:text-zinc-400">
+                    <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">
                       {searchQuery
                         ? "No friends found matching your search"
                         : "No friends yet. Start by adding some!"}
@@ -611,8 +550,8 @@ const Friends = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <UserPlus className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                    <p className="text-zinc-500 dark:text-zinc-400">
+                    <UserPlus className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">
                       {searchQuery
                         ? "No pending requests matching your search"
                         : "No pending friend requests"}
@@ -636,8 +575,8 @@ const Friends = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <Send className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                    <p className="text-zinc-500 dark:text-zinc-400">
+                    <Send className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">
                       {searchQuery
                         ? "No sent requests matching your search"
                         : "No pending sent requests"}
@@ -660,8 +599,8 @@ const Friends = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <Shield className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-                    <p className="text-zinc-500 dark:text-zinc-400">
+                    <Shield className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-500 dark:text-slate-400">
                       {searchQuery
                         ? "No blocked users matching your search"
                         : "No blocked users"}
@@ -670,12 +609,12 @@ const Friends = () => {
                 )}
               </div>
             )}
-
-            {/* Pagination */}
-            {!searchQuery && getFilteredData().length > 0 && renderPagination()}
           </>
         )}
       </div>
+
+      {/* Pagination - Outside card */}
+      {!searchQuery && getFilteredData().length > 0 && renderPagination()}
     </div>
   );
 };

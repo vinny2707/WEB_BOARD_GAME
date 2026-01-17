@@ -241,12 +241,12 @@ export default function Messages() {
   if (!isAuthenticated) {
     return (
       <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
-          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
+          <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold dark:text-white mb-2">
             Bạn chưa đăng nhập
           </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
             Vui lòng đăng nhập để xem danh sách tin nhắn
           </p>
           <a
@@ -261,15 +261,15 @@ export default function Messages() {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-zinc-900/50 h-full">
+    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-full">
       {/* Conversations List */}
       <div
         className={`${
           selectedConversation ? "hidden lg:flex" : "flex"
-        } flex-col w-full lg:w-96 border-r dark:border-zinc-800 bg-zinc-50 dark:!bg-zinc-900/50`}
+        } flex-col w-full lg:w-96 border-r dark:border-slate-800 bg-slate-50 dark:!bg-slate-900/50`}
       >
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b dark:border-zinc-800 bg-white dark:!bg-zinc-900">
+        <div className="p-4 sm:p-6 border-b dark:border-slate-800 bg-white dark:!bg-slate-900">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl">
@@ -304,7 +304,7 @@ export default function Messages() {
               placeholder="Search conversations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-zinc-100 dark:bg-zinc-800 border-0 dark:text-white"
+              className="pl-10 bg-slate-100 dark:bg-slate-800 border-0 dark:text-white"
             />
           </div>
         </div>
@@ -326,14 +326,14 @@ export default function Messages() {
               </p>
             </div>
           ) : (
-            <div className="divide-y dark:divide-zinc-800">
+            <div className="divide-y dark:divide-slate-800">
               {filteredConversations.map((conversation) => (
                 <div
                   key={conversation.user.id}
                   onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 cursor-pointer transition-colors hover:bg-white dark:hover:bg-zinc-800 ${
+                  className={`p-4 cursor-pointer transition-colors hover:bg-white dark:hover:bg-slate-800 ${
                     selectedConversation?.user.id === conversation.user.id
-                      ? "bg-white dark:!bg-zinc-800 border-l-4 border-l-emerald-500"
+                      ? "bg-white dark:!bg-slate-800 border-l-4 border-l-emerald-500"
                       : ""
                   }`}
                 >
@@ -394,11 +394,11 @@ export default function Messages() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white dark:!bg-zinc-900">
+      <div className="flex-1 flex flex-col bg-white dark:!bg-slate-900">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
+            <div className="p-4 border-b dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Button
@@ -436,7 +436,7 @@ export default function Messages() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-900/30 flex flex-col justify-end">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/30 flex flex-col justify-end">
               {messages.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-center py-12">
                   <div className="">
@@ -464,7 +464,7 @@ export default function Messages() {
                                   <MoreVertical className="w-4 h-4" />
                                 </button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                              <DropdownMenuContent className="dark:bg-slate-800 dark:border-slate-700">
                                 <DropdownMenuItem
                                   onClick={() => setDeleteMessageId(message.id)}
                                   className="text-red-600 dark:text-red-400 cursor-pointer"
@@ -480,7 +480,7 @@ export default function Messages() {
                             className={`break-words flex-1 rounded-2xl px-4 py-2 ${
                               message.is_from_me
                                 ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-                                : "bg-white dark:!bg-zinc-800 text-gray-900 dark:text-white"
+                                : "bg-white dark:!bg-slate-800 text-gray-900 dark:text-white"
                             }`}
                           >
                             {message.content}
@@ -505,7 +505,7 @@ export default function Messages() {
 
             {/* Message Input */}
             {isBlocked ? (
-              <div className="p-4 border-t dark:border-zinc-800 bg-red-50 dark:bg-red-900/20">
+              <div className="p-4 border-t dark:border-slate-800 bg-red-50 dark:bg-red-900/20">
                 <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
                   <Shield className="w-5 h-5" />
                   <p className="text-sm font-medium">
@@ -517,7 +517,7 @@ export default function Messages() {
             ) : (
               <form
                 onSubmit={handleSendMessage}
-                className="p-4 border-t dark:border-zinc-800 bg-white dark:!bg-zinc-900"
+                className="p-4 border-t dark:border-slate-800 bg-white dark:!bg-slate-900"
               >
                 <div className="flex gap-2 items-center">
                   <Textarea
@@ -530,7 +530,7 @@ export default function Messages() {
                         e.preventDefault();
                       }
                     }}
-                    className="flex-1 resize-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-white min-h-[40px] max-h-[120px]"
+                    className="flex-1 resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[40px] max-h-[120px]"
                   />
                   <Button
                     type="submit"
@@ -563,7 +563,7 @@ export default function Messages() {
         open={!!deleteMessageId}
         onOpenChange={() => setDeleteMessageId(null)}
       >
-        <AlertDialogContent className="dark:bg-zinc-900 dark:border-zinc-800">
+        <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="dark:text-white">
               Delete Message
@@ -574,7 +574,7 @@ export default function Messages() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700">
+            <AlertDialogCancel className="dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

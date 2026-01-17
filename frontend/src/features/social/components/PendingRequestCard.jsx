@@ -55,7 +55,7 @@ const PendingRequestCard = ({ requester, createdAt, onAccept, onReject }) => {
         
           <div className="flex items-center gap-1 mt-1">
             <Clock className="w-3 h-3 text-amber-500" />
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               {formatDate(createdAt)}
             </span>
           </div>

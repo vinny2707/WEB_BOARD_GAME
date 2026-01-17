@@ -158,7 +158,10 @@ const ROUTE_MAP = {
 const GameCard = ({ game, onClick }) => {
   const PreviewComponent = PREVIEW_MAP[game.type]
   const path = ROUTE_MAP[game.type]
-  const isAvailable = game.enabled && path
+  // Coming Soon only shows when game is disabled (enabled === false)
+  const isEnabled = game.enabled === true
+  // Game is clickable only if enabled AND has a route
+  const isClickable = isEnabled && path
 
   // Check if icon is a URL (for displaying game image)
   const isIconUrl = game.icon && (game.icon.startsWith('http') || game.icon.startsWith('/'))
@@ -223,13 +226,13 @@ const GameCard = ({ game, onClick }) => {
   return (
     <div
       className={`relative flex flex-col bg-card rounded-2xl border overflow-hidden transition-all duration-300
-        ${isAvailable 
+        ${isClickable 
           ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10' 
           : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
-      onClick={() => isAvailable && onClick(path)}
+      onClick={() => isClickable && onClick(path)}
     >
-      {/* Coming Soon Overlay */}
-      {!isAvailable && <ComingSoonOverlay />}
+      {/* Coming Soon Overlay - only shows when game is disabled */}
+      {!isEnabled && <ComingSoonOverlay />}
 
       {/* Preview Area */}
       <div className="flex-1 p-4 flex items-center justify-center aspect-square">
@@ -244,9 +247,9 @@ const GameCard = ({ game, onClick }) => {
 
       {/* Title Bar */}
       <div className={`text-center py-3 px-3 border-t transition-colors
-        ${isAvailable ? 'bg-secondary/80 border-border' : 'bg-muted/50 border-muted'}`}>
+        ${isEnabled ? 'bg-secondary/80 border-border' : 'bg-muted/50 border-muted'}`}>
         <span 
-          className={`text-sm tracking-wide ${isAvailable ? 'text-foreground' : 'text-muted-foreground'}`}
+          className={`text-sm tracking-wide ${isEnabled ? 'text-foreground' : 'text-muted-foreground'}`}
           style={{ fontFamily: "'Bungee', cursive" }}
         >
           {game.name.toUpperCase()}

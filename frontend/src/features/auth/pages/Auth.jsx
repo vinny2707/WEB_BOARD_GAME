@@ -156,7 +156,7 @@ const Auth = () => {
       {/* Show Auth Form if no OTP session */}
       {!otpSessionData && !showForgotPassword && (
         <div
-          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-4 sm:p-6"
+          className="w-full min-h-screen dark:bg-slate-950 flex items-center justify-center p-4 sm:p-6"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           {/* Background Pattern */}
@@ -171,7 +171,7 @@ const Auth = () => {
 
           {/* Auth Card */}
           <div
-            className="relative sm:w-fit dark:bg-zinc-900/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 dark:border-zinc-800 shadow-2xl w-full"
+            className="relative sm:w-fit dark:bg-slate-900/50 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 border-2 dark:border-slate-800 shadow-2xl w-full"
             style={{ boxShadow: "0 0 40px rgba(16, 185, 129, 0.1)" }}
           >
             {/* Glassmorphism effect */}
@@ -189,19 +189,19 @@ const Auth = () => {
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400 bg-clip-text text-transparent">
                   RETROGAMES
                 </h1>
-                <p className="text-zinc-400 text-sm sm:text-base">
+                <p className="text-slate-400 text-sm sm:text-base">
                   Join the retro gaming revolution
                 </p>
               </div>
 
               {/* Tabs */}
-              <div className="w-full flex gap-2 p-1 rounded-xl dark:bg-zinc-800/50 mb-4 sm:mb-6 bg-gray-100">
+              <div className="w-full flex gap-2 p-1 rounded-xl dark:bg-slate-800/50 mb-4 sm:mb-6 bg-gray-100">
                 <button
                   onClick={() => setActiveTab("login")}
                   className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "login"
                       ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
-                      : "text-zinc-400 dark:hover:text-white"
+                      : "text-slate-400 dark:hover:text-white"
                   }`}
                   style={{
                     textShadow:
@@ -217,7 +217,7 @@ const Auth = () => {
                   className={`flex-1 py-2 px-3 sm:py-3 sm:px-4 text-sm sm:text-base rounded-lg transition-all cursor-pointer ${
                     activeTab === "register"
                       ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
-                      : "text-zinc-400 dark:hover:text-white"
+                      : "text-slate-400 dark:hover:text-white"
                   }`}
                   style={{
                     textShadow:
@@ -238,15 +238,15 @@ const Auth = () => {
                 >
                   {/* Username Field */}
                   <div>
-                    <label className="block text-sm text-zinc-400 mb-2">
+                    <label className="block text-sm text-slate-400 mb-2">
                       Username
                     </label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                       <input
                         type="text"
                         {...register("username")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 outline-none dark:focus:border-emerald-500 transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 outline-none dark:focus:border-emerald-500 transition-colors"
                         placeholder="Enter your username"
                       />
                     </div>
@@ -259,21 +259,21 @@ const Auth = () => {
 
                   {/* Password Field */}
                   <div>
-                    <label className="block text-sm text-zinc-400 mb-2">
+                    <label className="block text-sm text-slate-400 mb-2">
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                       <input
                         type={showPassword ? "text" : "password"}
                         {...register("password")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
                       >
                         {showPassword ? (
                           <EyeOff className="w-5 h-5" />
@@ -326,15 +326,15 @@ const Auth = () => {
                   <div className="w-full space-y-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Username Field */}
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-slate-400 mb-2">
                         Username
                       </label>
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <input
                           type="text"
                           {...registerRegister("username")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Choose a username"
                         />
                       </div>
@@ -347,15 +347,15 @@ const Auth = () => {
 
                     {/* Email Field */}
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-slate-400 mb-2">
                         Email
                       </label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <input
                           type="email"
                           {...registerRegister("email")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your email"
                         />
                       </div>
@@ -368,15 +368,15 @@ const Auth = () => {
 
                     {/* Full Name Field */}
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-slate-400 mb-2">
                         Full Name
                       </label>
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <input
                           type="text"
                           {...registerRegister("fullName")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Enter your full name"
                         />
                       </div>
@@ -389,7 +389,7 @@ const Auth = () => {
 
                     {/* Date of Birth Field */}
                     <div className="flex flex-col gap-2">
-                      <label className="block text-sm text-zinc-400">
+                      <label className="block text-sm text-slate-400">
                         Date of Birth
                       </label>
 
@@ -405,7 +405,7 @@ const Auth = () => {
                           return (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <button className="flex justify-between items-center p-3 bg-transparent hover:bg-transparent w-full border-2 dark:border-zinc-700 rounded-xl dark:text-white text-left dark:bg-zinc-800/50 focus:border-emerald-500 outline-none transition-colors">
+                                <button className="flex justify-between items-center p-3 bg-transparent hover:bg-transparent w-full border-2 dark:border-slate-700 rounded-xl dark:text-white text-left dark:bg-slate-800/50 focus:border-emerald-500 outline-none transition-colors">
                                   {field.value
                                     ? new Date(
                                         field.value + "T00:00:00"
@@ -415,7 +415,7 @@ const Auth = () => {
                                         day: "numeric",
                                       })
                                     : "Pick a date"}
-                                  <CalendarIcon className="ml-2 w-4 h-4 text-zinc-500" />
+                                  <CalendarIcon className="ml-2 w-4 h-4 text-slate-500" />
                                 </button>
                               </PopoverTrigger>
 
@@ -455,21 +455,21 @@ const Auth = () => {
 
                     {/* Password Field */}
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-slate-400 mb-2">
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <input
                           type={showPassword ? "text" : "password"}
                           {...registerRegister("password")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Create a password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
                         >
                           {showPassword ? (
                             <EyeOff className="w-5 h-5" />
@@ -487,15 +487,15 @@ const Auth = () => {
 
                     {/* Confirm Password Field */}
                     <div>
-                      <label className="block text-sm text-zinc-400 mb-2">
+                      <label className="block text-sm text-slate-400 mb-2">
                         Confirm Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           {...registerRegister("confirmPassword")}
-                          className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                           placeholder="Confirm your password"
                         />
                         <button
@@ -503,7 +503,7 @@ const Auth = () => {
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
                         >
                           {showConfirmPassword ? (
                             <EyeOff className="w-5 h-5" />
@@ -544,7 +544,7 @@ const Auth = () => {
       {/* Forgot Password Modal */}
       {showForgotPassword && (
         <div
-          className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-3 sm:p-6"
+          className="w-full min-h-screen dark:bg-slate-950 flex items-center justify-center p-3 sm:p-6"
           style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         >
           {/* Background Pattern */}
@@ -560,7 +560,7 @@ const Auth = () => {
           {/* Forgot Password Card */}
           <div className="relative w-full max-w-md">
             <div
-              className="relative dark:bg-zinc-900/50 backdrop-blur-xl rounded-3xl p-8 border-2 dark:border-zinc-800 shadow-2xl"
+              className="relative dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border-2 dark:border-slate-800 shadow-2xl"
               style={{ boxShadow: "0 0 40px rgba(16, 185, 129, 0.1)" }}
             >
               {/* Glassmorphism effect */}
@@ -580,7 +580,7 @@ const Auth = () => {
                   >
                     FORGOT PASSWORD?
                   </h1>
-                  <p className="text-zinc-400 text-sm">
+                  <p className="text-slate-400 text-sm">
                     Enter your email and we'll send you a code to reset your
                     password
                   </p>
@@ -599,16 +599,16 @@ const Auth = () => {
                 >
                   {/* Email Field */}
                   <div>
-                    <label className="block text-sm text-zinc-400 mb-2">
+                    <label className="block text-sm text-slate-400 mb-2">
                       Email
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                       <input
                         type="email"
                         name="email"
                         required
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your email"
                       />
                     </div>
@@ -632,7 +632,7 @@ const Auth = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotPassword(false)}
-                    className="w-full py-2 px-4 border-2 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 rounded-xl transition-all cursor-pointer"
+                    className="w-full py-2 px-4 border-2 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600 rounded-xl transition-all cursor-pointer"
                   >
                     Back to Login
                   </button>

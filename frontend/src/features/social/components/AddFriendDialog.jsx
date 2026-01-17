@@ -125,7 +125,7 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
 
     if (!status) {
       return (
-        <div className="w-20 h-8 bg-zinc-200 dark:bg-zinc-700 animate-pulse rounded-lg"></div>
+        <div className="w-20 h-8 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg"></div>
       );
     }
 
@@ -225,14 +225,14 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
           {/* Search Input */}
           <div className="flex items-stretch gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Search by username or email..."
-                className="w-full pl-10 pr-4 py-2 bg-white dark:!bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 rounded-lg dark:text-white placeholder-zinc-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-white dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
               />
             </div>
             <Button
@@ -250,7 +250,7 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
               searchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-3 p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold shrink-0">
                     {getInitials(user.username)}
@@ -260,12 +260,12 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
                       {user.username}
                     </p>
                     {user.full_name && (
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
                         {user.full_name}
                       </p>
                     )}
                     {user.email && (
-                      <p className="text-xs text-zinc-500 truncate">
+                      <p className="text-xs text-slate-500 truncate">
                         {user.email}
                       </p>
                     )}
@@ -275,8 +275,8 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
               ))
             ) : (
               <div className="text-center py-8">
-                <Search className="w-10 h-10 text-zinc-400 mx-auto mb-2" />
-                <p className="text-zinc-500 dark:text-zinc-400">
+                <Search className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                <p className="text-slate-500 dark:text-slate-400">
                   {searchQuery
                     ? "No results found"
                     : "Enter a username or email to search"}

@@ -107,7 +107,7 @@ const UserMobileCard = ({
           >
             <Select
               value={user.role}
-              onValueChange={(value) => onRoleChange(user.id, value)}
+              onValueChange={(value) => onRoleChange(user.id, value, user)}
             >
               <SelectTrigger
                 className={`flex-1 border-0 h-8 text-xs ${getRoleColor(
@@ -127,7 +127,7 @@ const UserMobileCard = ({
             </Select>
             <Select
               value={user.status}
-              onValueChange={(value) => onStatusChange(user.id, value)}
+              onValueChange={(value) => onStatusChange(user.id, value, user)}
             >
               <SelectTrigger
                 className={`flex-1 border-0 h-8 text-xs ${getStatusColor(

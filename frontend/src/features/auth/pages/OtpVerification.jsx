@@ -162,7 +162,7 @@ const OtpVerification = ({
 
   return (
     <div
-      className="w-full min-h-screen dark:bg-zinc-950 flex items-center justify-center p-6"
+      className="w-full min-h-screen dark:bg-slate-950 flex items-center justify-center p-6"
       style={{ fontFamily: "Inter, system-ui, sans-serif" }}
     >
       {/* Background Pattern */}
@@ -178,7 +178,7 @@ const OtpVerification = ({
       {/* OTP Verification Card */}
       <div className="relative w-full max-w-md">
         <div
-          className="relative dark:bg-zinc-900/50 backdrop-blur-xl rounded-3xl p-8 border-2 dark:border-zinc-800 shadow-2xl"
+          className="relative dark:bg-slate-900/50 backdrop-blur-xl rounded-3xl p-8 border-2 dark:border-slate-800 shadow-2xl"
           style={{ boxShadow: "0 0 40px rgba(16, 185, 129, 0.1)" }}
         >
           {/* Glassmorphism effect */}
@@ -200,7 +200,7 @@ const OtpVerification = ({
                   ? "RESET PASSWORD"
                   : "VERIFY OTP"}
               </h1>
-              <p className="text-zinc-400 text-sm mb-2">
+              <p className="text-slate-400 text-sm mb-2">
                 {otpVerified && onOtpType === "forgot-password"
                   ? "Enter your new password"
                   : "Enter the 6-digit code sent to:"}
@@ -225,17 +225,17 @@ const OtpVerification = ({
               >
                 {/* OTP Code Input */}
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-3">
+                  <label className="block text-sm text-slate-400 mb-3">
                     OTP Code
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                       type="text"
                       inputMode="numeric"
                       maxLength="6"
                       {...register("otpCode")}
-                      className="w-full pl-12 pr-4 py-4 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors text-center text-2xl tracking-widest"
+                      className="w-full pl-12 pr-4 py-4 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors text-center text-2xl tracking-widest"
                       placeholder="000000"
                       disabled={isLoading}
                     />
@@ -249,7 +249,7 @@ const OtpVerification = ({
 
                 {/* Timer */}
                 <div className="text-center">
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-slate-400">
                     Code expires in:{" "}
                     <span
                       className={
@@ -283,22 +283,22 @@ const OtpVerification = ({
               >
                 {/* New Password Field */}
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
+                  <label className="block text-sm text-slate-400 mb-2">
                     New Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                       type={showPassword ? "text" : "password"}
                       {...registerPassword("newPassword")}
-                      className="w-full pl-12 pr-12 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-12 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                       placeholder="Enter new password"
                       disabled={isLoading}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -316,15 +316,15 @@ const OtpVerification = ({
 
                 {/* Confirm Password Field */}
                 <div>
-                  <label className="block text-sm text-zinc-400 mb-2">
+                  <label className="block text-sm text-slate-400 mb-2">
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       {...registerPassword("confirmPassword")}
-                      className="w-full pl-12 pr-12 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-12 pr-12 py-3 dark:bg-slate-800/50 border-2 dark:border-slate-700 rounded-xl dark:text-white placeholder-slate-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                       placeholder="Confirm new password"
                       disabled={isLoading}
                     />
@@ -333,7 +333,7 @@ const OtpVerification = ({
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="w-5 h-5" />
@@ -363,14 +363,14 @@ const OtpVerification = ({
 
             {/* Resend Section */}
             {!otpVerified && (
-              <div className="w-full mt-6 pt-6 border-t border-zinc-700">
+              <div className="w-full mt-6 pt-6 border-t border-slate-700">
                 {!canResend ? (
-                  <p className="text-center text-sm text-zinc-400">
+                  <p className="text-center text-sm text-slate-400">
                     Didn't receive the code? You can resend after timer expires.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-center text-sm text-zinc-400">
+                    <p className="text-center text-sm text-slate-400">
                       Didn't receive the code?
                     </p>
                     <button
