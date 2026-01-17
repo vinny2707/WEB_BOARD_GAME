@@ -143,40 +143,70 @@
 
 #root {
   @apply flex w-screen min-h-screen;
-  position: relative;
-  z-index: 1;
 }
 
-/* Custom thin scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 100, 0.3) transparent;
+/* Golden Sparkle Toast Notification */
+@keyframes sparkle {
+
+  0%,
+  100% {
+    background-position: -200% center;
+  }
+
+  50% {
+    background-position: 200% center;
+  }
 }
 
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@keyframes glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.3),
+      0 0 10px rgba(255, 215, 0, 0.2),
+      0 0 20px rgba(255, 215, 0, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5),
+      0 0 25px rgba(255, 215, 0, 0.4),
+      0 0 40px rgba(255, 215, 0, 0.2);
+  }
 }
 
-*::-webkit-scrollbar-track {
-  background: transparent;
+.toast-notification {
+  background: linear-gradient(120deg,
+      rgba(255, 215, 0, 0.05) 0%,
+      rgba(255, 193, 7, 0.15) 25%,
+      rgba(255, 215, 0, 0.05) 50%,
+      rgba(255, 193, 7, 0.15) 75%,
+      rgba(255, 215, 0, 0.05) 100%) !important;
+  background-size: 200% 100% !important;
+  border: 1px solid rgba(255, 193, 7, 0.4) !important;
+  animation: sparkle 3s ease-in-out infinite, glow 2s ease-in-out infinite !important;
 }
 
-*::-webkit-scrollbar-thumb {
-  background: rgba(100, 100, 100, 0.3);
-  border-radius: 3px;
+.toast-notification [data-title] {
+  color: #1a1a1a !important;
+  font-weight: 700 !important;
 }
 
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 100, 100, 0.5);
+.toast-notification [data-description] {
+  color: #333333 !important;
 }
 
-/* Hide scrollbar completely for elements with scrollbar-hide class */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Success toast override for newly_unlocked */
+[data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.1) 0%,
+      rgba(255, 193, 7, 0.2) 50%,
+      rgba(255, 215, 0, 0.1) 100%) !important;
+  background-size: 200% 100% !important;
+  border: 2px solid rgba(255, 193, 7, 0.6) !important;
+  animation: sparkle 2s ease-in-out infinite, glow 1.5s ease-in-out infinite !important;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+[data-sonner-toast][data-type="success"] [data-title],
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: #1a1a1a !important;
 }

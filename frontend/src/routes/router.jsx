@@ -33,6 +33,7 @@ import {
   MemoryLobby,
   DrawingGame,
   DrawingLobby,
+  GameHistory,
 } from "../features/games/components";
 
 const router = createBrowserRouter([
@@ -67,6 +68,11 @@ const router = createBrowserRouter([
             // Games selection page
             element: <Games />,
             path: "games",
+          },
+          {
+            // Games history page
+            element: <GameHistory />,
+            path: "games/history",
           },
           {
             element: <Ranking />,

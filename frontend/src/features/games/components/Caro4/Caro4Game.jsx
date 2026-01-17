@@ -179,6 +179,7 @@ const CARO4_TUTORIAL_STEPS = [
 const Caro4Game = () => {
   return (
     <CaroGame
+      gameId={2}
       gameName="CARO 4 HÀNG"
       lobbyPath="/games/caro4"
       winCount={4}

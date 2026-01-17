@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, Brain, X, ChevronLeft } from 'lucide-react';
+import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, Brain, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import GameReviews from '../GameReviews';
+import GameRankings from '../GameRankings';
+import GameSessionHistory from '../GameSessionHistory';
+import { getSession } from '../../../../api/sessionsApi';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -22,22 +35,11 @@ const DIFFICULTY_OPTIONS = {
     hard: { label: 'Khó', previewTime: 0, desc: 'Không xem trước' },
 };
 
-const sampleLeaderboard = [
-    { rank: 1, name: 'MemoryKing', time: 45, moves: 12, flag: '🇻🇳' },
-    { rank: 2, name: 'BrainMaster', time: 52, moves: 14, flag: '🇰🇷' },
-    { rank: 3, name: 'QuickMind', time: 58, moves: 15, flag: '🇨🇳' },
-    { rank: 4, name: 'CardPro', time: 63, moves: 16, flag: '🇯🇵' },
-    { rank: 5, name: 'SharpEye', time: 70, moves: 18, flag: '🇺🇸' },
-    { rank: 6, name: 'MemLord', time: 75, moves: 19, flag: '🇫🇷' },
-    { rank: 7, name: 'Matcher99', time: 82, moves: 21, flag: '🇬🇧' },
-    { rank: 8, name: 'FlipKing', time: 88, moves: 23, flag: '🇩🇪' },
-];
+
 
 const MemoryLobby = () => {
     const navigate = useNavigate();
     const playClick = useClickSound();
-    const [countdown, setCountdown] = useState({ hours: 3, minutes: 42, seconds: 18 });
-    const [currentUserRank] = useState({ rank: 156, name: 'You', time: 95, moves: 24 });
     const [bestTime, setBestTime] = useState(null);
     const [bestMoves, setBestMoves] = useState(null);
 
@@ -45,6 +47,29 @@ const MemoryLobby = () => {
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS });
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+    const [inProgressSession, setInProgressSession] = useState(null);
+
+    const gamePath = '/games/memory';
+
+    // Fetch game settings from API (Memory has gameId = 5)
+    useEffect(() => {
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(5);
+            if (settings) {
+                setApiSettings(settings);
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+        loadSettings();
+    }, []);
 
     useEffect(() => {
         const savedTime = localStorage.getItem('memoryBestTime_4');
@@ -53,19 +78,7 @@ const MemoryLobby = () => {
         if (savedMoves) setBestMoves(parseInt(savedMoves, 10));
     }, []);
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCountdown(prev => {
-                let { hours, minutes, seconds } = prev;
-                seconds--;
-                if (seconds < 0) { seconds = 59; minutes--; }
-                if (minutes < 0) { minutes = 59; hours--; }
-                if (hours < 0) { hours = 23; minutes = 59; seconds = 59; }
-                return { hours, minutes, seconds };
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -91,12 +104,36 @@ const MemoryLobby = () => {
         navigate('/games/memory/play', { state: { settings: gameSettings } });
     };
 
-    const getRankIcon = (rank) => {
-        if (rank === 1) return <Crown className="text-orange-400" size={16} />;
-        if (rank === 2) return <Medal className="text-gray-400" size={16} />;
-        if (rank === 3) return <Medal className="text-amber-700" size={16} />;
-        return <span className="text-sm text-muted-foreground">{rank}.</span>;
+    const handleInProgressChange = (hasInProgress, session) => {
+        setInProgressSession(hasInProgress ? session : null);
     };
+
+    const handleResumeGame = async () => {
+        if (!inProgressSession?.id) return;
+        playClick();
+
+        try {
+            const response = await getSession(inProgressSession.id);
+            const fullSession = response?.data || inProgressSession;
+
+            navigate('/games/memory/play', {
+                state: {
+                    settings: fullSession.settings || gameSettings,
+                    resumeSession: fullSession,
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch session:', error);
+            navigate('/games/memory/play', {
+                state: {
+                    settings: inProgressSession.settings || gameSettings,
+                    resumeSession: inProgressSession,
+                }
+            });
+        }
+    };
+
+
 
     return (
         <div className="flex-1 flex flex-col w-full h-full bg-background text-foreground">
@@ -119,10 +156,15 @@ const MemoryLobby = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="flex-1 flex gap-8 p-6 overflow-y-auto max-md:flex-col">
-                {/* Left Side - Play Modes */}
-                <div className="flex-1 max-w-[400px] max-md:max-w-full">
+            {/* Main Content - Three Column Layout */}
+            <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
+                {/* Left Side - Leaderboard */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
+                    <GameRankings gameId={5} themeColor="indigo" />
+                </div>
+
+                {/* Center - Play Modes */}
+                <div className="flex-1 max-w-[400px] max-lg:max-w-full max-lg:order-1">
                     <div className="flex flex-col gap-3">
                         {/* Best Score Display */}
                         {bestTime !== null && (
@@ -161,6 +203,22 @@ const MemoryLobby = () => {
                                 <Settings size={18} />
                             </button>
                         </div>
+
+                        {/* Resume Button */}
+                        {inProgressSession && (
+                            <button
+                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-emerald-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-emerald-700"
+                                onClick={handleResumeGame}
+                            >
+                                <Play size={20} />
+                                <div className="flex-1 flex flex-col text-left">
+                                    <span className="font-semibold">Tiếp tục chơi</span>
+                                    <span className="text-xs opacity-80">
+                                        {inProgressSession?.game_state?.matchedPairs || 0} cặp | {inProgressSession?.moves_count || 0} lượt
+                                    </span>
+                                </div>
+                            </button>
+                        )}
 
                         <button
                             className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500"
@@ -204,52 +262,10 @@ const MemoryLobby = () => {
                     </div>
                 </div>
 
-                {/* Right Side - Leaderboard */}
-                <div className="w-80 flex-shrink-0 max-md:w-full">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
-                        <div className="flex flex-col gap-2">
-                            {sampleLeaderboard.map((player) => (
-                                <div
-                                    key={player.rank}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${player.rank <= 3 ? 'bg-indigo-500/10' : ''}`}
-                                >
-                                    <div className="w-7 text-center">{getRankIcon(player.rank)}</div>
-                                    <div className="text-xl">{player.flag}</div>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
-                                    <span className="text-xs text-muted-foreground">{formatTime(player.time)}</span>
-                                    <span className="text-sm font-semibold text-muted-foreground">{player.moves}L</span>
-                                </div>
-                            ))}
-
-                            {/* Current User */}
-                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-indigo-500/15 to-transparent border border-indigo-500/30 mt-2">
-                                <div className="w-7 text-center">
-                                    <span className="text-sm font-semibold text-indigo-500">{currentUserRank.rank}.</span>
-                                </div>
-                                <div className="text-xl">🎮</div>
-                                <span className="flex-1 text-sm font-medium text-foreground">{currentUserRank.name}</span>
-                                <span className="text-xs text-muted-foreground">{formatTime(currentUserRank.time)}</span>
-                                <span className="text-sm font-semibold text-muted-foreground">{currentUserRank.moves}L</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-3 mt-2 bg-transparent border-none text-indigo-500 text-sm font-medium cursor-pointer hover:text-indigo-600 transition-colors">
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+                {/* Right Side - Reviews & History */}
+                <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3 flex flex-col gap-4">
+                    <GameSessionHistory gameId={5} gamePath={gamePath} onInProgressChange={handleInProgressChange} />
+                    <GameReviews gameId={5} />
                 </div>
             </div>
 
@@ -300,33 +316,51 @@ const MemoryLobby = () => {
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Kích thước:</span>
-                                            <span className="font-semibold text-foreground">{gameSettings.gridSize}x{gameSettings.gridSize}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Chủ đề:</span>
-                                            <span className="font-semibold text-foreground">
-                                                {THEME_OPTIONS[gameSettings.theme]?.icon} {THEME_OPTIONS[gameSettings.theme]?.label}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Độ khó:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {DIFFICULTY_OPTIONS[gameSettings.difficulty]?.label}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'gridSize') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Kích thước:</span>
+                                                <span className="font-semibold text-foreground">{gameSettings.gridSize}x{gameSettings.gridSize}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'theme') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Chủ đề:</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {THEME_OPTIONS[gameSettings.theme]?.icon} {THEME_OPTIONS[gameSettings.theme]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Độ khó:</span>
+                                                <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
+                                                    gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                                                    }`}>
+                                                    {DIFFICULTY_OPTIONS[gameSettings.difficulty]?.label}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
-                                    <button
-                                        className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setIsCustomMode(true)}
-                                    >
-                                        Tùy chỉnh cài đặt
-                                    </button>
+                                    {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                        <button
+                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            onClick={() => setIsCustomMode(true)}
+                                        >
+                                            Tùy chỉnh cài đặt
+                                        </button>
+                                    )}
                                 </>
                             ) : (
                                 <>

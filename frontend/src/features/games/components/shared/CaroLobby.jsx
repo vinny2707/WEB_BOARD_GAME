@@ -1,7 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
+import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import { getSession } from '../../../../api/sessionsApi';
+import GameReviews from '../GameReviews';
+import GameRankings from '../GameRankings';
+import GameSessionHistory from '../GameSessionHistory';
+import {
+    fetchGameSettings,
+    hasApiSetting,
+    getSettingValue,
+    getSettingOptions,
+    getSettingLabel,
+    getOptionLabel,
+    getOptionColor,
+    extractSettingValues
+} from '../../utils/settingsConfig';
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -26,15 +40,51 @@ const CaroLobby = ({
     icon,
     defaultBoardSize = 15,
     showBoardSizeSelector = false, // true for Caro4, false for Gomoku
+    gameId = null, // Game ID for reviews
 }) => {
     const navigate = useNavigate();
     const playClick = useClickSound();
-    const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
 
     // Settings modal state
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [gameSettings, setGameSettings] = useState({ ...DEFAULT_SETTINGS, boardSize: defaultBoardSize });
     const [isCustomMode, setIsCustomMode] = useState(false);
+    const [apiSettings, setApiSettings] = useState(null);
+    const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // In-progress session state (controlled by GameSessionHistory callback)
+    const [inProgressSession, setInProgressSession] = useState(null);
+
+    // Fetch game settings from API
+    useEffect(() => {
+        if (!gameId) return;
+
+        const loadSettings = async () => {
+            setIsLoadingSettings(true);
+            const { settings } = await fetchGameSettings(gameId);
+            if (settings) {
+                setApiSettings(settings);
+                // Extract flat values from nested settings
+                const values = extractSettingValues(settings);
+                setGameSettings(prev => ({
+                    ...prev,
+                    ...values,
+                }));
+            }
+            setIsLoadingSettings(false);
+        };
+
+        loadSettings();
+    }, [gameId]);
+
+    // Handler for when history updates in_progress status
+    const handleInProgressChange = (hasInProgress, firstInProgressSession) => {
+        if (hasInProgress && firstInProgressSession) {
+            setInProgressSession(firstInProgressSession);
+        } else {
+            setInProgressSession(null);
+        }
+    };
 
     const themeColors = {
         emerald: {
@@ -67,20 +117,7 @@ const CaroLobby = ({
 
     const colors = themeColors[theme] || themeColors.emerald;
 
-    // Countdown timer for daily leaderboard
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCountdown(prev => {
-                let { hours, minutes, seconds } = prev;
-                seconds--;
-                if (seconds < 0) { seconds = 59; minutes--; }
-                if (minutes < 0) { minutes = 59; hours--; }
-                if (hours < 0) { hours = 23; minutes = 59; seconds = 59; }
-                return { hours, minutes, seconds };
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+
 
     const formatTime = (seconds) => {
         if (seconds === 0) return 'Không giới hạn';
@@ -135,6 +172,34 @@ const CaroLobby = ({
         navigate(playPath, { state: { settings: gameSettings } });
     };
 
+    const handleResumeGame = async () => {
+        if (!inProgressSession?.id) return;
+        playClick();
+
+        try {
+            // Fetch full session data with game_state
+            const response = await getSession(inProgressSession.id);
+            const fullSession = response?.data || inProgressSession;
+
+            // Navigate to game with full session data for restoration
+            navigate(playPath, {
+                state: {
+                    settings: fullSession.settings || gameSettings,
+                    resumeSession: fullSession,
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch session:', error);
+            // Fallback: try with existing data
+            navigate(playPath, {
+                state: {
+                    settings: inProgressSession.settings || gameSettings,
+                    resumeSession: inProgressSession,
+                }
+            });
+        }
+    };
+
     const handlePlayWithFriend = () => {
         playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
@@ -150,12 +215,7 @@ const CaroLobby = ({
         alert('Tính năng tạo giải đấu đang được phát triển!');
     };
 
-    const getRankIcon = (rank) => {
-        if (rank === 1) return <Crown className="text-orange-400" size={16} />;
-        if (rank === 2) return <Medal className="text-gray-400" size={16} />;
-        if (rank === 3) return <Medal className="text-amber-700" size={16} />;
-        return <span className="text-sm text-muted-foreground">{rank}.</span>;
-    };
+
 
     return (
         <div className="flex-1 flex flex-col w-full h-full bg-background text-foreground">
@@ -178,11 +238,38 @@ const CaroLobby = ({
                 </div>
             </div>
 
-            {/* Main Content - Two Column Layout */}
-            <div className="flex-1 flex gap-8 p-6 overflow-y-auto max-md:flex-col">
-                {/* Left Side - Play Modes */}
-                <div className="flex-1 max-w-[400px] max-md:max-w-full">
+            {/* Main Content - Three Column Layout */}
+            <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
+                {/* Left Side - Leaderboard */}
+                <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
+                    {gameId ? (
+                        <GameRankings gameId={gameId} themeColor={theme} />
+                    ) : (
+                        <div className="bg-card rounded-2xl p-4 border border-border">
+                            <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
+                            <p className="text-sm text-muted-foreground text-center py-4">Cần gameId để tải dữ liệu</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Center - Play Modes */}
+                <div className="flex-1 max-w-[400px] max-lg:max-w-full max-lg:order-1">
                     <div className="flex flex-col gap-3">
+                        {/* Resume Game Button - shown when in-progress session exists */}
+                        {inProgressSession && (
+                            <button
+                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse"
+                                onClick={handleResumeGame}
+                            >
+                                <Play size={20} />
+                                <div className="flex-1 flex flex-col text-left">
+                                    <span className="font-semibold">Tiếp tục chơi</span>
+                                    <span className="text-xs opacity-80">
+                                        Bạn có ván chơi dở - {inProgressSession.moves_count || 0} nước
+                                    </span>
+                                </div>
+                            </button>
+                        )}
                         {/* Play with Friends */}
                         <div className="flex items-center gap-2">
                             <button
@@ -239,58 +326,18 @@ const CaroLobby = ({
                                 <span className="text-xs opacity-80">với người chơi ngẫu nhiên</span>
                             </div>
                         </button>
+
+                        {/* Game Session History */}
+                        {gameId && <GameSessionHistory gameId={gameId} limit={5} gamePath={playPath} onInProgressChange={handleInProgressChange} />}
                     </div>
                 </div>
 
-                {/* Right Side - Leaderboard */}
-                <div className="w-80 flex-shrink-0 max-md:w-full">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
-                        <div className="flex flex-col gap-2">
-                            {leaderboard.map((player) => (
-                                <div
-                                    key={player.rank}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''}`}
-                                >
-                                    <div className="w-7 text-center">
-                                        {getRankIcon(player.rank)}
-                                    </div>
-                                    <div className="text-xl">
-                                        {player.flag}
-                                    </div>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
-                                    <span className="text-sm font-semibold text-muted-foreground">{player.score.toLocaleString()}</span>
-                                </div>
-                            ))}
-
-                            {/* Current User */}
-                            <div className={`flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r ${colors.userBg} to-transparent border ${colors.userBorder} mt-2`}>
-                                <div className="w-7 text-center">
-                                    <span className={`text-sm font-semibold ${colors.text}`}>{currentUser.rank}.</span>
-                                </div>
-                                <div className="text-xl">🎮</div>
-                                <span className="flex-1 text-sm font-medium text-foreground">{currentUser.name}</span>
-                                <span className="text-sm font-semibold text-muted-foreground">{currentUser.score.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <button className={`w-full py-3 mt-2 bg-transparent border-none ${colors.text} text-sm font-medium cursor-pointer ${colors.textHover} transition-colors`}>
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
+                {/* Right Side - Reviews */}
+                {gameId && (
+                    <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3">
+                        <GameReviews gameId={gameId} />
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Settings Modal */}
@@ -340,76 +387,95 @@ const CaroLobby = ({
                                 <>
                                     {/* Current Settings Summary */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        {/* Board Size - Only for Caro4 */}
-                                        {showBoardSizeSelector && (
+                                        {/* Board Size - Only for Caro4 and if API has this setting */}
+                                        {showBoardSizeSelector && hasApiSetting(apiSettings, 'boardSize') && (
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">Board size:</span>
                                                 <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
                                             </div>
                                         )}
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Time per turn:</span>
-                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Minutes per player:</span>
-                                            <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Who plays first?</span>
-                                            <span className="font-semibold text-foreground">
-                                                {gameSettings.firstPlayer === 'random' ? 'Random' :
-                                                    gameSettings.firstPlayer === 'player' ? 'Bạn' : 'Máy'}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Difficulty:</span>
-                                            <span className={`font-semibold ${gameSettings.difficulty === 'easy' ? 'text-green-500' :
-                                                gameSettings.difficulty === 'medium' ? 'text-yellow-500' : 'text-red-500'
-                                                }`}>
-                                                {gameSettings.difficulty === 'easy' ? 'Dễ' :
-                                                    gameSettings.difficulty === 'medium' ? 'Trung bình' : 'Khó'}
-                                            </span>
-                                        </div>
+                                        {hasApiSetting(apiSettings, 'timePerTurn') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Time per turn:</span>
+                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'timePerPlayer') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">Minutes per player:</span>
+                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'firstPlayer') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">{getSettingLabel(apiSettings, 'firstPlayer')}</span>
+                                                <span className="font-semibold text-foreground">
+                                                    {getOptionLabel(apiSettings, 'firstPlayer', gameSettings.firstPlayer)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">{getSettingLabel(apiSettings, 'difficulty')}</span>
+                                                <span className={`font-semibold ${getOptionColor(apiSettings, 'difficulty', gameSettings.difficulty) || 'text-foreground'}`}>
+                                                    {getOptionLabel(apiSettings, 'difficulty', gameSettings.difficulty)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {/* Show message if no settings available */}
+                                        {!apiSettings && !isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Không có cài đặt khả dụng
+                                            </div>
+                                        )}
+                                        {isLoadingSettings && (
+                                            <div className="text-sm text-muted-foreground text-center py-2">
+                                                Đang tải cài đặt...
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Actions */}
                                     <div className="flex gap-2">
-                                        <button
-                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                            onClick={handleSetUnlimitedTime}
-                                        >
-                                            Set unlimited time
-                                        </button>
-                                        <button
-                                            className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
-                                            onClick={() => setIsCustomMode(true)}
-                                        >
-                                            Custom options
-                                        </button>
+                                        {(hasApiSetting(apiSettings, 'timePerTurn') || hasApiSetting(apiSettings, 'timePerPlayer')) && (
+                                            <button
+                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                onClick={handleSetUnlimitedTime}
+                                            >
+                                                Set unlimited time
+                                            </button>
+                                        )}
+                                        {apiSettings && Object.keys(apiSettings).length > 0 && (
+                                            <button
+                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                onClick={() => setIsCustomMode(true)}
+                                            >
+                                                Custom options
+                                            </button>
+                                        )}
                                     </div>
                                 </>
                             ) : (
                                 <>
                                     {/* Custom Settings Editor */}
                                     <div className="space-y-4">
-                                        {/* Board Size - Only show for Caro4 */}
-                                        {showBoardSizeSelector && (
+                                        {/* Board Size - Only show for Caro4 and if API has this setting */}
+                                        {showBoardSizeSelector && hasApiSetting(apiSettings, 'boardSize') && (
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm text-muted-foreground">Board size:</span>
+                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'boardSize')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    {[7, 10, 15].map(size => (
+                                                    {getSettingOptions(apiSettings, 'boardSize').map(opt => (
                                                         <button
-                                                            key={size}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
+                                                            key={opt.value}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === opt.value
                                                                 ? `${colors.btnBg} text-white`
                                                                 : 'bg-secondary text-foreground hover:bg-accent'
                                                                 }`}
-                                                            onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
+                                                            onClick={() => setGameSettings(prev => ({ ...prev, boardSize: opt.value }))}
                                                         >
-                                                            {size}x{size}
+                                                            {opt.label}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -417,97 +483,106 @@ const CaroLobby = ({
                                         )}
 
                                         {/* Time per Turn */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Clock size={16} className="text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">Time per turn:</span>
+                                        {hasApiSetting(apiSettings, 'timePerTurn') && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Clock size={16} className="text-muted-foreground" />
+                                                    <span className="text-sm text-muted-foreground">Time per turn:</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                        onClick={() => adjustTimePerTurn(-10)}
+                                                    >
+                                                        <Minus size={16} />
+                                                    </button>
+                                                    <span className="text-sm font-semibold text-foreground w-24 text-center">
+                                                        {formatTime(gameSettings.timePerTurn)}
+                                                    </span>
+                                                    <button
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                        onClick={() => adjustTimePerTurn(10)}
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                    onClick={() => adjustTimePerTurn(-10)}
-                                                >
-                                                    <Minus size={16} />
-                                                </button>
-                                                <span className="text-sm font-semibold text-foreground w-24 text-center">
-                                                    {formatTime(gameSettings.timePerTurn)}
-                                                </span>
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                    onClick={() => adjustTimePerTurn(10)}
-                                                >
-                                                    <Plus size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Minutes per Player */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <User size={16} className="text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">Minutes per player:</span>
+                                        {hasApiSetting(apiSettings, 'timePerPlayer') && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <User size={16} className="text-muted-foreground" />
+                                                    <span className="text-sm text-muted-foreground">Minutes per player:</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                        onClick={() => adjustTimePerPlayer(-60)}
+                                                    >
+                                                        <Minus size={16} />
+                                                    </button>
+                                                    <span className="text-sm font-semibold text-foreground w-24 text-center">
+                                                        {formatTime(gameSettings.timePerPlayer)}
+                                                    </span>
+                                                    <button
+                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
+                                                        onClick={() => adjustTimePerPlayer(60)}
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                    onClick={() => adjustTimePerPlayer(-60)}
-                                                >
-                                                    <Minus size={16} />
-                                                </button>
-                                                <span className="text-sm font-semibold text-foreground w-24 text-center">
-                                                    {formatTime(gameSettings.timePerPlayer)}
-                                                </span>
-                                                <button
-                                                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                    onClick={() => adjustTimePerPlayer(60)}
-                                                >
-                                                    <Plus size={16} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        )}
 
                                         {/* Who Plays First */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Shuffle size={16} className="text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">Who plays first?</span>
+                                        {hasApiSetting(apiSettings, 'firstPlayer') && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Shuffle size={16} className="text-muted-foreground" />
+                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'firstPlayer')}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {getSettingOptions(apiSettings, 'firstPlayer').map(opt => (
+                                                        <button
+                                                            key={opt.value}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.firstPlayer === opt.value
+                                                                ? `${colors.btnBg} text-white`
+                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                                }`}
+                                                            onClick={() => setGameSettings(prev => ({ ...prev, firstPlayer: opt.value }))}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <select
-                                                className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm font-medium border-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                                                value={gameSettings.firstPlayer}
-                                                onChange={(e) => setGameSettings(prev => ({ ...prev, firstPlayer: e.target.value }))}
-                                            >
-                                                <option value="random">Random</option>
-                                                <option value="player">Bạn đi trước</option>
-                                                <option value="ai">Máy đi trước</option>
-                                            </select>
-                                        </div>
+                                        )}
 
                                         {/* Difficulty */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Trophy size={16} className="text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">Độ khó:</span>
+                                        {hasApiSetting(apiSettings, 'difficulty') && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <Trophy size={16} className="text-muted-foreground" />
+                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'difficulty')}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    {getSettingOptions(apiSettings, 'difficulty').map(opt => (
+                                                        <button
+                                                            key={opt.value}
+                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === opt.value
+                                                                ? `${opt.color ? `bg-${opt.color}-500` : colors.btnBg} text-white`
+                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                                }`}
+                                                            onClick={() => setGameSettings(prev => ({ ...prev, difficulty: opt.value }))}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
-                                                {[
-                                                    { key: 'easy', label: 'Dễ', color: 'text-green-500 bg-green-500' },
-                                                    { key: 'medium', label: 'TB', color: 'text-yellow-500 bg-yellow-500' },
-                                                    { key: 'hard', label: 'Khó', color: 'text-red-500 bg-red-500' }
-                                                ].map(diff => (
-                                                    <button
-                                                        key={diff.key}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
-                                                            ? `${diff.color} text-white`
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
-                                                    >
-                                                        {diff.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
 
                                     {/* Quick Reset */}

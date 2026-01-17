@@ -158,6 +158,7 @@ const GOMOKU_TUTORIAL_STEPS = [
 const GomokuGame = () => {
     return (
         <CaroGame
+            gameId={1}
             gameName="CARO 5 HÀNG"
             lobbyPath="/games/gomoku"
             winCount={5}

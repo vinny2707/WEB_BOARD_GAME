@@ -159,6 +159,31 @@ const GameCard = ({ game, onClick }) => {
   const path = ROUTE_MAP[game.type]
   const isAvailable = game.enabled && path
 
+  // Check if icon is a URL (for displaying game image)
+  const isIconUrl = game.icon && (game.icon.startsWith('http') || game.icon.startsWith('/'))
+
+  // Render preview: prioritize icon URL, then PREVIEW_MAP, then icon emoji fallback
+  const renderPreview = () => {
+    if (isIconUrl) {
+      return (
+        <img
+          src={game.icon}
+          alt={game.name}
+          className="w-full h-full object-cover rounded-lg"
+          onError={(e) => {
+            // Fallback if image fails to load
+            e.target.style.display = 'none'
+            e.target.nextSibling?.classList.remove('hidden')
+          }}
+        />
+      )
+    }
+    if (PreviewComponent) {
+      return <PreviewComponent />
+    }
+    return <IconPreview icon={game.icon} />
+  }
+
   return (
     <div
       className={`flex flex-col bg-card rounded-2xl border border-border overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg
@@ -167,7 +192,13 @@ const GameCard = ({ game, onClick }) => {
     >
       {/* Preview Area */}
       <div className="flex-1 p-4 flex items-center justify-center aspect-square">
-        {PreviewComponent ? <PreviewComponent /> : <IconPreview icon={game.icon} />}
+        {renderPreview()}
+        {/* Hidden fallback for image error */}
+        {isIconUrl && (
+          <div className="hidden w-full h-full">
+            {PreviewComponent ? <PreviewComponent /> : <IconPreview icon={game.icon} />}
+          </div>
+        )}
       </div>
 
       {/* Title Bar */}

@@ -10,7 +10,9 @@ import {
     BookOpen,
     X,
     ChevronRight,
+    Save,
 } from "lucide-react";
+import useGameSession from '../../hooks/useGameSession';
 
 // Theme card symbols - fruits use Icons8 images, others use emoji
 const THEMES = {
@@ -205,6 +207,10 @@ const MemoryGame = () => {
     const theme = lobbySettings.theme || 'fruits';
     const difficulty = lobbySettings.difficulty || 'medium';
     const previewTime = DIFFICULTY_SETTINGS[difficulty]?.previewTime ?? 1000;
+    const resumeSession = location.state?.resumeSession;
+
+    // Session management
+    const { startSession, saveProgress, completeGame, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(5);
 
     const [boardSize, setBoardSize] = useState(initialGridSize);
     const [cards, setCards] = useState(() => createBoard(initialGridSize, theme));
@@ -328,8 +334,21 @@ const MemoryGame = () => {
                 localStorage.setItem(`memoryBestMoves_${boardSize}`, moves.toString());
                 setBestMoves(moves);
             }
+
+            // Complete session with win
+            if (isAuthenticated) {
+                const symbols = cards.map(c => c.symbol);
+                const matchedIds = cards.filter(c => c.isMatched).map(c => c.id);
+                completeGame({
+                    result: 'win',
+                    score: totalPairs - moves, // Score based on efficiency
+                    moves_count: moves,
+                    time_elapsed: timer,
+                    gameState: { symbols, matchedIds, moves, matchedPairs, timer }
+                });
+            }
         }
-    }, [matchedPairs, boardSize, timer, moves, gameStatus]);
+    }, [matchedPairs, boardSize, timer, moves, gameStatus, isAuthenticated, completeGame, cards]);
 
     const handleCardClick = useCallback(
         async (cardId) => {
@@ -444,6 +463,12 @@ const MemoryGame = () => {
             setCards(newCards.map(c => ({ ...c, isFlipped: false })));
         }
         setGameStatus("playing");
+
+        // Start session for API tracking
+        if (isAuthenticated) {
+            const symbols = newCards.map(c => c.symbol);
+            await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+        }
     };
 
     const startTutorial = () => {
@@ -523,6 +548,78 @@ const MemoryGame = () => {
         setBestTime(savedTime ? parseInt(savedTime, 10) : null);
         setBestMoves(savedMoves ? parseInt(savedMoves, 10) : null);
     };
+
+    // Save game function
+    const handleSaveGame = async () => {
+        if (gameStatus !== 'playing') return;
+
+        const symbols = cards.map(c => c.symbol);
+        const matchedIds = cards.filter(c => c.isMatched).map(c => c.id);
+        await saveProgress({
+            symbols,
+            matchedIds,
+            moves,
+            matchedPairs,
+            timer
+        });
+        import('sonner').then(({ toast }) => {
+            toast.success('Đã lưu game!', { duration: 2000 });
+        });
+    };
+
+    // Resume game from saved session
+    useEffect(() => {
+        if (resumeSession?.id && gameStatus === 'idle') {
+            // Set session ID for completing later
+            setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+            // If we have saved game_state with symbols, restore it
+            if (resumeSession.game_state?.symbols && resumeSession.game_state.symbols.length > 0) {
+                const { symbols, matchedIds, moves: savedMoves, matchedPairs: savedMatchedPairs, timer: savedTimer } = resumeSession.game_state;
+                // Reconstruct cards from saved state
+                const restoredCards = symbols.map((symbol, id) => ({
+                    id,
+                    symbol,
+                    isFlipped: matchedIds?.includes(id) || false,
+                    isMatched: matchedIds?.includes(id) || false,
+                }));
+                setCards(restoredCards);
+                if (savedMoves !== undefined) setMoves(savedMoves);
+                if (savedMatchedPairs !== undefined) setMatchedPairs(savedMatchedPairs);
+                if (savedTimer !== undefined) setTimer(savedTimer);
+                setGameStatus('playing');
+                setIsTimerRunning(true);
+                playSound(gameStartSoundRef);
+            } else {
+                // No game_state saved yet - start fresh game with same session
+                const newCards = createBoard(boardSize, theme);
+                setCards(newCards);
+                setFlippedCards([]);
+                setMoves(0);
+                setMatchedPairs(0);
+                setIsChecking(false);
+                setTimer(0);
+                setIsTimerRunning(false);
+                setGameStatus('playing');
+                playSound(gameStartSoundRef);
+            }
+        }
+    }, [resumeSession, playSound, setResumeSessionId, boardSize, theme]);
+
+    // Update game state for auto-save
+    useEffect(() => {
+        if (gameStatus === 'playing') {
+            const symbols = cards.map(c => c.symbol);
+            const matchedIds = cards.filter(c => c.isMatched).map(c => c.id);
+            updateGameState({
+                symbols,
+                matchedIds,
+                moves,
+                matchedPairs,
+                timer
+            });
+        }
+    }, [cards, moves, matchedPairs, timer, gameStatus, updateGameState]);
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -628,12 +725,18 @@ const MemoryGame = () => {
                         </>
                     )}
                 </div>
-                <button
-                    className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
-                    onClick={() => setShowSettings(!showSettings)}
-                >
-                    <Settings size={20} />
-                </button>
+                {/* Save Button - only during playing */}
+                {gameStatus === 'playing' ? (
+                    <button
+                        className="w-10 h-10 flex items-center justify-center bg-indigo-500/20 rounded-lg text-indigo-500 hover:bg-indigo-500/30 transition-all"
+                        onClick={handleSaveGame}
+                        title="Lưu game"
+                    >
+                        <Save size={20} />
+                    </button>
+                ) : (
+                    <div className="w-10" />
+                )}
             </div>
 
             {/* Stats Bar - Hide in idle and tutorial */}

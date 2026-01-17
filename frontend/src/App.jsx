@@ -11,7 +11,22 @@ function App() {
       <UserProvider>
         <RouterProvider router={router} />
       </UserProvider>
-      <Toaster position="top-center" richColors theme={theme} />
+      <Toaster
+        position="top-right"
+        richColors
+        theme={theme}
+        expand={true}
+        visibleToasts={5}
+        closeButton
+        toastOptions={{
+          style: {
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+          },
+          className: 'toast-notification',
+        }}
+      />
     </>
   )
 }
