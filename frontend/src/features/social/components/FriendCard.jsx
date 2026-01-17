@@ -21,23 +21,31 @@ import {
 
 const FriendCard = ({ friend, onUnfriend, onBlock }) => {
   return (
-    <div className="bg-white dark:!bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
+    <div className="bg-white/70 dark:bg-zinc-800/70 backdrop-blur-sm border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
       <div className="flex items-center gap-4">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0">
-          {getInitials(friend.username)}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-md font-semibold shrink-0 group">
+          {friend.avatar_url ? (
+            <img
+              src={friend.avatar_url}
+              alt={friend.username}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+            />
+          ) : (
+            getInitials(friend.username)
+          )}
         </div>
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold dark:text-white truncate">
-            {friend.username}
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {friend.full_name || friend.username}
           </h3>
-          {friend.full_name && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
-              {friend.full_name}
-            </p>
-          )}
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{friend.username}
+          </p>
+
           {friend.status && (
             <span
               className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${

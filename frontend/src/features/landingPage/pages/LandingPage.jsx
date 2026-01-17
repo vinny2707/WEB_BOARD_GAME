@@ -45,11 +45,8 @@ const LandingPage = () => {
   };
 
   const handleGetStarted = () => {
-    if (isAuthenticated) {
-      navigate("/");
-    } else {
-      navigate("/auth");
-    }
+    // Always navigate to games, even for guests
+    navigate("/games");
   };
 
   const features = [
@@ -115,7 +112,7 @@ const LandingPage = () => {
                 onClick={handleGetStarted}
                 className="px-6 py-2 rounded-lg cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
               >
-                {isAuthenticated ? "Go to Games" : "Get Started"}
+                {isAuthenticated ? "Go to Games" : "Play Now"}
               </button>
             </div>
           </div>
@@ -167,7 +164,7 @@ const LandingPage = () => {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/games")}
                 className="px-8 py-4 cursor-pointer rounded-xl bg-white dark:!bg-zinc-800 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-200 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-lg transition-all duration-300"
               >
                 View Games

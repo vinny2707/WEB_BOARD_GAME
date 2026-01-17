@@ -13,16 +13,18 @@ const { success, error } = require('../utils/response');
 
 /**
  * Complete a game and record results
- * POST /api/sessions/complete
+ * PUT /api/sessions/:id/complete (with session_id)
+ * POST /api/sessions/complete (legacy - with game_id in body)
  */
 const completeGame = async (req, res, next) => {
     try {
         const userId = req.user.id;
+        const sessionId = req.params.id;  // From URL params (new way)
         const { game_id, result, score, moves_count, time_elapsed, game_state, settings, started_at } = req.body;
 
-        // Validate required fields
-        if (!game_id) {
-            return error(res, 'game_id is required', 400);
+        // Validate: either session_id (from params) or game_id (from body) required
+        if (!sessionId && !game_id) {
+            return error(res, 'session_id (in URL) or game_id (in body) is required', 400);
         }
 
         if (!result || !['win', 'loss', 'draw'].includes(result)) {
@@ -30,7 +32,8 @@ const completeGame = async (req, res, next) => {
         }
 
         const session = await GameSession.complete(userId, {
-            game_id,
+            session_id: sessionId,  // UUID of existing session (optional)
+            game_id,                // Required if no session_id
             result,
             score,
             moves_count,
@@ -53,6 +56,12 @@ const completeGame = async (req, res, next) => {
     } catch (err) {
         if (err.code === '23503') { // Foreign key violation
             return error(res, 'Game not found', 404);
+        }
+        if (err.code === 'SESSION_NOT_FOUND') {
+            return error(res, err.message, 404);
+        }
+        if (err.code === 'VALIDATION_ERROR') {
+            return error(res, err.message, 400);
         }
         next(err);
     }

@@ -1,4 +1,4 @@
-import React, { use } from "react";
+import React from "react";
 import {
   Edit2,
   Trophy,
@@ -6,6 +6,9 @@ import {
   Lock,
   CheckCircle2,
   TrendingUp,
+  User,
+  CalendarIcon,
+  Camera,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserProvider";
@@ -22,8 +25,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useForm, Controller } from "react-hook-form";
-import { User } from "lucide-react";
-import { CalendarIcon } from "lucide-react";
 import { editSchema } from "../schemas/editSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -34,17 +35,21 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import api from "@/api/axios";
 import { toast } from "sonner";
+import AvatarPicker from "../components/AvatarPicker";
 
 const Profile = () => {
-  const { user } = useUser();
+  const { user, updateUser } = useUser();
   const [open, setOpen] = useState(false);
   const [backup, setBackup] = useState({
     full_name: "",
     dob: "",
+    avatar_id: null,
   });
+  const [selectedAvatarId, setSelectedAvatarId] = useState(null);
   const [achievements, setAchievements] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
@@ -52,11 +57,13 @@ const Profile = () => {
     control,
     formState: { errors },
     reset,
+    setValue,
   } = useForm({
     resolver: zodResolver(editSchema),
     defaultValues: {
       full_name: "",
       dob: "",
+      avatar_id: null,
     },
   });
 
@@ -82,31 +89,47 @@ const Profile = () => {
 
   useEffect(() => {
     if (user) {
-      reset({
+      const initialData = {
         full_name: user.full_name || "",
         dob: user.dob || "",
-      });
-
-      setBackup({
-        full_name: user.full_name || "",
-        dob: user.dob || "",
-      });
+        avatar_id: user.avatar_id || null,
+      };
+      reset(initialData);
+      setBackup(initialData);
+      setSelectedAvatarId(user.avatar_id || null);
     }
-  }, [user]);
+  }, [user, reset]);
 
   const handleCancel = () => {
     reset(backup);
+    setSelectedAvatarId(backup.avatar_id);
+  };
+
+  const handleAvatarSelect = (avatarId) => {
+    setSelectedAvatarId(avatarId);
+    setValue("avatar_id", avatarId);
   };
 
   const onSubmit = async (data) => {
-    console.log("Submitting data:", data);
     try {
-      const response = await api.put("/api/auth/profile", data);
-      toast.success("Profile updated successfully");
+      setSubmitting(true);
+      const payload = {
+        full_name: data.full_name,
+        dob: data.dob,
+        avatar_id: selectedAvatarId,
+      };
+      
+      await api.put("/api/auth/profile", payload);
+      toast.success("Profile updated successfully!");
       setOpen(false);
-      console.log("Profile updated successfully:", response.data);
+      
+      // Refresh user data to get updated avatar_url
+      await updateUser();
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -142,56 +165,121 @@ const Profile = () => {
     return colors[category] || colors.beginner;
   };
 
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+          <User className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+            Vui lòng đăng nhập để xem profile của bạn
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6 dark:bg-zinc-900/50">
+    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Profile Card */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-          {/* Large Avatar */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-xl text-2xl sm:text-3xl text-white flex-shrink-0">
-            {getInitials(user.username)}
+          {/* Avatar with Image or Initials */}
+          <div className="relative group">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-xl text-2xl sm:text-3xl text-white flex-shrink-0">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.username}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+                />
+              ) : (
+                getInitials(user?.username)
+              )}
+            </div>
+            {/* Camera overlay on hover */}
+            <div 
+              onClick={() => setOpen(true)}
+              className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              <Camera className="w-6 h-6 text-white" />
+            </div>
           </div>
 
           {/* User Info */}
           <div className="flex-1 text-center sm:text-left">
-            <h1 className="text-2xl sm:text-3xl dark:text-white">
-              {user.username}
+            <h1 className="text-2xl sm:text-3xl font-bold dark:text-white">
+              {user?.username}
             </h1>
-            <span className="text-sm dark:text-zinc-400 text-gray-600 break-all">
-              {user.email}
-            </span>
+            {user?.full_name && (
+              <p className="text-lg text-zinc-600 dark:text-zinc-300">
+                {user.full_name}
+              </p>
+            )}
+            <p className="text-sm dark:text-zinc-400 text-gray-500 break-all">
+              {user?.email}
+            </p>
+            {user?.dob && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-1">
+                📅 {new Date(user.dob).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            )}
           </div>
 
           {/* Edit Button */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <button className="cursor-pointer px-4 sm:px-6 py-2 sm:py-3 rounded-xl border-2 border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-sm sm:text-base whitespace-nowrap">
+              <button className="cursor-pointer px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 transition-all flex items-center gap-2 text-sm sm:text-base whitespace-nowrap shadow-lg hover:shadow-emerald-500/25">
                 <Edit2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Edit Profile</span>
                 <span className="sm:hidden">Edit</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <DialogHeader>
-                  <DialogTitle>Edit profile</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">Edit Profile</DialogTitle>
                   <DialogDescription>
-                    Make changes to your profile here. Click save when
-                    you&apos;re done.
+                    Update your avatar and personal information
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="grid gap-4">
+                {/* Avatar Picker Section */}
+                <div className="space-y-4">
+                  <AvatarPicker
+                    selectedId={selectedAvatarId}
+                    onSelect={handleAvatarSelect}
+                    currentAvatarUrl={user?.avatar_url}
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-zinc-200 dark:border-zinc-700" />
+
+                {/* Form Fields */}
+                <div className="space-y-4">
+                  {/* Full Name */}
                   <div>
-                    <label className="block text-sm text-zinc-400 mb-2">
+                    <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
                       Full Name
                     </label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
                       <input
                         type="text"
                         {...register("full_name")}
-                        className="w-full pl-12 pr-4 py-3 dark:bg-zinc-800/50 border-2 dark:border-zinc-700 rounded-xl dark:text-white placeholder-zinc-500 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                        className="w-full pl-12 pr-4 py-3 bg-zinc-100 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -202,12 +290,11 @@ const Profile = () => {
                     )}
                   </div>
 
-                  {/* Date of birth */}
-                  <div className="flex flex-col gap-2">
-                    <label className="block text-sm text-zinc-400">
+                  {/* Date of Birth */}
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-2">
                       Date of Birth
                     </label>
-
                     <Controller
                       name="dob"
                       control={control}
@@ -219,7 +306,10 @@ const Profile = () => {
                         return (
                           <Popover>
                             <PopoverTrigger asChild>
-                              <button className="flex justify-between items-center p-3 bg-transparent hover:bg-transparent w-full border-2 dark:border-zinc-700 rounded-xl dark:text-white text-left dark:bg-zinc-800/50 focus:border-emerald-500 outline-none transition-colors">
+                              <button
+                                type="button"
+                                className="flex justify-between items-center w-full py-3 px-4 bg-zinc-100 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl text-left text-zinc-900 dark:text-white focus:border-emerald-500 outline-none transition-colors"
+                              >
                                 {field.value
                                   ? new Date(
                                       field.value + "T00:00:00"
@@ -228,8 +318,8 @@ const Profile = () => {
                                       month: "long",
                                       day: "numeric",
                                     })
-                                  : "Pick a date"}
-                                <CalendarIcon className="ml-2 w-4 h-4 text-zinc-500" />
+                                  : <span className="text-zinc-400">Pick a date</span>}
+                                <CalendarIcon className="w-5 h-5 text-zinc-400" />
                               </button>
                             </PopoverTrigger>
 
@@ -259,26 +349,31 @@ const Profile = () => {
                         );
                       }}
                     />
-
                     {errors.dob && (
-                      <p className="text-red-500 text-sm">
+                      <p className="text-red-500 text-sm mt-1">
                         {errors.dob.message}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:gap-0">
                   <DialogClose asChild>
-                    <Button variant="outline" onClick={handleCancel}>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      onClick={handleCancel}
+                      className="w-full sm:w-auto"
+                    >
                       Cancel
                     </Button>
                   </DialogClose>
                   <Button
                     type="submit"
-                    className="py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white transition-all shadow-lg cursor-pointer"
+                    disabled={submitting}
+                    className="w-full sm:w-auto py-3 px-6 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white transition-all shadow-lg"
                   >
-                    Save changes
+                    {submitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -288,7 +383,7 @@ const Profile = () => {
       </div>
 
       {/* Achievements Section */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl">

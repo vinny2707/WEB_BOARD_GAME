@@ -16,8 +16,10 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useUser } from "@/contexts/UserProvider";
 
 const Friends = () => {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState("friends");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -119,8 +121,13 @@ const Friends = () => {
     }
   };
 
-  // Initial data load
+  // Initial data load - only run when user is authenticated
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    
     const fetchData = async () => {
       setLoading(true);
       await Promise.all([
@@ -132,7 +139,7 @@ const Friends = () => {
       setLoading(false);
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   // Handle unfriend
   const handleUnfriend = async (friendId) => {
@@ -402,10 +409,31 @@ const Friends = () => {
     },
   ];
 
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+            Vui lòng đăng nhập để xem danh sách bạn bè
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6 dark:bg-zinc-900/50">
+    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl">
@@ -471,7 +499,7 @@ const Friends = () => {
       </div>
 
       {/* Content */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

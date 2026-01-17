@@ -1,582 +1,525 @@
-import React from "react";
-import { useState, useEffect } from "react";
-import { Trophy } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeProvider";
+import React, { useState, useEffect } from "react";
+import {
+  Trophy,
+  Medal,
+  Award,
+  TrendingUp,
+  Crown,
+  Users,
+  User,
+} from "lucide-react";
+import api from "@/api/axios";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { NumberTicker } from "@/components/ui/number-ticker";
-import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar";
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { getInitials } from "@/utils/Username";
+import { Progress } from "@/components/ui/progress";
 
-const Ranking = () => {
-  const [scopeTab, setScopeTab] = useState("global");
-  const [gameFilter, setGameFilter] = useState("Caro5");
-  const { theme } = useTheme();
+export default function Ranking() {
+  const [games, setGames] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null);
+  const [scope, setScope] = useState("global");
+  const [rankings, setRankings] = useState([]);
+  const [myRanking, setMyRanking] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const itemsPerPage = 10;
 
-  // Mock data
-  const globalPlayers = [
-    {
-      id: 1,
-      username: "Alice",
-      win_rate: 92,
-      total_score: 1500,
-      best_score: 300,
-    },
-    {
-      id: 2,
-      username: "Bob",
-      win_rate: 89,
-      total_score: 1400,
-      best_score: 280,
-    },
-    {
-      id: 3,
-      username: "Charlie",
-      win_rate: 85,
-      total_score: 1300,
-      best_score: 270,
-    },
-    {
-      id: 4,
-      username: "David",
-      win_rate: 80,
-      total_score: 1200,
-      best_score: 260,
-    },
-    {
-      id: 5,
-      username: "Eve",
-      win_rate: 78,
-      total_score: 1100,
-      best_score: 250,
-    },
-  ];
-  const friendsPlayers = [
-    {
-      id: 1,
-      username: "Frank",
-      win_rate: 88,
-      total_score: 1250,
-      best_score: 275,
-    },
-    {
-      id: 2,
-      username: "Grace",
-      win_rate: 82,
-      total_score: 1150,
-      best_score: 265,
-    },
-    {
-      id: 3,
-      username: "Heidi",
-      win_rate: 79,
-      total_score: 1050,
-      best_score: 240,
-    },
-  ];
-  const myPersonalStats = {
-    win_rate: 75,
-    total_score: 1000,
-    best_score: 2400,
-    global_rank: 250,
-  };
+  // Fetch games list
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await api.get("/api/games");
+        const gamesList = response.data.data.games || [];
+        setGames(gamesList);
+        if (gamesList.length > 0) {
+          setSelectedGame(gamesList[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching games:", error);
+        toast.error("Failed to load games");
+      }
+    };
+    fetchGames();
+  }, []);
 
-  const games = [
-    "Caro5",
-    "Caro4",
-    "TicTacToe",
-    "Snake",
-    "Match-3",
-    "Memory Game",
-    "Drawing Canvas",
-  ];
+  // Fetch rankings when game or scope changes
+  useEffect(() => {
+    if (selectedGame) {
+      fetchRankings(1);
+      fetchMyRanking();
+    }
+  }, [selectedGame, scope]);
 
-  const getTrophyColor = (rank) => {
-    switch (rank) {
-      case 1:
-        return "text-yellow-500";
-      case 2:
-        return "text-gray-400";
-      case 3:
-        return "text-amber-700";
-      default:
-        return "";
+  // Fetch rankings
+  const fetchRankings = async (page = 1) => {
+    if (!selectedGame) return;
+
+    setLoading(true);
+    try {
+      const response = await api.get(`/api/rankings/game/${selectedGame}`, {
+        params: { scope, page, limit: itemsPerPage },
+      });
+      setRankings(response.data.data || []);
+      setPagination({
+        page: response.data.pagination?.page || 1,
+        totalPages: response.data.pagination?.totalPages || 1,
+        total: response.data.pagination?.total || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching rankings:", error);
+      toast.error("Failed to load rankings");
+      setRankings([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRowHighlight = (rank) => {
-    switch (rank) {
-      case 1:
-        return theme === "dark"
-          ? "bg-yellow-500/10 border-l-4 border-yellow-500"
-          : "bg-yellow-50 border-l-4 border-yellow-500";
-      case 2:
-        return theme === "dark"
-          ? "bg-gray-500/10 border-l-4 border-gray-400"
-          : "bg-gray-50 border-l-4 border-gray-400";
-      case 3:
-        return theme === "dark"
-          ? "bg-amber-700/10 border-l-4 border-amber-700"
-          : "bg-amber-50 border-l-4 border-amber-700";
-      default:
-        return "";
+  // Fetch current user's ranking
+  const fetchMyRanking = async () => {
+    if (!selectedGame) return;
+
+    try {
+      const response = await api.get(`/api/rankings/game/${selectedGame}/me`);
+      setMyRanking(response.data.data || null);
+    } catch (error) {
+      console.error("Error fetching my ranking:", error);
+      setMyRanking(null);
     }
   };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > pagination.totalPages) return;
+    fetchRankings(newPage);
+  };
+
+  // Render pagination
+  const renderPagination = () => {
+    const { page, totalPages } = pagination;
+    if (totalPages === 0) return null;
+
+    const maxVisible = 5;
+    const pages = [];
+    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+    if (endPage - startPage < maxVisible - 1) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <Pagination className="mt-6">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => handlePageChange(page - 1)}
+              className={
+                page === 1
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              }
+            />
+          </PaginationItem>
+
+          {startPage > 1 && (
+            <>
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => handlePageChange(1)}
+                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                >
+                  1
+                </PaginationLink>
+              </PaginationItem>
+              {startPage > 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+            </>
+          )}
+
+          {pages.map((pageNum) => (
+            <PaginationItem key={pageNum}>
+              <PaginationLink
+                onClick={() => handlePageChange(pageNum)}
+                isActive={pageNum === page}
+                className="cursor-pointer data-[active=true]:bg-gradient-to-r data-[active=true]:from-emerald-500 data-[active=true]:to-cyan-500 data-[active=true]:text-white hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              >
+                {pageNum}
+              </PaginationLink>
+            </PaginationItem>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              <PaginationItem>
+                <PaginationLink
+                  onClick={() => handlePageChange(totalPages)}
+                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
+                >
+                  {totalPages}
+                </PaginationLink>
+              </PaginationItem>
+            </>
+          )}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => handlePageChange(page + 1)}
+              className={
+                page === totalPages
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
+              }
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
+
+  // Get trophy/medal icon based on rank
+  const getRankIcon = (rank) => {
+    switch (rank) {
+      case 1:
+        return <Crown className="w-6 h-6 text-yellow-500" />;
+      case 2:
+        return <Medal className="w-6 h-6 text-gray-400" />;
+      case 3:
+        return <Award className="w-6 h-6 text-amber-600" />;
+      default:
+        return (
+          <span className="text-lg font-bold text-gray-500 dark:text-gray-400">
+            #{rank}
+          </span>
+        );
+    }
+  };
+
+  // Get rank styling
+  const getRankStyle = (rank) => {
+    switch (rank) {
+      case 1:
+        return "bg-gradient-to-r from-yellow-500 to-amber-500";
+      case 2:
+        return "bg-gradient-to-r from-gray-400 to-gray-500";
+      case 3:
+        return "bg-gradient-to-r from-amber-600 to-orange-600";
+      default:
+        return "bg-gradient-to-r from-emerald-500 to-cyan-500";
+    }
+  };
+
+  const scopeOptions = [
+    {
+      value: "global",
+      label: "Global",
+      icon: TrendingUp,
+      description: "All players",
+    },
+    {
+      value: "friends",
+      label: "Friends",
+      icon: Users,
+      description: "Friends only",
+    },
+  ];
+
+  const currentScopeOption = scopeOptions.find((opt) => opt.value === scope);
 
   return (
-    <div className="w-full flex-1 p-6 flex justify-center items-start dark:bg-zinc-900/50">
-      <div className="w-full flex flex-col gap-2">
-        {/* Game Filter */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="p-2 sm:p-3 rounded-xl bg-emerald-500/20">
-              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
+    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6 dark:bg-zinc-900/50">
+      {/* Header */}
+      <div className="w-full bg-zinc-50 border-gray-200 dark:!bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl">
+              <Trophy className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl dark:text-white text-gray-900">
-              Hall of Fame
-            </h1>
+            <div>
+              <h1 className="text-2xl font-semibold dark:text-white">
+                Rankings
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Compete and climb the leaderboard
+              </p>
+            </div>
           </div>
 
-          <Select value={gameFilter} onValueChange={setGameFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] rounded-xl border-2 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white focus:ring-emerald-500">
-              <SelectValue placeholder="Select game" />
-            </SelectTrigger>
-
-            <SelectContent className="dark:bg-zinc-800 dark:border-zinc-700">
-              {games.map((game) => (
-                <SelectItem
-                  key={game}
-                  value={game}
-                  className="dark:text-zinc-300 dark:focus:bg-zinc-700 dark:focus:text-white cursor-pointer"
-                >
-                  {game}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Scope Tabs */}
-        <div className="flex gap-1 sm:gap-2 p-1 rounded-xl bg-gray-100 dark:bg-zinc-800/50">
-          <button
-            onClick={() => setScopeTab("global")}
-            className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
-              scopeTab === "global"
-                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
-                : theme === "dark"
-                ? "text-zinc-400 hover:text-white"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Global System
-          </button>
-          <button
-            onClick={() => setScopeTab("friends")}
-            className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
-              scopeTab === "friends"
-                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
-                : theme === "dark"
-                ? "text-zinc-400 hover:text-white"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            Friends Only
-          </button>
-          <button
-            onClick={() => setScopeTab("personal")}
-            className={`flex-1 py-2 px-2 sm:py-3 sm:px-4 text-xs sm:text-base rounded-lg transition-all cursor-pointer ${
-              scopeTab === "personal"
-                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:shadow-lg"
-                : theme === "dark"
-                ? "text-zinc-400 hover:text-white"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            My Personal Stats
-          </button>
-        </div>
-
-        <hr className="my-4 border-gray-300 dark:border-zinc-700" />
-
-        {/* Ranking Table */}
-        {scopeTab === "global" && (
-          <>
-            {/* Desktop Table View */}
-            <Table className="hidden md:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Rank</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Win Rate</TableHead>
-                  <TableHead>Total Score</TableHead>
-                  <TableHead>Best Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {globalPlayers.map((player, index) => (
-                  <TableRow
-                    key={player.id}
-                    className={getRowHighlight(index + 1)}
-                  >
-                    <TableCell className="font-medium">
-                      {index + 1 === 1 || index + 1 === 2 || index + 1 === 3 ? (
-                        <div className="flex items-center gap-2">
-                          <Trophy
-                            className={`w-5 h-5 ${getTrophyColor(index + 1)}`}
-                          />
-                          #{index + 1}
-                        </div>
-                      ) : (
-                        `#${index + 1}`
-                      )}
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-10 h-10 rounded-full ${
-                            index === 0
-                              ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
-                              : index === 1
-                              ? "bg-gradient-to-br from-gray-300 to-gray-500"
-                              : index === 2
-                              ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                              : "bg-gradient-to-br from-emerald-400 to-cyan-500"
-                          } flex items-center justify-center text-white shadow-lg`}
-                        >
-                          {getInitials(player.username)}
-                        </div>
-                        {player.username}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={player.win_rate}
-                          className="w-20 bg-zinc-200 dark:bg-zinc-700 [&>*]:bg-emerald-500"
-                        />
-                        {`${player.win_rate}%`}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>{player.total_score}</TableCell>
-
-                    <TableCell>{player.best_score}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {globalPlayers.map((player, index) => (
-                <div
-                  key={player.id}
-                  className={`p-4 rounded-xl border-2 ${
-                    index === 0
-                      ? "bg-yellow-500/10 border-yellow-500"
-                      : index === 1
-                      ? "bg-gray-500/10 border-gray-400"
-                      : index === 2
-                      ? "bg-amber-700/10 border-amber-700"
-                      : theme === "dark"
-                      ? "bg-zinc-800/50 border-zinc-700"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-12 h-12 rounded-full ${
-                          index === 0
-                            ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
-                            : index === 1
-                            ? "bg-gradient-to-br from-gray-300 to-gray-500"
-                            : index === 2
-                            ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                            : "bg-gradient-to-br from-emerald-400 to-cyan-500"
-                        } flex items-center justify-center text-white shadow-lg text-sm`}
-                      >
-                        {getInitials(player.username)}
-                      </div>
-                      <div>
-                        <p className="font-medium dark:text-white text-gray-900">
-                          {player.username}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
-                          {index + 1 <= 3 && (
-                            <Trophy
-                              className={`w-4 h-4 ${getTrophyColor(index + 1)}`}
-                            />
-                          )}
-                          <span>Rank #{index + 1}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Win Rate
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={player.win_rate}
-                          className="w-20 bg-zinc-200 dark:bg-zinc-700 [&>*]:bg-emerald-500"
-                        />
-                        <span className="text-sm dark:text-white text-gray-900">
-                          {player.win_rate}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Total Score
-                      </span>
-                      <span className="text-sm font-medium dark:text-white text-gray-900">
-                        {player.total_score}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Best Score
-                      </span>
-                      <span className="text-sm font-medium dark:text-white text-gray-900">
-                        {player.best_score}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Game Filter */}
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Select Game
+              </label>
+              <Select
+                value={selectedGame?.toString()}
+                onValueChange={(val) => setSelectedGame(parseInt(val))}
+              >
+                <SelectTrigger className="w-full bg-white dark:!bg-zinc-800 dark:border-zinc-700">
+                  <SelectValue placeholder="Choose a game" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                  {games.map((game) => (
+                    <SelectItem
+                      key={game.id}
+                      value={game.id.toString()}
+                      className="dark:hover:bg-zinc-700 cursor-pointer"
+                    >
+                      {game.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </>
-        )}
 
-        {scopeTab === "friends" && (
-          <>
-            {/* Desktop Table View */}
-            <Table className="hidden md:table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Rank</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Win Rate</TableHead>
-                  <TableHead>Total Score</TableHead>
-                  <TableHead>Best Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {friendsPlayers.map((player, index) => (
-                  <TableRow
-                    key={player.id}
-                    className={getRowHighlight(index + 1)}
-                  >
-                    <TableCell className="font-medium">
-                      {index + 1 === 1 || index + 1 === 2 || index + 1 === 3 ? (
-                        <div className="flex items-center gap-2">
-                          <Trophy
-                            className={`w-5 h-5 ${getTrophyColor(index + 1)}`}
-                          />
-                          #{index + 1}
-                        </div>
-                      ) : (
-                        `#${index + 1}`
-                      )}
-                    </TableCell>
-
-                    <TableCell>
+            {/* Scope Filter */}
+            <div className="flex-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+                Ranking Scope
+              </label>
+              <Select value={scope} onValueChange={setScope}>
+                <SelectTrigger className="w-full bg-white dark:!bg-zinc-800 dark:border-zinc-700">
+                  <SelectValue placeholder="Choose scope" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                  {scopeOptions.map((option) => (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="dark:hover:bg-zinc-700 cursor-pointer"
+                    >
                       <div className="flex items-center gap-2">
-                        <div
-                          className={`w-10 h-10 rounded-full ${
-                            index === 0
-                              ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
-                              : index === 1
-                              ? "bg-gradient-to-br from-gray-300 to-gray-500"
-                              : index === 2
-                              ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                              : "bg-gradient-to-br from-emerald-400 to-cyan-500"
-                          } flex items-center justify-center text-white shadow-lg`}
-                        >
-                          {getInitials(player.username)}
-                        </div>
-                        {player.username}
+                        <option.icon className="w-4 h-4" />
+                        <span>{option.label}</span>
                       </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={player.win_rate}
-                          className="w-20 bg-zinc-200 dark:bg-zinc-700 [&>*]:bg-emerald-500"
-                        />
-                        {`${player.win_rate}%`}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>{player.total_score}</TableCell>
-
-                    <TableCell>{player.best_score}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {friendsPlayers.map((player, index) => (
-                <div
-                  key={player.id}
-                  className={`p-4 rounded-xl border-2 ${
-                    index === 0
-                      ? "bg-yellow-500/10 border-yellow-500"
-                      : index === 1
-                      ? "bg-gray-500/10 border-gray-400"
-                      : index === 2
-                      ? "bg-amber-700/10 border-amber-700"
-                      : theme === "dark"
-                      ? "bg-zinc-800/50 border-zinc-700"
-                      : "bg-white border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-12 h-12 rounded-full ${
-                          index === 0
-                            ? "bg-gradient-to-br from-yellow-400 to-yellow-600"
-                            : index === 1
-                            ? "bg-gradient-to-br from-gray-300 to-gray-500"
-                            : index === 2
-                            ? "bg-gradient-to-br from-amber-600 to-amber-800"
-                            : "bg-gradient-to-br from-emerald-400 to-cyan-500"
-                        } flex items-center justify-center text-white shadow-lg text-sm`}
-                      >
-                        {getInitials(player.username)}
-                      </div>
-                      <div>
-                        <p className="font-medium dark:text-white text-gray-900">
-                          {player.username}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-zinc-400">
-                          {index + 1 <= 3 && (
-                            <Trophy
-                              className={`w-4 h-4 ${getTrophyColor(index + 1)}`}
-                            />
-                          )}
-                          <span>Rank #{index + 1}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Win Rate
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          value={player.win_rate}
-                          className="w-20 bg-zinc-200 dark:bg-zinc-700 [&>*]:bg-emerald-500"
-                        />
-                        <span className="text-sm dark:text-white text-gray-900">
-                          {player.win_rate}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Total Score
-                      </span>
-                      <span className="text-sm font-medium dark:text-white text-gray-900">
-                        {player.total_score}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600 dark:text-zinc-400">
-                        Best Score
-                      </span>
-                      <span className="text-sm font-medium dark:text-white text-gray-900">
-                        {player.best_score}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+      </div>
 
-        {scopeTab === "personal" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
-              <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
-                Win Rate
-              </p>
-              <div className="w-full flex justify-center items-center">
-                <AnimatedCircularProgressBar
-                  value={myPersonalStats.win_rate}
-                  max={100}
-                  min={0}
-                  gaugePrimaryColor="rgb(16 185 129)"
-                  gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"
-                  className="w-20 h-20"
-                />
+      {/* My Ranking Card */}
+      {myRanking && (
+        <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-semibold opacity-90 mb-1">Your Ranking</p>
+              <div className="flex items-center gap-3">
+                <span className="text-4xl font-bold">#{myRanking.rank}</span>
+                <div className="text-sm">
+                  <p>Top {myRanking.percentile}%</p>
+                  <p className="opacity-90">
+                    {myRanking.total_players} players
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
-              <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
-                Total Score
-              </p>
-              <NumberTicker
-                value={myPersonalStats.total_score}
-                className="text-3xl dark:text-white text-gray-900"
-              />
-            </div>
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
-              <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
-                Best Score
-              </p>
-              <NumberTicker
-                value={myPersonalStats.best_score}
-                className="text-3xl dark:text-white text-gray-900"
-              />
-            </div>
-
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-800/50">
-              <p className="text-sm mb-2 text-gray-600 dark:text-zinc-400">
-                Global Rank
-              </p>
-              <NumberTicker
-                value={myPersonalStats.global_rank}
-                className="text-3xl dark:text-white text-gray-900"
+            <div className="text-right">
+              <p className="text-sm opacity-90 mb-2">Win Rate</p>
+              <div className="text-3xl font-bold">
+                {myRanking.stats?.win_rate?.toFixed(1)}%
+              </div>
+              <Progress
+                value={myRanking.stats?.win_rate || 0}
+                className="mt-2 h-2 bg-white/30"
               />
             </div>
           </div>
-        )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
+            <div>
+              <p className="text-xs opacity-75">Games</p>
+              <p className="text-xl font-semibold">
+                {myRanking.stats?.total_games || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs opacity-75">Wins</p>
+              <p className="text-xl font-semibold">
+                {myRanking.stats?.total_wins || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs opacity-75">Total Score</p>
+              <p className="text-xl font-semibold">
+                {myRanking.stats?.total_score || 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs opacity-75">Best Score</p>
+              <p className="text-xl font-semibold">
+                {myRanking.stats?.best_score || 0}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rankings List */}
+      <div className="bg-zinc-50 border-gray-200 dark:!bg-zinc-900/50 dark:border-zinc-800 rounded-2xl border shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="p-4 sm:p-6 border-b dark:border-zinc-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {currentScopeOption && (
+                <currentScopeOption.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              <h2 className="text-xl font-semibold dark:text-white">
+                {currentScopeOption?.label} Leaderboard
+              </h2>
+            </div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {pagination.total} {pagination.total === 1 ? "player" : "players"}
+            </span>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 sm:p-6">
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+              <p className="text-gray-500 dark:text-gray-400 mt-4">
+                Loading rankings...
+              </p>
+            </div>
+          ) : rankings.length === 0 ? (
+            <div className="text-center py-12">
+              <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">
+                No rankings available yet
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {rankings.map((ranking) => (
+                <div
+                  key={ranking.rank}
+                  className="bg-white dark:!bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Rank */}
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-zinc-700 dark:to-zinc-800 flex items-center justify-center">
+                      {getRankIcon(ranking.rank)}
+                    </div>
+
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div
+                        className={`w-10 h-10 rounded-full ${getRankStyle(
+                          ranking.rank
+                        )} flex items-center justify-center text-white font-semibold`}
+                      >
+                        {ranking.user?.avatar_url ? (
+                          <img
+                            src={ranking.user.avatar_url}
+                            alt={ranking.user.username}
+                            className="w-full h-full rounded-full object-cover"
+                          />
+                        ) : (
+                          <span>{getInitials(ranking.user?.full_name)}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                        {ranking.user?.full_name || ranking.user?.username}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        @{ranking.user?.username}
+                      </p>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="hidden sm:flex items-center gap-6">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Win Rate
+                        </p>
+                        <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          {ranking.stats?.win_rate?.toFixed(1)}%
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Games
+                        </p>
+                        <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                          {ranking.stats?.total_games || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Score
+                        </p>
+                        <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">
+                          {ranking.stats?.total_score || 0}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Best
+                        </p>
+                        <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">
+                          {ranking.stats?.best_score || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mobile Stats */}
+                    <div className="sm:hidden flex flex-col items-end">
+                      <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                        {ranking.stats?.win_rate?.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {ranking.stats?.total_games} games
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {rankings.length > 0 && renderPagination()}
+        </div>
       </div>
     </div>
   );
-};
-
-export default Ranking;
+}

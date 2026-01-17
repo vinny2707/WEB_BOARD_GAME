@@ -25,4 +25,6 @@ export const editSchema = z.object({
         message: "Invalid calendar date",
       }
     ),
+  // Avatar ID is optional, can be null or a positive integer
+  avatar_id: z.number().int().positive().nullable().optional(),
 });

@@ -11,7 +11,6 @@ import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
 import Games from "../features/games/pages/Games.jsx";
 import Ranking from "../features/ranking/pages/Ranking.jsx";
 import Friends from "../features/social/pages/Friends.jsx";
-import Social from "../features/social/pages/Social.jsx";
 import Profile from "../features/profile/pages/Profile.jsx";
 import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
 import NotFound from "@/features/errors/pages/NotFound.jsx";
@@ -38,6 +37,11 @@ import {
 
 const router = createBrowserRouter([
   {
+    // Default route is landing page
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
     path: "/landing",
     element: <LandingPage />,
   },
@@ -52,17 +56,13 @@ const router = createBrowserRouter([
     ],
   },
   {
+    // User pages with sidebar - accessible without login
     path: "/",
     element: <ProtectedLayout />,
     children: [
       {
         element: <UserLayout />,
         children: [
-          {
-            // Redirect from / to /games
-            index: true,
-            element: <Navigate to="/games" replace />,
-          },
           {
             // Games selection page
             element: <Games />,

@@ -53,8 +53,8 @@ const { authenticateJWT } = require('../middleware/auth');
  * @swagger
  * /api/achievements:
  *   get:
- *     summary: Get all achievements
- *     description: Returns list of all available achievements
+ *     summary: Get all achievements (paginated)
+ *     description: Returns paginated list of all available achievements
  *     tags: [Achievements]
  *     security:
  *       - apiKeyAuth: []
@@ -65,9 +65,21 @@ const { authenticateJWT } = require('../middleware/auth');
  *           type: string
  *           enum: [beginner, expert, social, special]
  *         description: Filter by category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page (default 10)
  *     responses:
  *       200:
- *         description: Achievements list
+ *         description: Achievements list with pagination
  *         content:
  *           application/json:
  *             schema:
@@ -82,6 +94,17 @@ const { authenticateJWT } = require('../middleware/auth');
  *                       type: array
  *                       items:
  *                         $ref: '#/components/schemas/Achievement'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
  */
 router.get('/', achievementController.getAllAchievements);
 
@@ -89,15 +112,28 @@ router.get('/', achievementController.getAllAchievements);
  * @swagger
  * /api/achievements/me:
  *   get:
- *     summary: Get current user's achievements
- *     description: Returns user's achievements with progress, grouped by status
+ *     summary: Get current user's achievements (paginated)
+ *     description: Returns user's achievements with progress, grouped by status with pagination
  *     tags: [Achievements]
  *     security:
  *       - apiKeyAuth: []
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number (default 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page (default 10)
  *     responses:
  *       200:
- *         description: User achievements with progress
+ *         description: User achievements with progress and pagination
  *         content:
  *           application/json:
  *             schema:
@@ -123,6 +159,17 @@ router.get('/', achievementController.getAllAchievements);
  *                           type: array
  *                         locked:
  *                           type: array
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         total:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
  */
 router.get('/me', authenticateJWT, achievementController.getMyAchievements);
 
