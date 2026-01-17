@@ -36,6 +36,7 @@ import { Calendar } from "@/components/ui/calendar";
 import api from "@/api/axios";
 import { toast } from "sonner";
 import AvatarPicker from "../components/AvatarPicker";
+import { se } from "date-fns/locale";
 
 const Profile = () => {
   const { user, updateUser, isAuthenticated } = useUser();
@@ -50,29 +51,6 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  // Check authentication
-  if (!isAuthenticated) {
-    return (
-      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
-          <User className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold dark:text-white mb-2">
-            Bạn chưa đăng nhập
-          </h2>
-          <p className="text-slate-500 dark:text-slate-400 mb-6">
-            Vui lòng đăng nhập để xem trang cá nhân
-          </p>
-          <a
-            href="/auth"
-            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
-          >
-            Đăng nhập
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   const {
     register,
@@ -136,16 +114,24 @@ const Profile = () => {
   const onSubmit = async (data) => {
     try {
       setSubmitting(true);
-      const payload = {
-        full_name: data.full_name,
-        dob: data.dob,
-        avatar_id: selectedAvatarId,
-      };
-      
+      let payload = {};
+      if (selectedAvatarId === null) {
+        payload = {
+          full_name: data.full_name,
+          dob: data.dob,
+        };
+      } else {
+        payload = {
+          full_name: data.full_name,
+          dob: data.dob,
+          avatar_id: selectedAvatarId,
+        };
+      }
+
       await api.put("/api/auth/profile", payload);
       toast.success("Profile updated successfully!");
       setOpen(false);
-      
+
       // Refresh user data to get updated avatar_url
       await updateUser();
     } catch (error) {
@@ -188,15 +174,17 @@ const Profile = () => {
     return colors[category] || colors.beginner;
   };
 
-  // Show login prompt if not authenticated
-  if (!user) {
+  // Check authentication
+  if (!isAuthenticated) {
     return (
-      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/50 dark:bg-slate-800/50  rounded-2xl p-8 border border-gray-200 dark:border-slate-700 shadow-lg">
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
           <User className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
           <p className="text-slate-500 dark:text-slate-400 mb-6">
-            Vui lòng đăng nhập để xem profile của bạn
+            Vui lòng đăng nhập để xem trang cá nhân
           </p>
           <a
             href="/auth"
@@ -228,7 +216,7 @@ const Profile = () => {
               )}
             </div>
             {/* Camera overlay on hover */}
-            <div 
+            <div
               onClick={() => setOpen(true)}
               className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             >
@@ -251,7 +239,8 @@ const Profile = () => {
             </p>
             {user?.dob && (
               <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
-                📅 {new Date(user.dob).toLocaleDateString("en-US", {
+                📅{" "}
+                {new Date(user.dob).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -272,7 +261,9 @@ const Profile = () => {
             <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <DialogHeader>
-                  <DialogTitle className="text-xl font-bold">Edit Profile</DialogTitle>
+                  <DialogTitle className="text-xl font-bold">
+                    Edit Profile
+                  </DialogTitle>
                   <DialogDescription>
                     Update your avatar and personal information
                   </DialogDescription>
@@ -333,15 +324,19 @@ const Profile = () => {
                                 type="button"
                                 className="flex justify-between items-center w-full py-3 px-4 bg-slate-100 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-left text-slate-900 dark:text-white focus:border-emerald-500 outline-none transition-colors"
                               >
-                                {field.value
-                                  ? new Date(
-                                      field.value + "T00:00:00"
-                                    ).toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "long",
-                                      day: "numeric",
-                                    })
-                                  : <span className="text-slate-400">Pick a date</span>}
+                                {field.value ? (
+                                  new Date(
+                                    field.value + "T00:00:00"
+                                  ).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })
+                                ) : (
+                                  <span className="text-slate-400">
+                                    Pick a date
+                                  </span>
+                                )}
                                 <CalendarIcon className="w-5 h-5 text-slate-400" />
                               </button>
                             </PopoverTrigger>
@@ -382,9 +377,9 @@ const Profile = () => {
 
                 <DialogFooter className="gap-2 sm:gap-0">
                   <DialogClose asChild>
-                    <Button 
+                    <Button
                       type="button"
-                      variant="outline" 
+                      variant="outline"
                       onClick={handleCancel}
                       className="w-full sm:w-auto"
                     >

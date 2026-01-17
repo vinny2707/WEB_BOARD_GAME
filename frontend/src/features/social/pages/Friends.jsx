@@ -440,7 +440,7 @@ const Friends = () => {
           <div className="flex gap-2">
             <button
               onClick={() => navigate("/messages")}
-              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors relative"
+              className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-white/95 dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors relative"
             >
               <MessageSquare className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <span className="hidden sm:inline text-slate-700 dark:text-slate-300 font-medium">
@@ -468,7 +468,7 @@ const Friends = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search friends..."
-            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl dark:text-white placeholder-slate-400 focus:border-blue-500 dark:focus:border-blue-500 outline-none transition-colors"
+            className="w-full pl-12 pr-4 py-3 bg-white/95 dark:bg-slate-800/50 border-2 border-slate-200 dark:border-slate-600 rounded-xl dark:text-white placeholder-slate-400 focus:border-blue-500 dark:focus:border-blue-500 outline-none transition-colors"
           />
         </div>
 
