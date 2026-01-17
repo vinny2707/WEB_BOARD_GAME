@@ -103,7 +103,7 @@ const Admin_Sidebar = () => {
 
           {/* Button Home */}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/games")}
             className={`p-2 rounded-lg transition-all flex-shrink-0 cursor-pointer ${isDarkMode
                 ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
                 : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"

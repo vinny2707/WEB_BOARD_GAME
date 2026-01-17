@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTheme } from "../../../contexts/ThemeProvider";
+import { useDebounce } from "../../../hooks/useDebounce";
 import {
   Trash2,
   Search,
@@ -40,7 +41,6 @@ import {
 import { getInitials } from "@/utils/Username";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { se } from "date-fns/locale";
 
 const UserManagement = () => {
   const { theme } = useTheme();
@@ -51,6 +51,7 @@ const UserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [statusFilter, setStatusFilter] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -73,7 +74,7 @@ const UserManagement = () => {
       const data = response.data?.data;
 
       setUsers(data.users || []);
-      console.log('users data:', data.users);
+      console.log("users data:", data.users);
       setTotalPages(data.pagination?.totalPages || 1);
       setCurrentPage(page);
       setError(null);
@@ -87,15 +88,14 @@ const UserManagement = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchUsers(1, searchTerm, statusFilter);
-  }, [searchTerm, statusFilter]);
+    fetchUsers(1, debouncedSearchTerm, statusFilter);
+  }, [debouncedSearchTerm, statusFilter]);
 
   // Handle search
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     setCurrentPage(1);
-    fetchUsers(1, value, statusFilter);
   };
 
   // Handle status filter
@@ -259,299 +259,323 @@ const UserManagement = () => {
               }`}
             >
               <table className="w-full">
-              <thead>
-                <tr
-                  className={`border-b ${
-                    isDarkMode
-                      ? "border-zinc-800 bg-zinc-900/80"
-                      : "border-gray-200 bg-gray-100/80"
-                  }`}
-                >
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
+                <thead>
+                  <tr
+                    className={`border-b ${
+                      isDarkMode
+                        ? "border-zinc-800 bg-zinc-900/80"
+                        : "border-gray-200 bg-gray-100/80"
                     }`}
                   >
-                    No.
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}
-                  >
-                    Name
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}
-                  >
-                    Email
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}
-                  >
-                    Role
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}
-                  >
-                    Status
-                  </th>
-                  <th
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan="6"
-                      className={`px-6 py-8 text-center ${
-                        isDarkMode ? "text-zinc-400" : "text-gray-500"
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
                       }`}
                     >
-                      No users found
-                    </td>
+                      No.
+                    </th>
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
+                      }`}
+                    >
+                      Name
+                    </th>
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
+                      }`}
+                    >
+                      Email
+                    </th>
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
+                      }`}
+                    >
+                      Role
+                    </th>
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
+                      }`}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className={`px-6 py-4 text-left text-sm font-semibold ${
+                        isDarkMode ? "text-zinc-300" : "text-gray-700"
+                      }`}
+                    >
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  users.map((user, index) => (
-                    <tr
-                      key={user.id}
-                      className={`border-b transition-colors ${
-                        isDarkMode
-                          ? "border-zinc-800 hover:bg-zinc-800/50"
-                          : "border-gray-200 hover:bg-gray-100/50"
-                      }`}
-                    >
+                </thead>
+                <tbody>
+                  {users.length === 0 ? (
+                    <tr>
                       <td
-                        className={`px-6 py-4 text-sm ${
-                          isDarkMode ? "text-zinc-300" : "text-gray-700"
+                        colSpan="6"
+                        className={`px-6 py-8 text-center ${
+                          isDarkMode ? "text-zinc-400" : "text-gray-500"
                         }`}
                       >
-                        {(currentPage - 1) * limit + index + 1}
-                      </td>
-                      <td
-                        className={`px-6 py-4 cursor-pointer hover:underline`}
-                        onClick={() => handleViewDetails(user)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-emerald-600 to-cyan-600 flex items-center justify-center text-white text-sm font-bold shrink-0 group">
-                            {user.avatar_url ? (
-                              <img
-                                src={user.avatar_url}
-                                alt={user.username}
-                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-125"
-                              />
-                            ) : (
-                              getInitials(user.username)
-                            )}
-                          </div>
-                          <span className={`text-sm font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
-                            {user.username}
-                          </span>
-                        </div>
-                      </td>
-                      <td
-                        className={`px-6 py-4 text-sm ${
-                          isDarkMode ? "text-zinc-300" : "text-gray-700"
-                        }`}
-                      >
-                        {user.email}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Select
-                          value={user.role}
-                          onValueChange={(value) =>
-                            handleRoleChange(user.id, value)
-                          }
-                        >
-                          <SelectTrigger
-                            className={`w-fit border-0 cursor-pointer ${getRoleColor(
-                              user.role
-                            )}`}
-                          >
-                            <SelectValue>
-                              <span className="font-semibold text-xs">
-                                {user.role?.charAt(0).toUpperCase() +
-                                  user.role?.slice(1)}
-                              </span>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="user">User</SelectItem>
-                            <SelectItem value="admin">Admin</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Select
-                          value={user.status}
-                          onValueChange={(value) =>
-                            handleStatusChange(user.id, value)
-                          }
-                        >
-                          <SelectTrigger
-                            className={`w-fit border-0 cursor-pointer ${getStatusColor(
-                              user.status
-                            )}`}
-                          >
-                            <SelectValue>
-                              <span className="font-semibold text-xs">
-                                {user.status?.charAt(0).toUpperCase() +
-                                  user.status?.slice(1)}
-                              </span>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
-                            <SelectItem value="banned">Banned</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleDelete(user)}
-                          className={`p-2 rounded-lg transition-all cursor-pointer ${
-                            isDarkMode
-                              ? "hover:bg-red-500/20 text-red-400 hover:text-red-300"
-                              : "hover:bg-red-100 text-red-600 hover:text-red-500"
-                          }`}
-                          title="Delete user"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        No users found
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {users.length === 0 ? (
-              <div className={`text-center py-8 ${
-                isDarkMode ? "text-zinc-400" : "text-gray-500"
-              }`}>
-                No users found
-              </div>
-            ) : (
-              users.map((user, index) => (
-                <div
-                  key={user.id}
-                  className={`rounded-xl border p-4 ${
-                    isDarkMode
-                      ? "border-zinc-800 bg-zinc-900/50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
-                        isDarkMode
-                          ? "bg-gradient-to-br from-emerald-600 to-cyan-600 text-white"
-                          : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
-                      }`}>
-                        {user.username.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div
-                          className={`font-semibold text-base cursor-pointer hover:underline truncate ${
-                            isDarkMode ? "text-white" : "text-gray-900"
+                  ) : (
+                    users.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className={`border-b transition-colors ${
+                          isDarkMode
+                            ? "border-zinc-800 hover:bg-zinc-800/50"
+                            : "border-gray-200 hover:bg-gray-100/50"
+                        }`}
+                      >
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDarkMode ? "text-zinc-300" : "text-gray-700"
                           }`}
+                        >
+                          {(currentPage - 1) * limit + index + 1}
+                        </td>
+                        <td
+                          className={`px-6 py-4 cursor-pointer hover:underline`}
                           onClick={() => handleViewDetails(user)}
                         >
-                          {user.username}
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-emerald-600 to-cyan-600 flex items-center justify-center text-white text-sm font-bold shrink-0 group">
+                              {user.avatar_url ? (
+                                <img
+                                  src={user.avatar_url}
+                                  alt={user.username}
+                                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-125"
+                                />
+                              ) : (
+                                getInitials(user.username)
+                              )}
+                            </div>
+                            <span
+                              className={`text-sm font-medium ${
+                                isDarkMode ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {user.username}
+                            </span>
+                          </div>
+                        </td>
+                        <td
+                          className={`px-6 py-4 text-sm ${
+                            isDarkMode ? "text-zinc-300" : "text-gray-700"
+                          }`}
+                        >
+                          {user.email}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Select
+                            value={user.role}
+                            onValueChange={(value) =>
+                              handleRoleChange(user.id, value)
+                            }
+                          >
+                            <SelectTrigger
+                              className={`w-fit border-0 cursor-pointer ${getRoleColor(
+                                user.role
+                              )}`}
+                            >
+                              <SelectValue>
+                                <span className="font-semibold text-xs">
+                                  {user.role?.charAt(0).toUpperCase() +
+                                    user.role?.slice(1)}
+                                </span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Select
+                            value={user.status}
+                            onValueChange={(value) =>
+                              handleStatusChange(user.id, value)
+                            }
+                          >
+                            <SelectTrigger
+                              className={`w-fit border-0 cursor-pointer ${getStatusColor(
+                                user.status
+                              )}`}
+                            >
+                              <SelectValue>
+                                <span className="font-semibold text-xs">
+                                  {user.status?.charAt(0).toUpperCase() +
+                                    user.status?.slice(1)}
+                                </span>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="banned">Banned</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => handleDelete(user)}
+                            className={`p-2 rounded-lg transition-all cursor-pointer ${
+                              isDarkMode
+                                ? "hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                                : "hover:bg-red-100 text-red-600 hover:text-red-500"
+                            }`}
+                            title="Delete user"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {users.length === 0 ? (
+                <div
+                  className={`text-center py-8 ${
+                    isDarkMode ? "text-zinc-400" : "text-gray-500"
+                  }`}
+                >
+                  No users found
+                </div>
+              ) : (
+                users.map((user, index) => (
+                  <div
+                    key={user.id}
+                    className={`rounded-xl border p-4 ${
+                      isDarkMode
+                        ? "border-zinc-800 bg-zinc-900/50"
+                        : "border-gray-200 bg-white"
+                    }`}
+                  >
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
+                            isDarkMode
+                              ? "bg-gradient-to-br from-emerald-600 to-cyan-600 text-white"
+                              : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                          }`}
+                        >
+                          {user.username.charAt(0).toUpperCase()}
                         </div>
-                        <div className={`text-xs truncate ${
-                          isDarkMode ? "text-zinc-400" : "text-gray-500"
-                        }`}>
-                          #{(currentPage - 1) * limit + index + 1}
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`font-semibold text-base cursor-pointer hover:underline truncate ${
+                              isDarkMode ? "text-white" : "text-gray-900"
+                            }`}
+                            onClick={() => handleViewDetails(user)}
+                          >
+                            {user.username}
+                          </div>
+                          <div
+                            className={`text-xs truncate ${
+                              isDarkMode ? "text-zinc-400" : "text-gray-500"
+                            }`}
+                          >
+                            #{(currentPage - 1) * limit + index + 1}
+                          </div>
                         </div>
                       </div>
+                      <button
+                        onClick={() => handleDelete(user)}
+                        className={`p-2 rounded-lg transition-all cursor-pointer flex-shrink-0 ${
+                          isDarkMode
+                            ? "hover:bg-red-500/20 text-red-400"
+                            : "hover:bg-red-100 text-red-600"
+                        }`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleDelete(user)}
-                      className={`p-2 rounded-lg transition-all cursor-pointer flex-shrink-0 ${
-                        isDarkMode
-                          ? "hover:bg-red-500/20 text-red-400"
-                          : "hover:bg-red-100 text-red-600"
+
+                    {/* Card Content */}
+                    <div className="space-y-2 mb-3">
+                      <div
+                        className={`text-sm truncate ${
+                          isDarkMode ? "text-zinc-300" : "text-gray-700"
+                        }`}
+                      >
+                        <Mail className="w-3.5 h-3.5 inline mr-2" />
+                        {user.email}
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div
+                      className={`flex items-center gap-2 pt-3 border-t ${
+                        isDarkMode ? "border-zinc-800" : "border-gray-200"
                       }`}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="space-y-2 mb-3">
-                    <div className={`text-sm truncate ${
-                      isDarkMode ? "text-zinc-300" : "text-gray-700"
-                    }`}>
-                      <Mail className="w-3.5 h-3.5 inline mr-2" />
-                      {user.email}
+                      <Select
+                        value={user.role}
+                        onValueChange={(value) =>
+                          handleRoleChange(user.id, value)
+                        }
+                      >
+                        <SelectTrigger
+                          className={`flex-1 border-0 h-8 text-xs ${getRoleColor(
+                            user.role
+                          )}`}
+                        >
+                          <SelectValue>
+                            <span className="font-semibold">
+                              {user.role?.charAt(0).toUpperCase() +
+                                user.role?.slice(1)}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={user.status}
+                        onValueChange={(value) =>
+                          handleStatusChange(user.id, value)
+                        }
+                      >
+                        <SelectTrigger
+                          className={`flex-1 border-0 h-8 text-xs ${getStatusColor(
+                            user.status
+                          )}`}
+                        >
+                          <SelectValue>
+                            <span className="font-semibold">
+                              {user.status?.charAt(0).toUpperCase() +
+                                user.status?.slice(1)}
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                          <SelectItem value="banned">Banned</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-
-                  {/* Card Footer */}
-                  <div className={`flex items-center gap-2 pt-3 border-t ${
-                    isDarkMode ? "border-zinc-800" : "border-gray-200"
-                  }`}>
-                    <Select
-                      value={user.role}
-                      onValueChange={(value) => handleRoleChange(user.id, value)}
-                    >
-                      <SelectTrigger className={`flex-1 border-0 h-8 text-xs ${
-                        getRoleColor(user.role)
-                      }`}>
-                        <SelectValue>
-                          <span className="font-semibold">
-                            {user.role?.charAt(0).toUpperCase() + user.role?.slice(1)}
-                          </span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={user.status}
-                      onValueChange={(value) => handleStatusChange(user.id, value)}
-                    >
-                      <SelectTrigger className={`flex-1 border-0 h-8 text-xs ${
-                        getStatusColor(user.status)
-                      }`}>
-                        <SelectValue>
-                          <span className="font-semibold">
-                            {user.status?.charAt(0).toUpperCase() + user.status?.slice(1)}
-                          </span>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="banned">Banned</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
 

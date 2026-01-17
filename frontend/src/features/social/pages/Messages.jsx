@@ -419,7 +419,7 @@ export default function Messages() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-900/30">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-900/30 flex flex-col justify-end">
               {messages.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-center py-12">
                   <div className="">
@@ -430,58 +430,60 @@ export default function Messages() {
                   </div>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.is_from_me ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div className="max-w-[70%]">
-                      <div className="flex items-center gap-2">
-                        {message.is_from_me && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button className="flex-shrink-0 opacity-70 hover:opacity-100">
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="dark:bg-zinc-800 dark:border-zinc-700">
-                              <DropdownMenuItem
-                                onClick={() => setDeleteMessageId(message.id)}
-                                className="text-red-600 dark:text-red-400 cursor-pointer"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
+                <div className="overflow-y-auto space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.is_from_me ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div className="max-w-[70%]">
+                        <div className="flex items-center gap-2">
+                          {message.is_from_me && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="flex-shrink-0 opacity-70 hover:opacity-100">
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="dark:bg-zinc-800 dark:border-zinc-700">
+                                <DropdownMenuItem
+                                  onClick={() => setDeleteMessageId(message.id)}
+                                  className="text-red-600 dark:text-red-400 cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
 
+                          <p
+                            className={`break-words flex-1 rounded-2xl px-4 py-2 ${
+                              message.is_from_me
+                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                                : "bg-white dark:!bg-zinc-800 text-gray-900 dark:text-white"
+                            }`}
+                          >
+                            {message.content}
+                          </p>
+                        </div>
                         <p
-                          className={`break-words flex-1 rounded-2xl px-4 py-2 ${
+                          className={`text-xs mt-1 ${
                             message.is_from_me
-                              ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-                              : "bg-white dark:!bg-zinc-800 text-gray-900 dark:text-white"
+                              ? "text-white/70 text-end"
+                              : "text-gray-500 dark:text-gray-400 text-start"
                           }`}
                         >
-                          {message.content}
+                          {formatTime(message.sent_at)}
                         </p>
                       </div>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.is_from_me
-                            ? "text-white/70 text-end"
-                            : "text-gray-500 dark:text-gray-400 text-start"
-                        }`}
-                      >
-                        {formatTime(message.sent_at)}
-                      </p>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
@@ -489,7 +491,7 @@ export default function Messages() {
               onSubmit={handleSendMessage}
               className="p-4 border-t dark:border-zinc-800 bg-white dark:!bg-zinc-900"
             >
-              <div className="flex gap-2">
+              <div className="flex gap-2 item-stretch">
                 <Textarea
                   rows={1}
                   placeholder="Type your message..."

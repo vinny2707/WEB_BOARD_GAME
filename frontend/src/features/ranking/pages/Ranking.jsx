@@ -54,7 +54,7 @@ export default function Ranking() {
             Bạn chưa đăng nhập
           </h2>
           <p className="text-zinc-500 dark:text-zinc-400 mb-6">
-            Vui lòng đăng nhập để xem danh sách bạn bè
+            Vui lòng đăng nhập để xem danh sách xếp hạng
           </p>
           <a
             href="/auth"
