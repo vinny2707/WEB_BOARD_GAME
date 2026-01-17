@@ -9,13 +9,20 @@ const { success, error } = require('../utils/response');
  * Public: Search users for friend functionality
  * GET /api/users
  * Returns only public fields, only active users
+ * If authenticated: excludes blocked users and users who blocked you
  */
 const searchUsers = async (req, res, next) => {
     try {
         const { search, page = 1, limit = 10 } = req.query;
+        const currentUserId = req.user?.id; // From optional auth middleware
 
         // Only get active users
         let users = await User.findAll({ status: 'active' });
+
+        // Exclude current user from results if authenticated
+        if (currentUserId) {
+            users = users.filter(u => u.id !== currentUserId);
+        }
 
         // Search by username, email, or full_name
         if (search) {
@@ -25,6 +32,37 @@ const searchUsers = async (req, res, next) => {
                 u.email.toLowerCase().includes(searchLower) ||
                 (u.full_name && u.full_name.toLowerCase().includes(searchLower))
             );
+        }
+
+        // If authenticated, filter out blocked users
+        if (currentUserId) {
+            const Friend = require('../models/Friend');
+            const db = require('../config/database');
+
+            // Get all block relationships (both directions)
+            const blockRelationships = await db('friends')
+                .where('status', 'blocked')
+                .andWhere(function () {
+                    this.where('user_id', currentUserId)
+                        .orWhere('friend_id', currentUserId);
+                })
+                .select('user_id', 'friend_id');
+
+            // Extract blocked user IDs
+            const blockedUserIds = new Set();
+            blockRelationships.forEach(rel => {
+                // If I blocked someone (user_id = me)
+                if (rel.user_id === currentUserId) {
+                    blockedUserIds.add(rel.friend_id);
+                }
+                // If someone blocked me (friend_id = me)
+                if (rel.friend_id === currentUserId) {
+                    blockedUserIds.add(rel.user_id);
+                }
+            });
+
+            // Filter out blocked users
+            users = users.filter(u => !blockedUserIds.has(u.id));
         }
 
         // Return only public fields (including avatar_url)

@@ -70,6 +70,59 @@ const authenticateJWT = async (req, res, next) => {
 };
 
 /**
+ * Optional JWT Authentication Middleware
+ * Verifies JWT token if present, but allows requests without token
+ * Used for endpoints that work both authenticated and unauthenticated
+ */
+const authenticateOptional = async (req, res, next) => {
+    try {
+        // Get token from Authorization header
+        const authHeader = req.headers.authorization;
+
+        // If no token, continue without user info
+        if (!authHeader) {
+            req.user = null;
+            return next();
+        }
+
+        // Extract token (format: "Bearer <token>")
+        const token = authHeader.split(' ')[1];
+
+        if (!token) {
+            req.user = null;
+            return next();
+        }
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Check user status from database
+        const user = await User.findById(decoded.userId);
+
+        if (!user || user.status !== 'active') {
+            // Invalid/inactive user - continue without user info
+            req.user = null;
+            return next();
+        }
+
+        // Attach user info to request
+        req.user = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            status: user.status
+        };
+
+        next();
+    } catch (err) {
+        // On any error, continue without user info
+        req.user = null;
+        next();
+    }
+};
+
+/**
  * Role Authorization Middleware
  * Must be used after authenticateJWT
  * @param  {...string} roles - Allowed roles
@@ -88,4 +141,4 @@ const authorize = (...roles) => {
     };
 };
 
-module.exports = { authenticateJWT, authorize };
+module.exports = { authenticateJWT, authenticateOptional, authorize };

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const { authenticateJWT, authorize } = require('../middleware/auth');
+const { authenticateJWT, authenticateOptional, authorize } = require('../middleware/auth');
 
 /**
  * @swagger
@@ -14,11 +14,12 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  * @swagger
  * /api/users:
  *   get:
- *     summary: Search users (Public)
- *     description: Search active users for friend functionality. Returns only public fields.
+ *     summary: Search users (Public with optional auth)
+ *     description: Search active users for friend functionality. Returns only public fields. If authenticated, excludes blocked users.
  *     tags: [Users]
  *     security:
  *       - apiKeyAuth: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: search
@@ -39,9 +40,9 @@ const { authenticateJWT, authorize } = require('../middleware/auth');
  *         description: Items per page
  *     responses:
  *       200:
- *         description: Users list (public fields only - id, username, full_name, email)
+ *         description: Users list (public fields only - id, username, full_name, email, avatar_url). Excludes blocked users if authenticated.
  */
-router.get('/', userController.searchUsers);
+router.get('/', authenticateOptional, userController.searchUsers);
 
 /**
  * @swagger
