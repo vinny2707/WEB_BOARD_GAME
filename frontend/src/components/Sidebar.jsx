@@ -379,9 +379,9 @@ const Sidebar = () => {
             >
               <div className="flex items-center gap-3">
                 {/* Avatar with Admin Badge */}
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 group">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center shadow-xl transition-all"
+                    className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-xl transition-all"
                     style={{
                       background: isAdmin
                         ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
@@ -391,9 +391,17 @@ const Sidebar = () => {
                         : "rgba(16, 185, 129, 0.3)",
                     }}
                   >
-                    <span className="text-white text-base font-bold">
-                      {getInitials(user.username)}
-                    </span>
+                    {user.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt={user.username}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+                      />
+                    ) : (
+                      <span className="text-white text-base font-bold">
+                        {getInitials(user.username)}
+                      </span>
+                    )}
                   </div>
                   {/* Admin Crown Badge */}
                   {isAdmin && (

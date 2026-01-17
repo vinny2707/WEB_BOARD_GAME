@@ -27,12 +27,13 @@ const searchUsers = async (req, res, next) => {
             );
         }
 
-        // Return only public fields
+        // Return only public fields (including avatar_url)
         users = users.map(user => ({
             id: user.id,
             username: user.username,
             full_name: user.full_name,
-            email: user.email
+            email: user.email,
+            avatar_url: user.avatar_url || null
         }));
 
         // Pagination

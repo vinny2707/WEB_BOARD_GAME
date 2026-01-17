@@ -33,7 +33,7 @@ const GameConfig = () => {
   const [totalGames, setTotalGames] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [enabledFilter, setEnabledFilter] = useState("");
-  const [limit, setLimit] = useState(9); // Dynamic limit with selector
+  const [limit, setLimit] = useState(6); // Default limit 6
 
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -379,24 +379,22 @@ const GameConfig = () => {
                 />
               ))}
             </div>
+
+            {/* Pagination - Inside scrollable content */}
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalGames}
+                limit={limit}
+                onPageChange={handlePageChange}
+                onLimitChange={handleLimitChange}
+                limitOptions={[6, 12, 18, 24]}
+              />
+            </div>
           </>
         )}
       </div>
-
-      {/* Pagination - Always visible */}
-      {!loading && !error && (
-        <div className="flex-none px-4 sm:px-6 md:px-8 py-3 sm:py-4 border-t border-gray-200 dark:border-zinc-800">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalGames}
-            limit={limit}
-            onPageChange={handlePageChange}
-            onLimitChange={handleLimitChange}
-            limitOptions={[6, 9, 12, 18, 24]}
-          />
-        </div>
-      )}
 
       {/* Create Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
