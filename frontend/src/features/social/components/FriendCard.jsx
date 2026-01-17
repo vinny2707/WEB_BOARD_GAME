@@ -1,5 +1,6 @@
 import React from "react";
 import { MoreVertical, MessageCircle, UserX, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getInitials } from "@/utils/Username";
 import {
   DropdownMenu,
@@ -20,6 +21,12 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const FriendCard = ({ friend, onUnfriend, onBlock }) => {
+  const navigate = useNavigate();
+
+  const handleMessageClick = () => {
+    navigate("/messages", { state: { selectedUserId: friend.id } });
+  };
+
   return (
     <div className="bg-white dark:!bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 rounded-xl p-4 hover:border-blue-500 dark:hover:border-blue-500 transition-all">
       <div className="flex items-center gap-4">
@@ -62,7 +69,10 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {/* Message Button */}
-          <button className="p-2 cursor-pointer rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors">
+          <button
+            onClick={handleMessageClick}
+            className="p-2 cursor-pointer rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+          >
             <MessageCircle className="w-5 h-5" />
           </button>
 

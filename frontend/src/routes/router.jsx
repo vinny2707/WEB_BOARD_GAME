@@ -11,6 +11,7 @@ import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
 import Games from "../features/games/pages/Games.jsx";
 import Ranking from "../features/ranking/pages/Ranking.jsx";
 import Friends from "../features/social/pages/Friends.jsx";
+import Messages from "../features/social/pages/Messages.jsx";
 import Social from "../features/social/pages/Social.jsx";
 import Profile from "../features/profile/pages/Profile.jsx";
 import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
@@ -74,6 +75,10 @@ const router = createBrowserRouter([
           {
             element: <Friends />,
             path: "social",
+          },
+          {
+            element: <Messages />,
+            path: "messages",
           },
           {
             element: <Profile />,
