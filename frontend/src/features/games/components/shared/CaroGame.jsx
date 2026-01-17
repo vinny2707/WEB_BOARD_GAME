@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft } from 'lucide-react';
+import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft, Save } from 'lucide-react';
 import CaroBoard from './CaroBoard';
 import { createCaroAI } from './CaroAI';
+import useGameSession from '../../hooks/useGameSession';
 
 
 // Player Card Component
@@ -52,6 +53,7 @@ const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
 /**
  * Shared Game component for Caro games with tutorial support
  * @param {Object} props
+ * @param {number} props.gameId - Game ID for session tracking
  * @param {string} props.gameName - Display name (e.g., "CARO 5 HÀNG")
  * @param {string} props.lobbyPath - Path to lobby (e.g., "/games/gomoku")
  * @param {number} props.winCount - Number of pieces in a row to win (4 or 5)
@@ -59,12 +61,16 @@ const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
  * @param {string} props.theme - 'emerald' or 'amber'
  * @param {Array} props.tutorialSteps - Optional tutorial steps array
  */
-const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, theme = 'emerald', tutorialSteps = null }) => {
+const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, theme = 'emerald', tutorialSteps = null }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get settings from lobby navigation state
+    // Session tracking for rankings
+    const { completeGame, incrementMoves, isAuthenticated, startSession, saveProgress, updateGameState, setResumeSessionId } = useGameSession(gameId);
+
+    // Get settings and possible resume session from lobby navigation state
     const lobbySettings = location.state?.settings || {};
+    const resumeSession = location.state?.resumeSession || null;
     const boardSize = lobbySettings.boardSize || defaultBoardSize;
     const timePerTurn = lobbySettings.timePerTurn ?? 40; // seconds (0 = unlimited)
     const timePerPlayer = lobbySettings.timePerPlayer ?? 240; // seconds (0 = unlimited)
@@ -99,13 +105,19 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
     // Audio
     const gameStartSoundRef = useRef(null);
     const victorySoundRef = useRef(null);
+    const defeatSoundRef = useRef(null);
+    const tickSoundRef = useRef(null);
 
     // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
         victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        defeatSoundRef.current = new Audio('/sounds/Defeat.mp3');
+        tickSoundRef.current = new Audio('/sounds/tick.mp3');
         gameStartSoundRef.current.load();
         victorySoundRef.current.load();
+        defeatSoundRef.current.load();
+        tickSoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
@@ -196,6 +208,25 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
             setBoard(currentStep.boardState);
         }
     }, [tutorialStep, gameStatus, tutorialSteps]);
+
+    // Play defeat sound when player loses (for timeout cases)
+    useEffect(() => {
+        if (gameStatus === 'win' && winner === 'O' && (winReason === 'timeout' || winReason === 'turnTimeout' || winReason === 'lessTime')) {
+            playSound(defeatSoundRef);
+        }
+    }, [gameStatus, winner, winReason]);
+
+    // Submit game results to rankings API when game ends
+    useEffect(() => {
+        if ((gameStatus === 'win' || gameStatus === 'draw') && isAuthenticated) {
+            const result = gameStatus === 'draw' ? 'draw' : (winner === 'X' ? 'win' : 'loss');
+            completeGame({
+                result,
+                score: result === 'win' ? 100 : (result === 'draw' ? 50 : 0),
+                gameState: { board, winner, winReason },
+            });
+        }
+    }, [gameStatus, winner, isAuthenticated]);
 
     // Timer for current player - countdown
     useEffect(() => {
@@ -288,6 +319,14 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         setBoard(newBoard);
         setMoveHistory(prev => [...prev, { index, player }]);
 
+        // Track player moves for session
+        if (player === 'X') {
+            incrementMoves();
+        }
+
+        // Play tick sound for each move
+        playSound(tickSoundRef);
+
         const result = checkWinner(newBoard);
         if (result) {
             setWinner(result.winner);
@@ -298,7 +337,11 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 ...prev,
                 [result.winner === 'X' ? 'player' : 'ai']: prev[result.winner === 'X' ? 'player' : 'ai'] + 1
             }));
-            if (result.winner === 'X') playSound(victorySoundRef);
+            if (result.winner === 'X') {
+                playSound(victorySoundRef);
+            } else {
+                playSound(defeatSoundRef);
+            }
         } else if (isDraw(newBoard)) {
             // Check if time-based win should apply
             if (timePerPlayer > 0 && playerTime !== aiTime) {
@@ -329,6 +372,9 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                 const newBoard = [...board];
                 newBoard[index] = 'X';
                 setBoard(newBoard);
+
+                // Play tick sound in tutorial
+                playSound(tickSoundRef);
 
                 // Check if this completes win in tutorial
                 const result = checkWinner(newBoard);
@@ -387,7 +433,7 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         setHintCell(null);
     };
 
-    const startGame = () => {
+    const startGame = async () => {
         playSound(gameStartSoundRef);
         setBoard(Array(boardSize * boardSize).fill(null));
         // Determine who starts based on firstPlayer setting
@@ -408,7 +454,80 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
         setTurnTime(timePerTurn);
         setHintCell(null);
         setIsAIThinking(false);
+
+        // Start a new session for tracking
+        if (isAuthenticated) {
+            await startSession({ boardSize, timePerTurn, timePerPlayer, difficulty, winCount });
+        }
     };
+
+    // Handle manual save game
+    const handleSaveGame = async () => {
+        if (gameStatus !== 'playing') return;
+        const gameState = {
+            board,
+            isXNext,
+            playerTime,
+            aiTime,
+            moveHistory,
+            boardSize,
+        };
+        await saveProgress(gameState);
+        // Show toast notification
+        import('sonner').then(({ toast }) => {
+            toast.success('Đã lưu game!', { duration: 2000 });
+        });
+    };
+
+    // Resume game from session if provided
+    useEffect(() => {
+        if (resumeSession?.id && gameStatus === 'idle') {
+            // Set session ID for completing later
+            setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+            // If we have saved game_state, restore it
+            if (resumeSession.game_state?.board) {
+                const { board: savedBoard, isXNext: savedIsXNext, playerTime: savedPlayerTime, aiTime: savedAiTime, moveHistory: savedMoveHistory } = resumeSession.game_state;
+                setBoard(savedBoard);
+                setIsXNext(savedIsXNext ?? true);
+                setPlayerTime(savedPlayerTime ?? timePerPlayer);
+                setAiTime(savedAiTime ?? timePerPlayer);
+                setMoveHistory(savedMoveHistory ?? []);
+                setGameStatus('playing');
+                playSound(gameStartSoundRef);
+            } else {
+                // No game_state saved yet - start fresh game with same session
+                setBoard(Array(boardSize * boardSize).fill(null));
+                if (firstPlayer === 'ai') {
+                    setIsXNext(false);
+                } else if (firstPlayer === 'random') {
+                    setIsXNext(Math.random() > 0.5);
+                } else {
+                    setIsXNext(true);
+                }
+                setGameStatus('playing');
+                setPlayerTime(timePerPlayer);
+                setAiTime(timePerPlayer);
+                setTurnTime(timePerTurn);
+                setMoveHistory([]);
+                playSound(gameStartSoundRef);
+            }
+        }
+    }, [resumeSession, setResumeSessionId, boardSize, firstPlayer, timePerPlayer, timePerTurn]);
+
+    // Update game state ref whenever state changes (for beforeunload save)
+    useEffect(() => {
+        if (gameStatus === 'playing') {
+            updateGameState({
+                board,
+                isXNext,
+                playerTime,
+                aiTime,
+                moveHistory,
+                boardSize,
+            });
+        }
+    }, [board, isXNext, playerTime, aiTime, moveHistory, gameStatus, updateGameState]);
 
     const startTutorial = () => {
         setBoard(Array(boardSize * boardSize).fill(null));
@@ -688,6 +807,14 @@ const CaroGame = ({ gameName, lobbyPath, winCount = 5, defaultBoardSize = 15, th
                         >
                             <RotateCcw size={18} />
                             <span>Quay lại</span>
+                        </button>
+
+                        <button
+                            className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-blue-500 transition-all hover:bg-blue-500/15 hover:text-blue-600"
+                            onClick={handleSaveGame}
+                        >
+                            <Save size={18} />
+                            <span>Lưu game</span>
                         </button>
 
                         <button

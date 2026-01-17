@@ -38,6 +38,7 @@ const GomokuLobby = () => {
             currentUser={{ rank: 892, name: 'You', score: 2150 }}
             theme="emerald"
             icon={<GomokuIcon />}
+            gameId={1}
         />
     );
 };

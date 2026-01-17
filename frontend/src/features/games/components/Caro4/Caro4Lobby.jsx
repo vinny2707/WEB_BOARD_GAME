@@ -41,6 +41,7 @@ const Caro4Lobby = () => {
             icon={<Caro4Icon />}
             defaultBoardSize={10}
             showBoardSizeSelector={true}
+            gameId={2}
         />
     );
 };
