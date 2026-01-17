@@ -23,6 +23,7 @@ class Review {
         // Build query
         let query = db('reviews')
             .join('users', 'reviews.user_id', 'users.id')
+            .leftJoin('images', 'users.avatar_id', 'images.id')
             .select(
                 'reviews.id',
                 'reviews.rating',
@@ -31,7 +32,8 @@ class Review {
                 'reviews.updated_at',
                 'users.id as user_id',
                 'users.username',
-                'users.full_name'
+                'users.full_name',
+                'images.url as avatar_url'
             )
             .where('reviews.game_id', gameId);
 

@@ -81,10 +81,12 @@ class Message {
                 COALESCE(uc.unread_count, 0) as unread_count,
                 u.username,
                 u.full_name,
-                u.email
+                u.email,
+                i.url as avatar_url
             FROM latest_messages lm
             LEFT JOIN unread_counts uc ON lm.other_user_id = uc.other_user_id
             JOIN users u ON lm.other_user_id = u.id
+            LEFT JOIN images i ON u.avatar_id = i.id
             WHERE lm.rn = 1
             ORDER BY lm.sent_at DESC
             LIMIT ? OFFSET ?
@@ -109,7 +111,8 @@ class Message {
                 id: row.other_user_id,
                 username: row.username,
                 full_name: row.full_name,
-                email: row.email
+                email: row.email,
+                avatar_url: row.avatar_url || null
             },
             last_message: {
                 content: row.last_message_content,
@@ -156,6 +159,8 @@ class Message {
         const messages = await db('messages as m')
             .leftJoin('users as sender', 'm.sender_id', 'sender.id')
             .leftJoin('users as receiver', 'm.receiver_id', 'receiver.id')
+            .leftJoin('images as sender_avatar', 'sender.avatar_id', 'sender_avatar.id')
+            .leftJoin('images as receiver_avatar', 'receiver.avatar_id', 'receiver_avatar.id')
             .where(function () {
                 this.where({ 'm.sender_id': userId, 'm.receiver_id': otherUserId })
                     .orWhere({ 'm.sender_id': otherUserId, 'm.receiver_id': userId });
@@ -170,8 +175,10 @@ class Message {
                 'm.read_at',
                 'sender.username as sender_username',
                 'sender.full_name as sender_full_name',
+                'sender_avatar.url as sender_avatar_url',
                 'receiver.username as receiver_username',
-                'receiver.full_name as receiver_full_name'
+                'receiver.full_name as receiver_full_name',
+                'receiver_avatar.url as receiver_avatar_url'
             )
             .orderBy('m.sent_at', 'desc')
             .limit(limit)
@@ -182,12 +189,14 @@ class Message {
             sender: {
                 id: m.sender_id,
                 username: m.sender_username || '[Deleted]',
-                full_name: m.sender_full_name || 'Deleted User'
+                full_name: m.sender_full_name || 'Deleted User',
+                avatar_url: m.sender_avatar_url || null
             },
             receiver: {
                 id: m.receiver_id,
                 username: m.receiver_username || '[Deleted]',
-                full_name: m.receiver_full_name || 'Deleted User'
+                full_name: m.receiver_full_name || 'Deleted User',
+                avatar_url: m.receiver_avatar_url || null
             },
             content: m.content,
             is_read: m.is_read,

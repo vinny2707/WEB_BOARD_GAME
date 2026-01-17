@@ -20,7 +20,7 @@ const searchUsers = async (req, res, next) => {
         // Search by username, email, or full_name
         if (search) {
             const searchLower = search.toLowerCase();
-            users = users.filter(u => 
+            users = users.filter(u =>
                 u.username.toLowerCase().includes(searchLower) ||
                 u.email.toLowerCase().includes(searchLower) ||
                 (u.full_name && u.full_name.toLowerCase().includes(searchLower))
@@ -73,7 +73,7 @@ const getAllUsersAdmin = async (req, res, next) => {
         // Search by username or email
         if (search) {
             const searchLower = search.toLowerCase();
-            users = users.filter(u => 
+            users = users.filter(u =>
                 u.username.toLowerCase().includes(searchLower) ||
                 u.email.toLowerCase().includes(searchLower) ||
                 (u.full_name && u.full_name.toLowerCase().includes(searchLower))

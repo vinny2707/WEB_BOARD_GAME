@@ -32,7 +32,7 @@ const authenticateJWT = async (req, res, next) => {
         // SECURITY: Check user status from database (realtime check)
         // This prevents banned/inactive users from using old valid tokens
         const user = await User.findById(decoded.userId);
-        
+
         if (!user) {
             return error(res, 'User not found', 401);
         }
