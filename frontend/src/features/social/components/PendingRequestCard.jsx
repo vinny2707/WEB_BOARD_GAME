@@ -45,14 +45,14 @@ const PendingRequestCard = ({ requester, createdAt, onAccept, onReject }) => {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold dark:text-white truncate">
-            {requester.username}
+          <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            {requester.full_name || requester.username}
           </h3>
-          {requester.full_name && (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 truncate">
-              {requester.full_name}
-            </p>
-          )}
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            @{requester.username}
+          </p>
+        
           <div className="flex items-center gap-1 mt-1">
             <Clock className="w-3 h-3 text-amber-500" />
             <span className="text-xs text-zinc-500 dark:text-zinc-400">
