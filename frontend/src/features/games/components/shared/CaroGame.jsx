@@ -3,52 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft, Save } from 'lucide-react';
 import CaroBoard from './CaroBoard';
 import { createCaroAI } from './CaroAI';
+import { PlayerCard, ScoreDisplay } from './CaroPlayerCard';
+import { CaroTutorialPanel } from './CaroTutorialPanel';
+import { CaroIdleScreen, CaroGameOverOverlay } from './CaroGameOverlay';
 import useGameSession from '../../hooks/useGameSession';
-
-
-// Player Card Component
-const PlayerCard = ({ name, symbol, avatar, isActive, timer, isLeft, theme }) => {
-    const borderColor = theme === 'amber' ? 'border-amber-500' : 'border-emerald-500';
-    const shadowColor = theme === 'amber'
-        ? 'shadow-[0_0_0_3px_rgba(245,158,11,0.2)]'
-        : 'shadow-[0_0_0_3px_rgba(16,185,129,0.2)]';
-    const symbolBg = symbol === 'X'
-        ? (theme === 'amber' ? 'bg-amber-500/15' : 'bg-emerald-500/15')
-        : 'bg-slate-500/15';
-    const symbolColor = symbol === 'X'
-        ? (theme === 'amber' ? 'bg-amber-500' : 'bg-emerald-500')
-        : 'bg-slate-500';
-
-    return (
-        <div className={`flex items-center gap-3 px-4 py-3 bg-secondary rounded-xl border-2 transition-all min-w-[140px]
-            ${isActive ? `${borderColor} ${shadowColor}` : 'border-transparent'}
-            ${isLeft ? '' : 'flex-row-reverse text-right'}`}
-        >
-            <div className="w-10 h-10 flex items-center justify-center bg-card rounded-full text-xl shadow-sm">
-                {avatar}
-            </div>
-            <div className="flex-1">
-                <div className="text-sm font-semibold text-foreground">{name}</div>
-                <div className="font-mono text-xs text-muted-foreground">{timer}</div>
-            </div>
-            <div className={`w-7 h-7 flex items-center justify-center rounded-md ${symbolBg}`}>
-                <div className={`w-5 h-5 rounded-full ${symbolColor}`} />
-            </div>
-        </div>
-    );
-};
-
-// Score Display
-const ScoreDisplay = ({ playerScore, aiScore, theme }) => {
-    const playerColor = theme === 'amber' ? 'text-amber-500' : 'text-emerald-500';
-    return (
-        <div className="flex items-center gap-2 px-4 py-2 bg-foreground rounded-full">
-            <span className={`font-mono text-xl font-bold ${playerColor}`}>{playerScore}</span>
-            <span className="font-bold text-background">-</span>
-            <span className="font-mono text-xl font-bold text-orange-500">{aiScore}</span>
-        </div>
-    );
-};
 
 /**
  * Shared Game component for Caro games with tutorial support
@@ -71,7 +29,14 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     // Get settings and possible resume session from lobby navigation state
     const lobbySettings = location.state?.settings || {};
     const resumeSession = location.state?.resumeSession || null;
-    const boardSize = lobbySettings.boardSize || defaultBoardSize;
+
+    // Tutorial state needs to be defined early for boardSize calculation
+    const [gameStatus, setGameStatus] = useState(tutorialSteps ? 'idle' : 'playing');
+    const [tutorialStep, setTutorialStep] = useState(0);
+
+    // If tutorialSteps exists, always use defaultBoardSize (15) since tutorial positions are hardcoded
+    // This ensures board matches tutorial step positions
+    const boardSize = tutorialSteps ? defaultBoardSize : (lobbySettings.boardSize || defaultBoardSize);
     const timePerTurn = lobbySettings.timePerTurn ?? 40; // seconds (0 = unlimited)
     const timePerPlayer = lobbySettings.timePerPlayer ?? 240; // seconds (0 = unlimited)
     const firstPlayer = lobbySettings.firstPlayer || 'random';
@@ -84,7 +49,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     const [board, setBoard] = useState(Array(boardSize * boardSize).fill(null));
     const [isXNext, setIsXNext] = useState(true);
     const [score, setScore] = useState({ player: 0, ai: 0 });
-    const [gameStatus, setGameStatus] = useState(tutorialSteps ? 'idle' : 'playing');
+    // gameStatus already declared above for boardSize calculation
     const [winner, setWinner] = useState(null);
     const [winReason, setWinReason] = useState(null); // 'normal', 'timeout', 'turnTimeout', 'lessTime'
     const [winningLine, setWinningLine] = useState(null);
@@ -95,8 +60,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     const [hintCell, setHintCell] = useState(null);
     const [isAIThinking, setIsAIThinking] = useState(false);
 
-    // Tutorial state
-    const [tutorialStep, setTutorialStep] = useState(0);
+    // Tutorial state (tutorialStep already declared above for boardSize calculation)
     const [isTyping, setIsTyping] = useState(false);
     const [displayedText, setDisplayedText] = useState('');
     const [displayedTitle, setDisplayedTitle] = useState('');
@@ -107,23 +71,32 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     const victorySoundRef = useRef(null);
     const defeatSoundRef = useRef(null);
     const tickSoundRef = useRef(null);
+    const keyboardSoundRef = useRef(null);
 
-    // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
         victorySoundRef.current = new Audio('/sounds/Victory.mp3');
         defeatSoundRef.current = new Audio('/sounds/Defeat.mp3');
         tickSoundRef.current = new Audio('/sounds/tick.mp3');
+        keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
         gameStartSoundRef.current.load();
         victorySoundRef.current.load();
         defeatSoundRef.current.load();
         tickSoundRef.current.load();
+        keyboardSoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
         if (soundRef.current) {
             soundRef.current.currentTime = 0;
             soundRef.current.play().catch(() => { });
+        }
+    }, []);
+
+    const stopSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.pause();
+            soundRef.current.currentTime = 0;
         }
     }, []);
 
@@ -167,6 +140,9 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         setDisplayedTitle('');
         setDisplayedText('');
 
+        // Play keyboard typing sound
+        playSound(keyboardSoundRef);
+
         const fullTitle = currentStep.title;
         const fullMessage = currentStep.message;
         let titleIndex = 0;
@@ -188,6 +164,8 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
                 } else {
                     clearInterval(typingRef.current);
                     setIsTyping(false);
+                    // Stop keyboard sound when typing is done
+                    stopSound(keyboardSoundRef);
                 }
             }
         }, 30);
@@ -196,6 +174,8 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
             if (typingRef.current) {
                 clearInterval(typingRef.current);
             }
+            // Stop keyboard sound on cleanup
+            stopSound(keyboardSoundRef);
         };
     }, [tutorialStep, gameStatus, tutorialSteps]);
 
@@ -378,12 +358,12 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
 
                 // Check if this completes win in tutorial
                 const result = checkWinner(newBoard);
-                if (result && result.winner === 'X') {
-                    setTutorialStep(prev => prev + 1);
-                    return;
-                }
 
-                setTutorialStep(prev => prev + 1);
+                // Delay before advancing to next step so user can see their move
+                // before AI's response (which is baked into next step's boardState)
+                setTimeout(() => {
+                    setTutorialStep(prev => prev + 1);
+                }, 600);
             }
             return;
         }
@@ -419,7 +399,12 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         }
     };
 
-    const handlePlayAgain = () => {
+    const handlePlayAgain = async () => {
+        // Start a new session for the new game
+        if (isAuthenticated) {
+            await startSession({ boardSize, timePerTurn, timePerPlayer, difficulty, winCount });
+        }
+
         setBoard(Array(boardSize * boardSize).fill(null));
         setIsXNext(true);
         setGameStatus('playing');
@@ -551,6 +536,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         if (!tutorialSteps) return;
         const currentStep = tutorialSteps[tutorialStep];
         if (currentStep?.action === 'finish') {
+            stopSound(keyboardSoundRef);
             startGame();
         } else {
             setTutorialStep(prev => prev + 1);
@@ -609,12 +595,33 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
                         </span>
                     )}
                 </div>
-                <button
-                    className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-                    onClick={() => navigate('/games')}
-                >
-                    <Home size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                    {gameStatus === 'playing' && (
+                        <>
+                            <button
+                                className={`w-10 h-10 flex items-center justify-center ${colors.hintBg} rounded-lg ${colors.text} transition-all disabled:opacity-50`}
+                                onClick={handleHint}
+                                disabled={!isXNext || isAIThinking}
+                                title="Gợi ý"
+                            >
+                                <Lightbulb size={20} />
+                            </button>
+                            <button
+                                className="w-10 h-10 flex items-center justify-center bg-blue-500/20 rounded-lg text-blue-500 hover:bg-blue-500/30 transition-all"
+                                onClick={handleSaveGame}
+                                title="Lưu game"
+                            >
+                                <Save size={20} />
+                            </button>
+                        </>
+                    )}
+                    <button
+                        className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                        onClick={() => navigate('/games')}
+                    >
+                        <Home size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Players Bar - Hide in tutorial and idle */}
@@ -653,44 +660,45 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
             <div className="flex-1 flex items-center justify-center gap-6 p-4">
                 {/* Idle Screen */}
                 {gameStatus === 'idle' && (
-                    <div className="flex flex-col items-center justify-center gap-4 p-8 bg-card rounded-2xl shadow-lg border-2 border-border">
-                        <div className="text-3xl font-bold text-foreground mb-2">🎯 {gameName}</div>
-                        <button
-                            className={`flex items-center gap-2 px-6 py-3 ${colors.primary} rounded-xl text-white font-semibold ${colors.primaryHover} transition-all`}
-                            onClick={startGame}
-                        >
-                            <ArrowLeft size={20} className="rotate-180" />
-                            Bắt đầu chơi
-                        </button>
-                        {tutorialSteps && (
-                            <button
-                                className="flex items-center gap-2 px-6 py-3 bg-blue-500 rounded-xl text-white font-semibold hover:bg-blue-600 transition-all"
-                                onClick={startTutorial}
-                            >
-                                <BookOpen size={20} />
-                                Hướng dẫn chơi
-                            </button>
-                        )}
-                    </div>
+                    <CaroIdleScreen
+                        gameName={gameName}
+                        colors={colors}
+                        startGame={startGame}
+                        startTutorial={startTutorial}
+                        hasTutorial={!!tutorialSteps}
+                    />
                 )}
 
                 {/* Game Board */}
                 {gameStatus !== 'idle' && (
                     <div className="flex flex-col items-center gap-4">
-                        <CaroBoard
-                            board={board}
-                            onCellClick={handleCellClick}
-                            winningLine={winningLine}
-                            hintCell={gameStatus === 'tutorial' ? null : hintCell}
-                            highlightCells={gameStatus === 'tutorial' ? (currentTutorialStep?.highlightCells ?? []) : []}
-                            disabled={
-                                gameStatus === 'tutorial'
-                                    ? !(currentTutorialStep?.action === 'click_cell' && !isTyping)
-                                    : (gameStatus !== 'playing' || !isXNext || isAIThinking)
-                            }
-                            boardSize={boardSize}
-                            theme={theme}
-                        />
+                        {/* Board Container with Overlay */}
+                        <div className="relative">
+                            <CaroBoard
+                                board={board}
+                                onCellClick={handleCellClick}
+                                winningLine={winningLine}
+                                hintCell={gameStatus === 'tutorial' ? null : hintCell}
+                                highlightCells={gameStatus === 'tutorial' ? (currentTutorialStep?.highlightCells ?? []) : []}
+                                disabled={
+                                    gameStatus === 'tutorial'
+                                        ? !(currentTutorialStep?.action === 'click_cell' && !isTyping)
+                                        : (gameStatus !== 'playing' || !isXNext || isAIThinking)
+                                }
+                                boardSize={boardSize}
+                                theme={theme}
+                            />
+
+                            {/* Game Over Overlay */}
+                            {(gameStatus === 'win' || gameStatus === 'draw') && (
+                                <CaroGameOverOverlay
+                                    winner={winner}
+                                    statusMessage={getStatusMessage()}
+                                    colors={colors}
+                                    onPlayAgain={handlePlayAgain}
+                                />
+                            )}
+                        </div>
 
                         {/* Status Message */}
                         <div className={`text-base font-medium px-4 py-2 rounded-full shadow-sm
@@ -705,84 +713,17 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
 
                 {/* Tutorial Panel */}
                 {gameStatus === 'tutorial' && currentTutorialStep && tutorialSteps && (
-                    <div className="hidden md:flex flex-col w-80 h-fit p-6 bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 rounded-2xl shadow-lg">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <BookOpen size={20} className="text-emerald-400" />
-                                <span className="text-sm font-semibold text-emerald-400">Hướng dẫn chơi</span>
-                            </div>
-                            <button
-                                className="text-muted-foreground hover:text-foreground p-1 rounded hover:bg-accent transition-all"
-                                onClick={exitTutorial}
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="flex gap-1 mb-4">
-                            {tutorialSteps.map((_, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`flex-1 h-1.5 rounded-full transition-colors
-                                        ${idx < tutorialStep ? 'bg-emerald-500' :
-                                            idx === tutorialStep ? 'bg-emerald-400 animate-pulse' :
-                                                'bg-secondary'}`}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Step Content */}
-                        <div className="mb-4">
-                            <div className="text-xs text-muted-foreground mb-2">
-                                Bước {tutorialStep + 1}/{tutorialSteps.length}
-                            </div>
-                            <div className="text-xl font-bold text-foreground mb-3 min-h-[2rem]">
-                                {displayedTitle}
-                                {isTyping && displayedText.length === 0 && <span className="animate-pulse">|</span>}
-                            </div>
-                            <div className="text-sm text-muted-foreground leading-relaxed min-h-[4rem]">
-                                {displayedText}
-                                {isTyping && displayedText.length > 0 && <span className="animate-pulse text-emerald-400">|</span>}
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        {showNextButton && (
-                            <button
-                                className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 text-white text-sm font-semibold rounded-xl hover:bg-emerald-600 transition-all shadow-md"
-                                onClick={nextTutorialStep}
-                            >
-                                {currentTutorialStep.action === 'finish' ? (
-                                    <>🎮 Bắt đầu chơi</>
-                                ) : (
-                                    <>
-                                        Tiếp tục
-                                        <ChevronRight size={18} />
-                                    </>
-                                )}
-                            </button>
-                        )}
-
-                        {/* Hint for click_cell action */}
-                        {!isTyping && currentTutorialStep?.action === 'click_cell' && (
-                            <div className="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-xl border border-emerald-500/50">
-                                <div className="text-sm text-muted-foreground">Nhấn vào ô được đánh dấu!</div>
-                                <div className="text-3xl animate-bounce">👆</div>
-                            </div>
-                        )}
-
-                        {/* Tips */}
-                        <div className="mt-4 pt-4 border-t border-border">
-                            <div className="text-xs text-muted-foreground leading-relaxed">
-                                💡 {currentTutorialStep?.action === 'click_cell' && !isTyping && 'Nhấn vào ô sáng lên để tiếp tục'}
-                                {currentTutorialStep?.action === 'click_next' && !isTyping && 'Nhấn nút Tiếp tục bên dưới'}
-                                {currentTutorialStep?.action === 'finish' && !isTyping && 'Bạn đã sẵn sàng chiến đấu!'}
-                                {isTyping && 'Đang hiển thị hướng dẫn...'}
-                            </div>
-                        </div>
-                    </div>
+                    <CaroTutorialPanel
+                        tutorialSteps={tutorialSteps}
+                        tutorialStep={tutorialStep}
+                        currentTutorialStep={currentTutorialStep}
+                        isTyping={isTyping}
+                        displayedTitle={displayedTitle}
+                        displayedText={displayedText}
+                        showNextButton={showNextButton}
+                        nextTutorialStep={nextTutorialStep}
+                        exitTutorial={exitTutorial}
+                    />
                 )}
             </div>
 
@@ -798,45 +739,9 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
                     </button>
                 )}
 
-                {gameStatus === 'playing' && (
-                    <>
-                        <button
-                            className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
-                            onClick={handleUndo}
-                            disabled={moveHistory.length < 2 || isAIThinking}
-                        >
-                            <RotateCcw size={18} />
-                            <span>Quay lại</span>
-                        </button>
 
-                        <button
-                            className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-blue-500 transition-all hover:bg-blue-500/15 hover:text-blue-600"
-                            onClick={handleSaveGame}
-                        >
-                            <Save size={18} />
-                            <span>Lưu game</span>
-                        </button>
 
-                        <button
-                            className={`flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium ${colors.text} transition-all ${colors.hintBg} ${colors.textHover} disabled:opacity-40 disabled:cursor-not-allowed`}
-                            onClick={handleHint}
-                            disabled={!isXNext || isAIThinking}
-                        >
-                            <Lightbulb size={18} />
-                            <span>Gợi ý</span>
-                        </button>
-                    </>
-                )}
 
-                {(gameStatus === 'win' || gameStatus === 'draw') && (
-                    <button
-                        className={`flex items-center gap-2 px-5 py-3 ${colors.primary} rounded-xl text-sm font-medium text-white transition-all ${colors.primaryHover}`}
-                        onClick={handlePlayAgain}
-                    >
-                        <RotateCcw size={18} />
-                        <span>Chơi lại</span>
-                    </button>
-                )}
             </div>
         </div >
     );

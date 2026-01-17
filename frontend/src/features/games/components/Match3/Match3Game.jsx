@@ -105,6 +105,7 @@ const Match3Game = () => {
   const failSoundRef = useRef(null);
   const gameStartSoundRef = useRef(null);
   const victorySoundRef = useRef(null);
+  const keyboardSoundRef = useRef(null);
 
   // Settings and resume session
   const lobbySettings = location.state?.settings || {};
@@ -160,13 +161,13 @@ const Match3Game = () => {
       img.onerror = resolve;
     }))).then(() => { imagesLoadedRef.current = true; });
 
-    // Initialize sounds
     swapSoundRef.current = new Audio('/sounds/swap.wav');
     matchSoundRef.current = new Audio('/sounds/match.wav');
     comboSoundRef.current = new Audio('/sounds/combo.wav');
     failSoundRef.current = new Audio('/sounds/fail-game.wav');
     gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
     victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+    keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
 
     // Preload sounds
     swapSoundRef.current.load();
@@ -175,15 +176,59 @@ const Match3Game = () => {
     failSoundRef.current.load();
     gameStartSoundRef.current.load();
     victorySoundRef.current.load();
+    keyboardSoundRef.current.load();
   }, []);
 
-  // Play sound helper
   const playSound = useCallback((soundRef) => {
     if (soundRef.current) {
       soundRef.current.currentTime = 0;
-      soundRef.current.play().catch(() => { }); // Ignore autoplay errors
+      soundRef.current.play().catch(() => { });
     }
   }, []);
+
+  const stopSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.pause();
+      soundRef.current.currentTime = 0;
+    }
+  }, []);
+
+  // Typewriter effect for tutorial
+  useEffect(() => {
+    if (gameStatus !== "tutorial") return;
+    const step = TUTORIAL_STEPS[tutorialStep];
+    if (!step) return;
+
+    if (typingRef.current) clearInterval(typingRef.current);
+    setIsTyping(true);
+    setDisplayedTitle("");
+    setDisplayedText("");
+
+    // Play keyboard typing sound
+    playSound(keyboardSoundRef);
+
+    let titleIdx = 0, msgIdx = 0, phase = 'title';
+    typingRef.current = setInterval(() => {
+      if (phase === 'title') {
+        if (titleIdx < step.title.length) {
+          setDisplayedTitle(step.title.slice(0, ++titleIdx));
+        } else phase = 'message';
+      } else {
+        if (msgIdx < step.message.length) {
+          setDisplayedText(step.message.slice(0, ++msgIdx));
+        } else {
+          clearInterval(typingRef.current);
+          setIsTyping(false);
+          stopSound(keyboardSoundRef);
+        }
+      }
+    }, 40);
+
+    return () => {
+      clearInterval(typingRef.current);
+      stopSound(keyboardSoundRef);
+    };
+  }, [tutorialStep, gameStatus, playSound, stopSound]);
 
   // Find matches
   const findMatches = useCallback((currentBoard) => {
@@ -780,31 +825,13 @@ const Match3Game = () => {
   const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
 
   const nextTutorialStep = () => {
-    if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") startGame();
-    else setTutorialStep(prev => prev + 1);
+    if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") {
+      stopSound(keyboardSoundRef);
+      startGame();
+    } else setTutorialStep(prev => prev + 1);
   };
 
-  // Typewriter
-  useEffect(() => {
-    if (gameStatus !== "tutorial") return;
-    const step = TUTORIAL_STEPS[tutorialStep];
-    if (!step) return;
-    if (typingRef.current) clearInterval(typingRef.current);
-    setIsTyping(true);
-    setDisplayedTitle("");
-    setDisplayedText("");
-    let ti = 0, mi = 0, phase = "title";
-    typingRef.current = setInterval(() => {
-      if (phase === "title") {
-        if (ti < step.title.length) setDisplayedTitle(step.title.slice(0, ++ti));
-        else phase = "message";
-      } else {
-        if (mi < step.message.length) setDisplayedText(step.message.slice(0, ++mi));
-        else { clearInterval(typingRef.current); setIsTyping(false); }
-      }
-    }, 35);
-    return () => clearInterval(typingRef.current);
-  }, [tutorialStep, gameStatus]);
+
 
   const currentStep = TUTORIAL_STEPS[tutorialStep];
 

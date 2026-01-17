@@ -313,15 +313,15 @@ const ReviewItem = ({ review, onEditSuccess, onDeleteSuccess }) => {
             {/* Header - User info & Rating */}
             <div className="flex items-start justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center cursor-pointer group">
                         {review.avatar_url ? (
                             <img
                                 src={review.avatar_url}
                                 alt={review.username}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-165"
                             />
                         ) : (
-                            <User size={18} className="text-primary" />
+                            <User size={18} className="text-primary transition-transform duration-200 group-hover:scale-165" />
                         )}
                     </div>
                     <div>
@@ -425,8 +425,8 @@ const SortDropdown = ({ value, onChange }) => {
     const options = [
         { value: 'newest', label: 'Mới nhất' },
         { value: 'oldest', label: 'Cũ nhất' },
-        { value: 'highest_rating', label: 'Đánh giá cao' },
-        { value: 'lowest_rating', label: 'Đánh giá thấp' },
+        { value: 'highest', label: 'Đánh giá cao' },
+        { value: 'lowest', label: 'Đánh giá thấp' },
     ];
 
     return (
