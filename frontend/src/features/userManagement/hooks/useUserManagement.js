@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDebounce } from "../../../hooks/useDebounce";
 import api from "../../../api/axios";
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ export const useUserManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -55,15 +57,14 @@ export const useUserManagement = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchUsers(1, searchTerm, statusFilter);
-  }, [searchTerm, statusFilter]);
+    fetchUsers(1, debouncedSearchTerm, statusFilter);
+  }, [debouncedSearchTerm, statusFilter]);
 
   // Handle search
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
     setCurrentPage(1);
-    fetchUsers(1, value, statusFilter);
   };
 
   // Handle status filter
@@ -104,8 +105,8 @@ export const useUserManagement = () => {
     if (!pendingStatusChange) return;
 
     try {
-      await api.patch(`/api/users/${pendingStatusChange.userId}/status`, { 
-        status: pendingStatusChange.newStatus 
+      await api.patch(`/api/users/${pendingStatusChange.userId}/status`, {
+        status: pendingStatusChange.newStatus,
       });
       toast.success("User status updated successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
@@ -128,8 +129,8 @@ export const useUserManagement = () => {
     if (!pendingRoleChange) return;
 
     try {
-      await api.patch(`/api/users/${pendingRoleChange.userId}/role`, { 
-        role: pendingRoleChange.newRole 
+      await api.patch(`/api/users/${pendingRoleChange.userId}/role`, {
+        role: pendingRoleChange.newRole,
       });
       toast.success("User role updated successfully");
       fetchUsers(currentPage, searchTerm, statusFilter);
