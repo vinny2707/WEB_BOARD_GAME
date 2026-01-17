@@ -24,7 +24,7 @@ const GameDeleteDialog = ({ open, onOpenChange, game, onConfirm }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent
-        className={`max-w-md ${isDarkMode ? "bg-zinc-900 border-zinc-800" : ""}`}
+        className={`max-w-md ${isDarkMode ? "bg-slate-900 border-slate-800" : ""}`}
       >
         <AlertDialogHeader>
           <AlertDialogTitle
@@ -44,7 +44,7 @@ const GameDeleteDialog = ({ open, onOpenChange, game, onConfirm }) => {
             Delete Game
           </AlertDialogTitle>
           <AlertDialogDescription
-            className={`${isDarkMode ? "text-zinc-400" : "text-gray-600"} mt-4`}
+            className={`${isDarkMode ? "text-slate-400" : "text-gray-600"} mt-4`}
           >
             <div className="space-y-4">
               <p className="text-base">
@@ -53,13 +53,13 @@ const GameDeleteDialog = ({ open, onOpenChange, game, onConfirm }) => {
               <div
                 className={`p-4 rounded-lg flex items-center gap-3 ${
                   isDarkMode
-                    ? "bg-zinc-800/50 border border-zinc-700"
+                    ? "bg-slate-800/50 border border-slate-700"
                     : "bg-gray-50 border border-gray-200"
                 }`}
               >
                 <div
                   className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden ${
-                    isDarkMode ? "bg-zinc-700" : "bg-gray-200"
+                    isDarkMode ? "bg-slate-700" : "bg-gray-200"
                   }`}
                 >
                   {game.icon ? (
@@ -87,7 +87,7 @@ const GameDeleteDialog = ({ open, onOpenChange, game, onConfirm }) => {
                   </p>
                   <p
                     className={`text-sm font-mono ${
-                      isDarkMode ? "text-zinc-400" : "text-gray-500"
+                      isDarkMode ? "text-slate-400" : "text-gray-500"
                     }`}
                   >
                     {game.type}
@@ -109,7 +109,7 @@ const GameDeleteDialog = ({ open, onOpenChange, game, onConfirm }) => {
           <AlertDialogCancel
             className={`${
               isDarkMode
-                ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+                ? "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
                 : "bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
             }`}
           >

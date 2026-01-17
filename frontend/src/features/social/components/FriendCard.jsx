@@ -68,7 +68,7 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
               className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                 friend.status === "active"
                   ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                  : "bg-zinc-500/20 text-zinc-600 dark:text-zinc-400"
+                  : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
               }`}
             >
               {friend.status}

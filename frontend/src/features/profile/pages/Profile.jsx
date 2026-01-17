@@ -38,7 +38,7 @@ import { toast } from "sonner";
 import AvatarPicker from "../components/AvatarPicker";
 
 const Profile = () => {
-  const { user, updateUser } = useUser();
+  const { user, updateUser, isAuthenticated } = useUser();
   const [open, setOpen] = useState(false);
   const [backup, setBackup] = useState({
     full_name: "",
@@ -50,6 +50,29 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Check authentication
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
+          <User className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
+            Vui lòng đăng nhập để xem trang cá nhân
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const {
     register,

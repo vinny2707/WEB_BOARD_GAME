@@ -76,11 +76,11 @@ function Pagination({
       <div className="flex items-center gap-4">
         {onLimitChange && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-zinc-500 dark:text-zinc-400">Show</span>
+            <span className="text-sm text-slate-500 dark:text-slate-400">Show</span>
             <select
               value={limit}
               onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="px-2 py-1 rounded-lg border text-sm cursor-pointer bg-gray-100 border-gray-300 text-gray-900 dark:bg-zinc-800 dark:border-zinc-700 dark:text-white focus:outline-none"
+              className="px-2 py-1 rounded-lg border text-sm cursor-pointer bg-gray-100 border-gray-300 text-gray-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:outline-none"
             >
               {limitOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
@@ -88,7 +88,7 @@ function Pagination({
             </select>
           </div>
         )}
-        <span className="text-sm text-zinc-500 dark:text-zinc-400">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
           Showing {startItem}-{endItem} of {totalItems}
         </span>
       </div>
@@ -103,8 +103,8 @@ function Pagination({
             className={cn(
               "p-2 rounded-lg transition-all cursor-pointer",
               currentPage === 1
-                ? "text-gray-400 dark:text-zinc-600 cursor-not-allowed"
-                : "hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+                ? "text-gray-400 dark:text-slate-600 cursor-not-allowed"
+                : "hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
             )}
           >
             <ChevronLeft className="w-4 h-4" />
@@ -113,7 +113,7 @@ function Pagination({
           {/* Page numbers */}
           {getPageNumbers().map((page, idx) =>
             page === "..." ? (
-              <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-zinc-500">
+              <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
                 ...
               </span>
             ) : (
@@ -124,7 +124,7 @@ function Pagination({
                   "px-3 py-1 rounded-lg text-sm transition-all cursor-pointer",
                   currentPage === page
                     ? "bg-blue-500/20 text-blue-600 border border-blue-500/30 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30"
-                    : "hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+                    : "hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
                 )}
               >
                 {page}
@@ -139,8 +139,8 @@ function Pagination({
             className={cn(
               "p-2 rounded-lg transition-all cursor-pointer",
               currentPage === totalPages
-                ? "text-gray-400 dark:text-zinc-600 cursor-not-allowed"
-                : "hover:bg-gray-200 dark:hover:bg-zinc-800 text-gray-700 dark:text-zinc-300"
+                ? "text-gray-400 dark:text-slate-600 cursor-not-allowed"
+                : "hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
             )}
           >
             <ChevronRight className="w-4 h-4" />

@@ -33,7 +33,7 @@ const MobileNav = ({ navItems }) => {
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 border-b bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-gray-200 dark:border-zinc-800">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-gray-200 dark:border-slate-800">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white text-sm">
@@ -50,7 +50,7 @@ const MobileNav = ({ navItems }) => {
             onClick={() => setIsOpen(!isOpen)}
             className={`p-2 rounded-lg transition-all ${
               isDarkMode
-                ? "hover:bg-zinc-800 text-zinc-300"
+                ? "hover:bg-slate-800 text-slate-300"
                 : "hover:bg-gray-100 text-gray-700"
             }`}
           >
@@ -73,25 +73,25 @@ const MobileNav = ({ navItems }) => {
           isOpen ? "translate-x-0" : "translate-x-full"
         } ${
           isDarkMode
-            ? "bg-zinc-900 border-zinc-800"
+            ? "bg-slate-900 border-slate-800"
             : "bg-white border-gray-200"
         } border-l shadow-xl`}
       >
         <div className="flex flex-col h-full p-4">
           {/* Theme Toggle */}
-          <div className="mb-6 pb-6 border-b border-gray-200 dark:border-zinc-800">
+          <div className="mb-6 pb-6 border-b border-gray-200 dark:border-slate-800">
             <button
               onClick={() => {
                 toggleTheme();
               }}
-              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
             >
-              <span className="text-sm text-gray-700 dark:text-zinc-300">
+              <span className="text-sm text-gray-700 dark:text-slate-300">
                 Theme
               </span>
               <div className="flex items-center gap-2">
                 {isDarkMode ? (
-                  <Moon className="w-4 h-4 text-zinc-400" />
+                  <Moon className="w-4 h-4 text-slate-400" />
                 ) : (
                   <Sun className="w-4 h-4 text-yellow-500" />
                 )}
@@ -114,7 +114,7 @@ const MobileNav = ({ navItems }) => {
                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                         : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                       : isDarkMode
-                      ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                      ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
                       : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                   }`}
                 >

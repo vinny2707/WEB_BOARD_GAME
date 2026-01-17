@@ -155,7 +155,7 @@ const UserTable = ({
               <td className="px-6 py-4">
                 <Select
                   value={user.role}
-                  onValueChange={(value) => onRoleChange(user.id, value)}
+                  onValueChange={(value) => onRoleChange(user.id, value, user)}
                 >
                   <SelectTrigger
                     className={`w-fit border-0 cursor-pointer ${getRoleColor(
@@ -178,7 +178,7 @@ const UserTable = ({
               <td className="px-6 py-4">
                 <Select
                   value={user.status}
-                  onValueChange={(value) => onStatusChange(user.id, value)}
+                  onValueChange={(value) => onStatusChange(user.id, value, user)}
                 >
                   <SelectTrigger
                     className={`w-fit border-0 cursor-pointer ${getStatusColor(

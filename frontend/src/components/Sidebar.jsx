@@ -123,7 +123,7 @@ const Sidebar = () => {
     return (
       <aside
         className={`border-r transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "max-w-1/4"
-          } ${isDarkMode ? "border-zinc-800" : "border-gray-200"
+          } ${isDarkMode ? "border-slate-800" : "border-gray-200"
           } relative overflow-hidden flex flex-col`}
         style={{
           background: isDarkMode
@@ -143,7 +143,7 @@ const Sidebar = () => {
   return (
     <aside
       className={`border-r transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64 md:max-w-1/4"
-        } ${isDarkMode ? "border-zinc-800" : "border-gray-200"
+        } ${isDarkMode ? "border-slate-800" : "border-gray-200"
         } relative overflow-visible flex flex-col hidden md:flex z-40`}
       style={{
         background: isDarkMode
@@ -166,14 +166,14 @@ const Sidebar = () => {
       <div className="relative h-full flex flex-col p-4">
         {/* Top Section: Toggle, Notification & Settings */}
         <div
-          className={`mb-6 pb-6 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between ${isCollapsed ? "flex-col gap-3" : ""
+          className={`mb-6 pb-6 border-b border-gray-200 dark:border-slate-800 flex items-center justify-between ${isCollapsed ? "flex-col gap-3" : ""
             }`}
         >
           {/* Toggle Collapse Button */}
           <button
             onClick={toggleSidebar}
             className={`p-2 rounded-lg transition-all flex-shrink-0 ${isDarkMode
-              ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-zinc-200"
+              ? "hover:bg-slate-800/50 text-slate-400 hover:text-slate-200"
               : "hover:bg-gray-200/50 text-gray-600 hover:text-gray-900"
               }`}
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -195,7 +195,7 @@ const Sidebar = () => {
             <button
               className={`p-2 rounded-lg transition-all cursor-pointer ${
                 isDarkMode
-                  ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
+                  ? "hover:bg-slate-800/50 text-slate-400 hover:text-emerald-400"
                   : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"
               }`}
               title="Notifications"
@@ -212,7 +212,7 @@ const Sidebar = () => {
                     ? "bg-emerald-500/20 text-emerald-400"
                     : "bg-blue-500/20 text-blue-600"
                   : isDarkMode
-                    ? "hover:bg-zinc-800/50 text-zinc-400 hover:text-emerald-400"
+                    ? "hover:bg-slate-800/50 text-slate-400 hover:text-emerald-400"
                     : "hover:bg-gray-200/50 text-gray-600 hover:text-blue-600"
                   }`}
                 title="Settings"
@@ -225,7 +225,7 @@ const Sidebar = () => {
                 <div
                   className={`absolute top-full mt-2 w-60 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl ${
                     isDarkMode
-                      ? "bg-zinc-800/95 border border-zinc-700/50"
+                      ? "bg-slate-800/95 border border-slate-700/50"
                       : "bg-white/95 border border-gray-200/50"
                   } ${isCollapsed ? "left-0" : "right-0"}`}
                   style={{
@@ -237,13 +237,13 @@ const Sidebar = () => {
                 >
                   {/* Dark Mode Toggle */}
                   <div
-                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
+                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-slate-700/50" : "hover:bg-gray-50"
                       }`}
                     onClick={onToggleTheme}
                   >
                     <div className="flex items-center gap-3">
                       {isDarkMode ? (
-                        <div className="w-9 h-9 rounded-lg bg-zinc-700/50 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-lg bg-slate-700/50 flex items-center justify-center">
                           <Moon className="w-5 h-5 text-blue-400" />
                         </div>
                       ) : (
@@ -253,12 +253,12 @@ const Sidebar = () => {
                       )}
                       <div>
                         <span
-                          className={`text-sm font-medium block ${isDarkMode ? "text-zinc-100" : "text-gray-900"
+                          className={`text-sm font-medium block ${isDarkMode ? "text-slate-100" : "text-gray-900"
                             }`}
                         >
                           {isDarkMode ? "Dark Mode" : "Light Mode"}
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-zinc-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-500">
                           {isDarkMode ? "Enabled" : "Disabled"}
                         </span>
                       </div>
@@ -276,13 +276,13 @@ const Sidebar = () => {
 
                   {/* Divider */}
                   <div
-                    className={`h-px mx-3 ${isDarkMode ? "bg-zinc-700/50" : "bg-gray-200/50"
+                    className={`h-px mx-3 ${isDarkMode ? "bg-slate-700/50" : "bg-gray-200/50"
                       }`}
                   ></div>
 
                   {/* Background Music Toggle */}
                   <div
-                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-zinc-700/50" : "hover:bg-gray-50"
+                    className={`px-4 py-3.5 flex items-center justify-between cursor-pointer transition-all ${isDarkMode ? "hover:bg-slate-700/50" : "hover:bg-gray-50"
                       }`}
                     onClick={() => setIsMusicEnabled(!isMusicEnabled)}
                   >
@@ -293,7 +293,7 @@ const Sidebar = () => {
                             ? "bg-emerald-500/20"
                             : "bg-emerald-50"
                           : isDarkMode
-                            ? "bg-zinc-700/50"
+                            ? "bg-slate-700/50"
                             : "bg-gray-100"
                           }`}
                       >
@@ -301,19 +301,19 @@ const Sidebar = () => {
                           className={`w-5 h-5 ${isMusicEnabled
                             ? "text-emerald-500"
                             : isDarkMode
-                              ? "text-zinc-400"
+                              ? "text-slate-400"
                               : "text-gray-500"
                             }`}
                         />
                       </div>
                       <div>
                         <span
-                          className={`text-sm font-medium block ${isDarkMode ? "text-zinc-100" : "text-gray-900"
+                          className={`text-sm font-medium block ${isDarkMode ? "text-slate-100" : "text-gray-900"
                             }`}
                         >
                           Music
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-zinc-500">
+                        <span className="text-xs text-gray-500 dark:text-slate-500">
                           {isMusicEnabled ? "Playing" : "Paused"}
                         </span>
                       </div>
@@ -322,7 +322,7 @@ const Sidebar = () => {
                       className={`relative w-11 h-6 rounded-full transition-all ${isMusicEnabled
                         ? "bg-emerald-500"
                         : isDarkMode
-                          ? "bg-zinc-600"
+                          ? "bg-slate-600"
                           : "bg-gray-300"
                         }`}
                     >
@@ -414,7 +414,7 @@ const Sidebar = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                    <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">
                       {user.email}
                     </p>
                   </div>
@@ -476,7 +476,7 @@ const Sidebar = () => {
                     ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                     : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                   : isDarkMode
-                    ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                    ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
                     : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
                   } ${isCollapsed ? "justify-center" : "justify-start"}`}
                 title={isCollapsed ? item.label : ""}
@@ -512,7 +512,7 @@ const Sidebar = () => {
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                   : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
                 : isDarkMode
-                  ? "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
+                  ? "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
                   : "text-gray-600 hover:bg-gray-200/50 hover:text-gray-900"
                 } ${isCollapsed ? "justify-center" : "justify-start"} mt-8`}
               title={isCollapsed ? "Management" : ""}
@@ -547,10 +547,10 @@ const Sidebar = () => {
 
         {/* Footer */}
         <div
-          className={`mt-auto pt-6 border-t border-gray-200 dark:border-zinc-800 ${isCollapsed ? "hidden" : ""
+          className={`mt-auto pt-6 border-t border-gray-200 dark:border-slate-800 ${isCollapsed ? "hidden" : ""
             }`}
         >
-          <div className="text-xs text-gray-400 dark:text-zinc-500 text-center space-y-2">
+          <div className="text-xs text-gray-400 dark:text-slate-500 text-center space-y-2">
             <p>Gaming Platform v1.0</p>
             <p className="mt-1">© 2026 RetroGames</p>
           </div>

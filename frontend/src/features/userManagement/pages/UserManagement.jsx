@@ -12,6 +12,8 @@ import UserMobileCard from "../components/UserMobileCard";
 import UserPagination from "../components/UserPagination";
 import UserDeleteDialog from "../components/UserDeleteDialog";
 import UserDetailDialog from "../components/UserDetailDialog";
+import UserStatusDialog from "../components/UserStatusDialog";
+import UserRoleDialog from "../components/UserRoleDialog";
 
 /**
  * User Management Page - Admin Panel
@@ -35,6 +37,14 @@ const UserManagement = () => {
     showDeleteDialog,
     userToDelete,
     limit,
+    // Status change dialog
+    showStatusDialog,
+    pendingStatusChange,
+    setShowStatusDialog,
+    // Role change dialog
+    showRoleDialog,
+    pendingRoleChange,
+    setShowRoleDialog,
     // Setters
     setShowDetailDialog,
     setShowDeleteDialog,
@@ -45,7 +55,9 @@ const UserManagement = () => {
     handleDelete,
     confirmDelete,
     handleStatusChange,
+    confirmStatusChange,
     handleRoleChange,
+    confirmRoleChange,
     handleViewDetails,
   } = useUserManagement();
 
@@ -127,6 +139,22 @@ const UserManagement = () => {
         isOpen={showDetailDialog}
         onOpenChange={setShowDetailDialog}
         user={selectedUser}
+      />
+
+      {/* Status Change Confirmation Dialog */}
+      <UserStatusDialog
+        open={showStatusDialog}
+        onOpenChange={setShowStatusDialog}
+        pendingChange={pendingStatusChange}
+        onConfirm={confirmStatusChange}
+      />
+
+      {/* Role Change Confirmation Dialog */}
+      <UserRoleDialog
+        open={showRoleDialog}
+        onOpenChange={setShowRoleDialog}
+        pendingChange={pendingRoleChange}
+        onConfirm={confirmRoleChange}
       />
     </div>
   );

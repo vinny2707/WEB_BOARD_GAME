@@ -43,12 +43,12 @@ const GameForm = ({
 
   const inputClass = `w-full px-3 py-2 rounded-lg border transition-colors ${
     isDarkMode
-      ? "bg-zinc-800 border-zinc-700 text-white focus:border-emerald-500"
+      ? "bg-slate-800 border-slate-700 text-white focus:border-emerald-500"
       : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
   } focus:outline-none`;
 
   const labelClass = `block text-sm font-medium mb-1 ${
-    isDarkMode ? "text-zinc-300" : "text-gray-700"
+    isDarkMode ? "text-slate-300" : "text-gray-700"
   }`;
 
   return (
@@ -94,18 +94,6 @@ const GameForm = ({
             className={inputClass}
             placeholder="https://example.com/icon.png"
           />
-        </div>
-
-        {/* Enabled */}
-        <div className="flex items-center gap-2 pt-6">
-          <input
-            type="checkbox"
-            name="enabled"
-            checked={formData.enabled}
-            onChange={handleInputChange}
-            className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
-          />
-          <label className={labelClass.replace("mb-1", "")}>Enabled</label>
         </div>
 
         {/* Rows */}
@@ -186,7 +174,7 @@ const GameForm = ({
           onClick={onCancel}
           className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${
             isDarkMode
-              ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              ? "bg-slate-800 hover:bg-slate-700 text-slate-300"
               : "bg-gray-200 hover:bg-gray-300 text-gray-700"
           }`}
         >

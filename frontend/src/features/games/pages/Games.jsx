@@ -230,9 +230,12 @@ const ROUTE_MAP = {
 };
 
 const GameCard = ({ game, onClick }) => {
-  const PreviewComponent = PREVIEW_MAP[game.type];
-  const path = ROUTE_MAP[game.type];
-  const isAvailable = game.enabled && path;
+  const PreviewComponent = PREVIEW_MAP[game.type]
+  const path = ROUTE_MAP[game.type]
+  // Coming Soon only shows when game is disabled (enabled === false)
+  const isEnabled = game.enabled === true
+  // Game is clickable only if enabled AND has a route
+  const isClickable = isEnabled && path
 
   // Check if icon is a URL (for displaying game image)
   const isIconUrl =
@@ -325,15 +328,13 @@ const GameCard = ({ game, onClick }) => {
   return (
     <div
       className={`relative flex flex-col bg-card rounded-2xl border overflow-hidden transition-all duration-300
-        ${
-          isAvailable
-            ? "cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10"
-            : "border-dashed border-muted-foreground/30 grayscale-[30%]"
-        }`}
-      onClick={() => isAvailable && onClick(path)}
+        ${isClickable 
+          ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10' 
+          : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
+      onClick={() => isClickable && onClick(path, game)}
     >
-      {/* Coming Soon Overlay */}
-      {!isAvailable && <ComingSoonOverlay />}
+      {/* Coming Soon Overlay - only shows when game is disabled */}
+      {!isEnabled && <ComingSoonOverlay />}
 
       {/* Preview Area */}
       <div className="flex-1 p-4 flex items-center justify-center aspect-square">
@@ -351,12 +352,10 @@ const GameCard = ({ game, onClick }) => {
       </div>
 
       {/* Title Bar */}
-      <div
-        className={`text-center py-3 px-3 border-t transition-colors
-        ${isAvailable ? "bg-secondary/80 border-border" : "bg-muted/50 border-muted"}`}
-      >
-        <span
-          className={`text-sm tracking-wide ${isAvailable ? "text-foreground" : "text-muted-foreground"}`}
+      <div className={`text-center py-3 px-3 border-t transition-colors
+        ${isEnabled ? 'bg-secondary/80 border-border' : 'bg-muted/50 border-muted'}`}>
+        <span 
+          className={`text-sm tracking-wide ${isEnabled ? 'text-foreground' : 'text-muted-foreground'}`}
           style={{ fontFamily: "'Bungee', cursive" }}
         >
           {game.name.toUpperCase()}
@@ -416,10 +415,11 @@ const Games = () => {
     fetchGames(1, newLimit);
   };
 
-  const handleGameClick = (path) => {
+  const handleGameClick = (path, game) => {
     if (path) {
-      playClick();
-      navigate(path);
+      playClick()
+      // Pass game data to lobby including id, type, name, settings
+      navigate(path, { state: { game } })
     }
   };
 

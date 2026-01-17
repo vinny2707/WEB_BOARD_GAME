@@ -17,15 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { getInitials } from "@/utils/Username";
 import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/contexts/UserProvider";
@@ -48,12 +40,12 @@ export default function Ranking() {
   if (!isAuthenticated) {
     return (
       <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
-        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
-          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+        <div className="text-center bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-slate-800 shadow-lg">
+          <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold dark:text-white mb-2">
             Bạn chưa đăng nhập
           </h2>
-          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+          <p className="text-slate-500 dark:text-slate-400 mb-6">
             Vui lòng đăng nhập để xem danh sách xếp hạng
           </p>
           <a
@@ -134,101 +126,6 @@ export default function Ranking() {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     fetchRankings(newPage);
-  };
-
-  // Render pagination
-  const renderPagination = () => {
-    const { page, totalPages } = pagination;
-    if (totalPages === 0) return null;
-
-    const maxVisible = 5;
-    const pages = [];
-    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage < maxVisible - 1) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return (
-      <Pagination className="mt-6">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => handlePageChange(page - 1)}
-              className={
-                page === 1
-                  ? "pointer-events-none opacity-50"
-                  : "cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
-              }
-            />
-          </PaginationItem>
-
-          {startPage > 1 && (
-            <>
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => handlePageChange(1)}
-                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
-                >
-                  1
-                </PaginationLink>
-              </PaginationItem>
-              {startPage > 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-            </>
-          )}
-
-          {pages.map((pageNum) => (
-            <PaginationItem key={pageNum}>
-              <PaginationLink
-                onClick={() => handlePageChange(pageNum)}
-                isActive={pageNum === page}
-                className="cursor-pointer data-[active=true]:bg-gradient-to-r data-[active=true]:from-emerald-500 data-[active=true]:to-cyan-500 data-[active=true]:text-white hover:bg-emerald-50 dark:hover:bg-emerald-950"
-              >
-                {pageNum}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-
-          {endPage < totalPages && (
-            <>
-              {endPage < totalPages - 1 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-              <PaginationItem>
-                <PaginationLink
-                  onClick={() => handlePageChange(totalPages)}
-                  className="cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
-                >
-                  {totalPages}
-                </PaginationLink>
-              </PaginationItem>
-            </>
-          )}
-
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => handlePageChange(page + 1)}
-              className={
-                page === totalPages
-                  ? "pointer-events-none opacity-50"
-                  : "cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950"
-              }
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    );
   };
 
   // Get trophy/medal icon based on rank
@@ -452,7 +349,7 @@ export default function Ranking() {
               {rankings.map((ranking) => (
                 <div
                   key={ranking.rank}
-                  className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
+                  className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
@@ -465,13 +362,13 @@ export default function Ranking() {
                       <div
                         className={`w-10 h-10 rounded-full ${getRankStyle(
                           ranking.rank
-                        )} flex items-center justify-center text-white font-semibold`}
+                        )} flex items-center justify-center text-white font-semibold overflow-hidden`}
                       >
                         {ranking.user?.avatar_url ? (
                           <img
                             src={ranking.user.avatar_url}
                             alt={ranking.user.username}
-                            className="w-full h-full rounded-full object-cover"
+                            className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-[1.65]"
                           />
                         ) : (
                           <span>{getInitials(ranking.user?.full_name)}</span>
@@ -539,11 +436,22 @@ export default function Ranking() {
               ))}
             </div>
           )}
-
-          {/* Pagination */}
-          {rankings.length > 0 && renderPagination()}
         </div>
       </div>
+
+      {/* Pagination - Outside card */}
+      {rankings.length > 0 && pagination.totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            totalItems={pagination.total}
+            limit={itemsPerPage}
+            onPageChange={handlePageChange}
+            limitOptions={[10, 20, 50]}
+          />
+        </div>
+      )}
     </div>
   );
 }
