@@ -37,6 +37,11 @@ import {
 
 const router = createBrowserRouter([
   {
+    // Default route is landing page
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
     path: "/landing",
     element: <LandingPage />,
   },
@@ -51,17 +56,13 @@ const router = createBrowserRouter([
     ],
   },
   {
+    // User pages with sidebar - accessible without login
     path: "/",
     element: <ProtectedLayout />,
     children: [
       {
         element: <UserLayout />,
         children: [
-          {
-            // Redirect from / to /games
-            index: true,
-            element: <Navigate to="/games" replace />,
-          },
           {
             // Games selection page
             element: <Games />,

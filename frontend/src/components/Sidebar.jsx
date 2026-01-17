@@ -117,7 +117,9 @@ const Sidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
 
-  if (loading) {
+  // Only show loading spinner if we're actually loading user data (has token)
+  // For guests (no token), we should render immediately with guest UI
+  if (loading && user !== null) {
     return (
       <aside
         className={`border-r transition-all duration-300 ease-in-out ${
@@ -368,69 +370,102 @@ const Sidebar = () => {
                 : "0 8px 32px rgba(0, 0, 0, 0.08)",
             }}
           >
-            {/* Avatar and User Info */}
-            <button
-              onClick={() => onClickItem("profile")}
-              className="w-full p-4 transition-all hover:bg-white/5 active:scale-[0.98]"
-            >
-              <div className="flex items-center gap-3">
-                {/* Avatar with Admin Badge */}
-                <div className="relative flex-shrink-0 group">
-                  <div
-                    className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-xl transition-all"
-                    style={{
-                      background: isAdmin
-                        ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
-                        : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                      ringColor: isAdmin
-                        ? "rgba(245, 158, 11, 0.3)"
-                        : "rgba(16, 185, 129, 0.3)",
-                    }}
-                  >
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt={user.username}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
-                      />
-                    ) : (
-                      <span className="text-white text-base font-bold">
-                        {getInitials(user.username)}
-                      </span>
-                    )}
-                  </div>
-                  {/* Admin Crown Badge */}
-                  {isAdmin && (
+            {/* Guest or Authenticated User */}
+            {user ? (
+              /* Avatar and User Info for authenticated users */
+              <button
+                onClick={() => onClickItem("profile")}
+                className="w-full p-4 transition-all hover:bg-white/5 active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Avatar with Admin Badge */}
+                  <div className="relative flex-shrink-0 group">
                     <div
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center shadow-lg"
+                      className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-xl transition-all"
                       style={{
-                        background:
-                          "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                        background: isAdmin
+                          ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+                          : "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        ringColor: isAdmin
+                          ? "rgba(245, 158, 11, 0.3)"
+                          : "rgba(16, 185, 129, 0.3)",
                       }}
                     >
-                      <Crown className="w-3.5 h-3.5 text-white" />
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.username}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+                        />
+                      ) : (
+                        <span className="text-white text-base font-bold">
+                          {getInitials(user.username)}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                {/* User Info */}
-                <div className="text-left flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="dark:text-white text-gray-900 font-bold text-base truncate">
-                      {user.username}
-                    </h3>
+                    {/* Admin Crown Badge */}
                     {isAdmin && (
-                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
-                        ADMIN
-                      </span>
+                      <div
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center shadow-lg"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+                        }}
+                      >
+                        <Crown className="w-3.5 h-3.5 text-white" />
+                      </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
-                    {user.email}
-                  </p>
+
+                  {/* User Info */}
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="dark:text-white text-gray-900 font-bold text-base truncate">
+                        {user.username}
+                      </h3>
+                      {isAdmin && (
+                        <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                          ADMIN
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400 truncate mt-0.5">
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            ) : (
+              /* Guest User - Show Login Button */
+              <button
+                onClick={() => navigate("/auth")}
+                className="w-full p-4 transition-all hover:bg-white/5 active:scale-[0.98]"
+              >
+                <div className="flex items-center gap-3">
+                  {/* Guest Avatar */}
+                  <div className="relative flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center shadow-xl"
+                      style={{
+                        background: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
+                      }}
+                    >
+                      <User className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+
+                  {/* Guest Info */}
+                  <div className="text-left flex-1 min-w-0">
+                    <h3 className="dark:text-white text-gray-900 font-bold text-base">
+                      Guest
+                    </h3>
+                    <p className="text-xs text-emerald-500 dark:text-emerald-400 font-medium">
+                      Click to Login →
+                    </p>
+                  </div>
+                </div>
+              </button>
+            )}
           </div>
         </div>
 
@@ -513,17 +548,19 @@ const Sidebar = () => {
             </button>
           )}
 
-          {/* Logout Button */}
-          <button
-            onClick={() => logout()}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all cursor-pointer ${
-              isCollapsed ? "justify-center" : "justify-start"
-            } ${isAdmin ? "mt-2" : "mt-8"}`}
-            title={isCollapsed ? "Logout" : ""}
-          >
-            <LogOut className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="flex-1 text-left">Logout</span>}
-          </button>
+          {/* Logout Button - Only show for authenticated users */}
+          {user && (
+            <button
+              onClick={() => logout()}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 dark:hover:bg-red-500/20 bg-red-500/10 dark:hover:text-red-300 hover:bg-red-500/20 transition-all cursor-pointer ${
+                isCollapsed ? "justify-center" : "justify-start"
+              } ${isAdmin ? "mt-2" : "mt-8"}`}
+              title={isCollapsed ? "Logout" : ""}
+            >
+              <LogOut className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span className="flex-1 text-left">Logout</span>}
+            </button>
+          )}
         </nav>
 
         {/* Footer */}

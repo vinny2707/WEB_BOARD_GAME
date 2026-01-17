@@ -171,10 +171,15 @@ const GameCard = ({ game, onClick }) => {
       </div>
 
       {/* Title Bar */}
-      <div className="text-center py-3 px-4 bg-secondary text-sm font-semibold text-foreground border-t border-border">
-        <span>{game.name.toUpperCase()}</span>
+      <div className="text-center py-3 px-4 bg-secondary/80 border-t border-border">
+        <span 
+          className="text-sm tracking-wide text-foreground"
+          style={{ fontFamily: "'Bungee', cursive" }}
+        >
+          {game.name.toUpperCase()}
+        </span>
         {!isAvailable && (
-          <span className="text-[10px] opacity-70 ml-1">(Soon)</span>
+          <span className="text-[10px] text-muted-foreground ml-1">(Soon)</span>
         )}
       </div>
     </div>
