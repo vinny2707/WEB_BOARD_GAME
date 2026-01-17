@@ -26,7 +26,7 @@ const TicTacToePreview = () => (
 )
 
 const GomokuPreview = () => (
-  <div className="w-full h-full relative bg-white rounded border border-gray-200">
+  <div className="w-full h-full relative bg-white/90 dark:bg-zinc-800/90 backdrop-blur-sm rounded border border-gray-200 dark:border-zinc-700">
     {/* Grid */}
     <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
       {[20, 40, 60, 80].map(pos => (
@@ -224,7 +224,7 @@ const Games = () => {
 
   if (loading) {
     return (
-      <div className="flex-1 w-full h-full flex items-center justify-center bg-background">
+      <div className="flex-1 w-full h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-12 h-12 animate-spin text-primary" />
           <p className="text-muted-foreground">Đang tải danh sách game...</p>
@@ -235,7 +235,7 @@ const Games = () => {
 
   if (error) {
     return (
-      <div className="flex-1 w-full h-full flex items-center justify-center bg-background">
+      <div className="flex-1 w-full h-full flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="text-4xl">😢</div>
           <p className="text-red-500 font-medium">Không thể tải danh sách game</p>
@@ -252,7 +252,7 @@ const Games = () => {
   }
 
   return (
-    <div className="flex-1 w-full h-full p-8 bg-background">
+    <div className="flex-1 w-full h-full p-8">
       {/* Games Grid */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-6 max-w-5xl mx-auto">
         {games.map((game) => (
