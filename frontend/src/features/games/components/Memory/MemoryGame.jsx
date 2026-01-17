@@ -241,19 +241,31 @@ const MemoryGame = () => {
     // Audio
     const gameStartSoundRef = useRef(null);
     const victorySoundRef = useRef(null);
+    const flipSoundRef = useRef(null);
+    const keyboardSoundRef = useRef(null);
 
-    // Initialize sounds
     useEffect(() => {
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
         victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+        flipSoundRef.current = new Audio('/sounds/swap.wav');
+        keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
         gameStartSoundRef.current.load();
         victorySoundRef.current.load();
+        flipSoundRef.current.load();
+        keyboardSoundRef.current.load();
     }, []);
 
     const playSound = useCallback((soundRef) => {
         if (soundRef.current) {
             soundRef.current.currentTime = 0;
             soundRef.current.play().catch(() => { });
+        }
+    }, []);
+
+    const stopSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.pause();
+            soundRef.current.currentTime = 0;
         }
     }, []);
 
@@ -268,6 +280,9 @@ const MemoryGame = () => {
         setIsTyping(true);
         setDisplayedTitle("");
         setDisplayedText("");
+
+        // Play keyboard typing sound
+        playSound(keyboardSoundRef);
 
         const fullTitle = currentStep.title;
         const fullMessage = currentStep.message;
@@ -290,14 +305,18 @@ const MemoryGame = () => {
                 } else {
                     clearInterval(typingRef.current);
                     setIsTyping(false);
+                    // Stop keyboard sound when typing is done
+                    stopSound(keyboardSoundRef);
                 }
             }
         }, 35);
 
         return () => {
             if (typingRef.current) clearInterval(typingRef.current);
+            // Stop keyboard sound on cleanup
+            stopSound(keyboardSoundRef);
         };
-    }, [tutorialStep, gameStatus]);
+    }, [tutorialStep, gameStatus, playSound, stopSound]);
 
     // Timer
     useEffect(() => {
@@ -393,6 +412,7 @@ const MemoryGame = () => {
             }
 
             // Flip the card
+            playSound(flipSoundRef);
             setCards((prev) =>
                 prev.map((c) => (c.id === cardId ? { ...c, isFlipped: true } : c))
             );
@@ -495,6 +515,7 @@ const MemoryGame = () => {
     const nextTutorialStep = () => {
         const currentStep = TUTORIAL_STEPS[tutorialStep];
         if (currentStep?.action === "finish") {
+            stopSound(keyboardSoundRef);
             startGame();
         } else {
             setTutorialStep((prev) => prev + 1);
@@ -502,6 +523,13 @@ const MemoryGame = () => {
     };
 
     const restartGame = async () => {
+        // Start a new session for the new game
+        if (isAuthenticated) {
+            const newCards = createBoard(boardSize, theme);
+            const symbols = newCards.map(c => c.symbol);
+            await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+        }
+
         const newCards = createBoard(boardSize, theme);
         setCards(newCards);
         setFlippedCards([]);
@@ -1043,15 +1071,7 @@ const MemoryGame = () => {
                         <span>Thoát hướng dẫn</span>
                     </button>
                 )}
-                {gameStatus === "playing" && (
-                    <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-secondary rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-                        onClick={restartGame}
-                    >
-                        <RotateCcw size={16} />
-                        <span>Chơi lại</span>
-                    </button>
-                )}
+
             </div>
         </div>
     );

@@ -5,171 +5,133 @@ const BOARD_SIZE = 15;
 // User dùng tọa độ 1-indexed, code dùng 0-indexed
 const pos = (row, col) => (row - 1) * BOARD_SIZE + (col - 1);
 
-// Kịch bản CHÍNH XÁC theo yêu cầu user - FIX 14/01/2026
+// Kịch bản mới: Smart Diagonal Win - Đánh chéo thông minh
 const CARO4_TUTORIAL_STEPS = [
+  // Bước 0: Giới thiệu
   {
     id: 1,
     title: "Chào mừng đến với Caro 4 Hàng! 🎯",
     message:
-      "Chỉ cần 4 quân liên tiếp để thắng! Hãy học các bước chơi thông minh.",
+      "Chỉ cần 4 quân liên tiếp để thắng! Hãy học chiến thuật đường chéo thông minh.",
     action: "click_next",
     highlightCells: [],
     allowedMoves: [],
   },
-  // BƯỚC 1: Khởi đầu - X tại (8,8)
+  // Bước 1: Khai cuộc - X tại (8,8)
   {
     id: 2,
-    title: "Bước 1: Khởi đầu! ✖️",
-    message: "Hãy đánh vào trung tâm (8,8) để kiểm soát bàn cờ.",
+    title: "Bước 1: Khai cuộc! ✖️",
+    message: "Bắt đầu tại trung tâm (8,8) để kiểm soát bàn cờ.",
     action: "click_cell",
     highlightCells: [pos(8, 8)],
     allowedMoves: [pos(8, 8)],
     boardState: Array(BOARD_SIZE * BOARD_SIZE).fill(null),
   },
-  // BƯỚC 2: Tạo liên kết - O tại (6,6), X tại (9,8) → XX ngang
+  // Bước 2: Chuyển hướng - O đánh (8,9), X đánh (9,8)
   {
     id: 3,
-    title: "Bước 2: Tạo liên kết! ➡️",
-    message: "Đánh gần quân của bạn để tạo liên kết. Đánh sang phải tại (9,8)!",
+    title: "Bước 2: Chuyển hướng! 🔄",
+    message: "Máy chặn ngang. Hãy đánh (9,8) để tạo thế dọc.",
     action: "click_cell",
     highlightCells: [pos(9, 8)],
     allowedMoves: [pos(9, 8)],
     boardState: (() => {
       const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
       b[pos(8, 8)] = "X"; // Quân đầu tiên của người chơi
-      b[pos(6, 6)] = "O"; // Máy đi
+      b[pos(8, 9)] = "O"; // Máy chặn ngang
       return b;
     })(),
   },
-  // BƯỚC 3: Tấn công (Hàng 3) - O tại (5,5), X tại (10,8) → XXX ngang
+  // Bước 3: Mở đường chéo - O đánh (10,8), X đánh (9,7)
   {
     id: 4,
-    title: "Bước 3: Tấn công! ⚔️",
-    message: "Tiếp tục nối dài hàng quân để gây áp lực. Đánh tại (10,8)!",
+    title: "Bước 3: Mở đường chéo! ↗️",
+    message: "Dọc bị chặn dưới. Đánh (9,7) để bí mật tạo đường chéo với quân trung tâm.",
     action: "click_cell",
-    highlightCells: [pos(10, 8)],
-    allowedMoves: [pos(10, 8)],
+    highlightCells: [pos(9, 7)],
+    allowedMoves: [pos(9, 7)],
     boardState: (() => {
       const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
       b[pos(8, 8)] = "X"; // Quân 1
       b[pos(9, 8)] = "X"; // Quân 2
-      b[pos(6, 6)] = "O"; // Máy đi lượt 1
-      b[pos(5, 5)] = "O"; // Máy đi lượt 2
+      b[pos(8, 9)] = "O"; // Máy chặn ngang
+      b[pos(10, 8)] = "O"; // Máy chặn dọc
       return b;
     })(),
   },
-  // BƯỚC 4: Phòng thủ bắt buộc - Máy tạo 3 quân dọc tại (12,5)(12,6)(12,7), X chặn tại (12,8)
+  // Bước 4: Tạo Open 3 (Thế thắng) - O đánh (9,6), X đánh (10,6)
   {
     id: 5,
-    title: "Bước 4: Phòng thủ bắt buộc! 🛡️",
-    message: "Cẩn thận! Đối thủ sắp có 4 quân. Hãy chặn ngay đầu ô (12,8)!",
+    title: "Bước 4: Tạo Open 3! 🎯",
+    message: "Máy mắc bẫy chặn ngang! Đánh ngay (10,6) để hoàn thành bộ 3 đường chéo không thể cản phá.",
     action: "click_cell",
-    highlightCells: [pos(12, 8)],
-    allowedMoves: [pos(12, 8)],
+    highlightCells: [pos(10, 6)],
+    allowedMoves: [pos(10, 6)],
     boardState: (() => {
       const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
-      // X có 3 quân ngang
-      b[pos(8, 8)] = "X";
-      b[pos(9, 8)] = "X";
-      b[pos(10, 8)] = "X";
-      // O tạo 3 quân dọc đe dọa tại cột 12!
-      b[pos(12, 5)] = "O";
-      b[pos(12, 6)] = "O";
-      b[pos(12, 7)] = "O";
-      // O cũ
-      b[pos(6, 6)] = "O";
-      b[pos(5, 5)] = "O";
+      b[pos(8, 8)] = "X"; // Quân 1 - trung tâm
+      b[pos(9, 8)] = "X"; // Quân 2 - dọc
+      b[pos(9, 7)] = "X"; // Quân 3 - chéo
+      b[pos(8, 9)] = "O"; // Máy chặn ngang
+      b[pos(10, 8)] = "O"; // Máy chặn dọc
+      b[pos(9, 6)] = "O"; // Máy mắc bẫy chặn ngang (không nhận ra đường chéo)
       return b;
     })(),
   },
-  // BƯỚC 5: Mở rộng tấn công - O tại (2,2), X tại (7,8) → XXXX ngang (Open 4)
+  // Bước 5: Chiến thắng - O đánh (7,9), X đánh (11,5)
   {
     id: 6,
-    title: "Bước 5: Mở rộng tấn công! 🎯",
-    message:
-      "Quay lại tấn công. Hãy kéo dài chuỗi quân của bạn thành 4 tại (7,8)!",
+    title: "Bước 5: Chiến thắng! 🏆",
+    message: "Kết thúc trận đấu! Đánh vào (11,5) để hoàn thành 4 quân liên tiếp đường chéo.",
     action: "click_cell",
-    highlightCells: [pos(7, 8)],
-    allowedMoves: [pos(7, 8)],
+    highlightCells: [pos(11, 5)],
+    allowedMoves: [pos(11, 5)],
     boardState: (() => {
       const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
-      // X có 3 quân ngang + đã chặn
-      b[pos(8, 8)] = "X";
-      b[pos(9, 8)] = "X";
-      b[pos(10, 8)] = "X";
-      b[pos(12, 8)] = "X"; // Đã chặn O
-      // O quân cũ
-      b[pos(12, 5)] = "O";
-      b[pos(12, 6)] = "O";
-      b[pos(12, 7)] = "O";
-      b[pos(6, 6)] = "O";
-      b[pos(5, 5)] = "O";
-      b[pos(2, 2)] = "O"; // Máy đánh vu vơ
+      // Chuỗi chéo X: (8,8) - (9,7) - (10,6) - sẽ thêm (11,5)
+      b[pos(8, 8)] = "X"; // Quân 1
+      b[pos(9, 8)] = "X"; // Quân phụ (dọc)
+      b[pos(9, 7)] = "X"; // Quân 2 - chéo
+      b[pos(10, 6)] = "X"; // Quân 3 - chéo
+      // Máy
+      b[pos(8, 9)] = "O";
+      b[pos(10, 8)] = "O";
+      b[pos(9, 6)] = "O";
+      b[pos(7, 9)] = "O"; // Máy đánh lung tung
       return b;
     })(),
   },
-  // BƯỚC 6: Chiến thắng - O tại (6,10), X tại (11,8) hoặc (6,8) → 5 quân liên tiếp WIN!
+  // Hiển thị chiến thắng
   {
     id: 7,
-    title: "Bước 6: Chiến thắng! 🏆",
-    message: "Kết liễu! Đánh nước thứ 5 để chiến thắng tại (11,8)!",
-    action: "click_cell",
-    highlightCells: [pos(11, 8)],
-    allowedMoves: [pos(11, 8)],
-    boardState: (() => {
-      const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
-      // X có 4 quân ngang: (7,8) - (8,8) - (9,8) - (10,8) - Open 4!
-      b[pos(7, 8)] = "X";
-      b[pos(8, 8)] = "X";
-      b[pos(9, 8)] = "X";
-      b[pos(10, 8)] = "X";
-      b[pos(12, 8)] = "X"; // Đã chặn O trước đó
-      // O quân cũ
-      b[pos(12, 5)] = "O";
-      b[pos(12, 6)] = "O";
-      b[pos(12, 7)] = "O";
-      b[pos(6, 6)] = "O";
-      b[pos(5, 5)] = "O";
-      b[pos(2, 2)] = "O";
-      b[pos(6, 10)] = "O"; // Máy cố chặn nhưng đã muộn
-      return b;
-    })(),
-  },
-  // Hiển thị chiến thắng - 5 quân liên tiếp
-  {
-    id: 8,
     title: "Chiến thắng! 🎉",
     message:
-      "Xuất sắc! 5 X liên tiếp theo hàng ngang (7,8) → (11,8)! Bạn đã học được cách tấn công, phòng thủ và chiến thắng!",
+      "Xuất sắc! 4 X liên tiếp theo đường chéo (8,8) → (9,7) → (10,6) → (11,5)! Bạn đã học được chiến thuật đường chéo bất ngờ!",
     action: "click_next",
-    highlightCells: [pos(7, 8), pos(8, 8), pos(9, 8), pos(10, 8), pos(11, 8)],
+    highlightCells: [pos(8, 8), pos(9, 7), pos(10, 6), pos(11, 5)],
     allowedMoves: [],
     boardState: (() => {
       const b = Array(BOARD_SIZE * BOARD_SIZE).fill(null);
-      // X WIN! 5 quân liên tiếp ngang
-      b[pos(7, 8)] = "X";
-      b[pos(8, 8)] = "X";
-      b[pos(9, 8)] = "X";
-      b[pos(10, 8)] = "X";
-      b[pos(11, 8)] = "X"; // WIN!
-      b[pos(12, 8)] = "X"; // Đã chặn O
-      // O quân cũ
-      b[pos(12, 5)] = "O";
-      b[pos(12, 6)] = "O";
-      b[pos(12, 7)] = "O";
-      b[pos(6, 6)] = "O";
-      b[pos(5, 5)] = "O";
-      b[pos(2, 2)] = "O";
-      b[pos(6, 10)] = "O";
+      // Chuỗi chéo thắng: (8,8) - (9,7) - (10,6) - (11,5)
+      b[pos(8, 8)] = "X"; // Quân 1
+      b[pos(9, 7)] = "X"; // Quân 2
+      b[pos(10, 6)] = "X"; // Quân 3
+      b[pos(11, 5)] = "X"; // Quân 4 - WIN!
+      b[pos(9, 8)] = "X"; // Quân phụ (dọc)
+      // Máy
+      b[pos(8, 9)] = "O";
+      b[pos(10, 8)] = "O";
+      b[pos(9, 6)] = "O";
+      b[pos(7, 9)] = "O";
       return b;
     })(),
   },
   // Hoàn thành
   {
-    id: 9,
+    id: 8,
     title: "Hoàn thành! 🚀",
     message:
-      "Bạn đã học: 1) Chiếm trung tâm. 2) Tạo liên kết. 3) Tấn công nối dài. 4) Nhận biết nguy hiểm & chặn. 5) Mở rộng tấn công. 6) Kết liễu chiến thắng!",
+      "Bạn đã học: 1) Chiếm trung tâm. 2) Chuyển hướng khi bị chặn. 3) Tạo đường chéo bí mật. 4) Kết liễu chiến thắng bằng đường chéo!",
     action: "finish",
     highlightCells: [],
     allowedMoves: [],

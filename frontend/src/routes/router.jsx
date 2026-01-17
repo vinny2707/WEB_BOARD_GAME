@@ -33,6 +33,8 @@ import {
   MemoryLobby,
   DrawingGame,
   DrawingLobby,
+  DotArtGame,
+  DotArtLobby,
   GameHistory,
 } from "../features/games/components";
 
@@ -159,6 +161,16 @@ const router = createBrowserRouter([
             // Drawing Game
             element: <DrawingGame />,
             path: "games/drawing/play",
+          },
+          {
+            // DotArt Lobby
+            element: <DotArtLobby />,
+            path: "games/dotart",
+          },
+          {
+            // DotArt Game
+            element: <DotArtGame />,
+            path: "games/dotart/play",
           },
         ],
       },

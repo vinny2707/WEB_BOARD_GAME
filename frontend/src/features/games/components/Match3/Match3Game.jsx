@@ -24,6 +24,14 @@ const Match3Game = () => {
   const swapAnimRef = useRef(null);
   const fallingRef = useRef(false);
 
+  // Audio refs
+  const swapSoundRef = useRef(null);
+  const matchSoundRef = useRef(null);
+  const comboSoundRef = useRef(null);
+  const failSoundRef = useRef(null);
+  const gameStartSoundRef = useRef(null);
+  const victorySoundRef = useRef(null);
+  const keyboardSoundRef = useRef(null);
   // Drag-and-drop refs
   const dragStartRef = useRef(null);
   const isDraggingRef = useRef(false);
@@ -85,6 +93,114 @@ const Match3Game = () => {
 
   useEffect(() => { boardRef.current = board; }, [board]);
   useEffect(() => { selectedCellRef.current = selectedCell; }, [selectedCell]);
+
+  // Load images
+  useEffect(() => {
+    const images = ALL_CANDY_ICONS.map(src => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    });
+    imagesRef.current = images;
+    Promise.all(images.map(img => new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+    }))).then(() => { imagesLoadedRef.current = true; });
+
+    swapSoundRef.current = new Audio('/sounds/swap.wav');
+    matchSoundRef.current = new Audio('/sounds/match.wav');
+    comboSoundRef.current = new Audio('/sounds/combo.wav');
+    failSoundRef.current = new Audio('/sounds/fail-game.wav');
+    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+    victorySoundRef.current = new Audio('/sounds/Victory.mp3');
+    keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
+
+    // Preload sounds
+    swapSoundRef.current.load();
+    matchSoundRef.current.load();
+    comboSoundRef.current.load();
+    failSoundRef.current.load();
+    gameStartSoundRef.current.load();
+    victorySoundRef.current.load();
+    keyboardSoundRef.current.load();
+  }, []);
+
+  const playSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.currentTime = 0;
+      soundRef.current.play().catch(() => { });
+    }
+  }, []);
+
+  const stopSound = useCallback((soundRef) => {
+    if (soundRef.current) {
+      soundRef.current.pause();
+      soundRef.current.currentTime = 0;
+    }
+  }, []);
+
+  // Typewriter effect for tutorial
+  useEffect(() => {
+    if (gameStatus !== "tutorial") return;
+    const step = TUTORIAL_STEPS[tutorialStep];
+    if (!step) return;
+
+    if (typingRef.current) clearInterval(typingRef.current);
+    setIsTyping(true);
+    setDisplayedTitle("");
+    setDisplayedText("");
+
+    // Play keyboard typing sound
+    playSound(keyboardSoundRef);
+
+    let titleIdx = 0, msgIdx = 0, phase = 'title';
+    typingRef.current = setInterval(() => {
+      if (phase === 'title') {
+        if (titleIdx < step.title.length) {
+          setDisplayedTitle(step.title.slice(0, ++titleIdx));
+        } else phase = 'message';
+      } else {
+        if (msgIdx < step.message.length) {
+          setDisplayedText(step.message.slice(0, ++msgIdx));
+        } else {
+          clearInterval(typingRef.current);
+          setIsTyping(false);
+          stopSound(keyboardSoundRef);
+        }
+      }
+    }, 40);
+
+    return () => {
+      clearInterval(typingRef.current);
+      stopSound(keyboardSoundRef);
+    };
+  }, [tutorialStep, gameStatus, playSound, stopSound]);
+
+  // Find matches
+  const findMatches = useCallback((currentBoard) => {
+    const matches = new Set();
+    for (let row = 0; row < boardSize; row++) {
+      for (let col = 0; col < boardSize - 2; col++) {
+        const idx = row * boardSize + col;
+        const type = currentBoard[idx]?.type;
+        if (type !== null && type !== undefined && currentBoard[idx + 1]?.type === type && currentBoard[idx + 2]?.type === type) {
+          matches.add(idx); matches.add(idx + 1); matches.add(idx + 2);
+          if (col < boardSize - 3 && currentBoard[idx + 3]?.type === type) matches.add(idx + 3);
+        }
+      }
+    }
+    for (let col = 0; col < boardSize; col++) {
+      for (let row = 0; row < boardSize - 2; row++) {
+        const idx = row * boardSize + col;
+        const type = currentBoard[idx]?.type;
+        if (type !== null && type !== undefined && currentBoard[idx + boardSize]?.type === type && currentBoard[idx + boardSize * 2]?.type === type) {
+          matches.add(idx); matches.add(idx + boardSize); matches.add(idx + boardSize * 2);
+          if (row < boardSize - 3 && currentBoard[idx + boardSize * 3]?.type === type) matches.add(idx + boardSize * 3);
+        }
+      }
+    }
+    return matches;
+  }, [boardSize]);
 
   // Add particles for explosion effect
   const addParticles = useCallback((indices, currentBoard) => {
@@ -670,8 +786,10 @@ const Match3Game = () => {
 
   const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
   const nextTutorialStep = () => {
-    if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") startGame();
-    else setTutorialStep(prev => prev + 1);
+    if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") {
+      stopSound(keyboardSoundRef);
+      startGame();
+    } else setTutorialStep(prev => prev + 1);
   };
 
   // Typewriter effect

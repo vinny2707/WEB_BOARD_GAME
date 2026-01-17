@@ -21,13 +21,13 @@ const DIFFICULTY_SETTINGS = {
     hard: { speed: 70, label: 'Khó' }
 };
 
-// Tutorial steps
+// Tutorial steps - direction sequence: RIGHT → UP → LEFT → DOWN (each 90° turn)
 const TUTORIAL_STEPS = [
     { id: 1, title: 'Chào mừng! 🐍', message: 'Hãy học cách điều khiển rắn!', action: 'click_next', requiredKey: null },
     { id: 2, title: 'Đi sang phải ➡️', message: 'Nhấn → hoặc D để đi phải!', action: 'press_key_and_eat', requiredKey: 'RIGHT' },
     { id: 3, title: 'Đi lên ⬆️', message: 'Nhấn ↑ hoặc W để đi lên!', action: 'press_key_and_eat', requiredKey: 'UP' },
-    { id: 4, title: 'Đi xuống ⬇️', message: 'Nhấn ↓ hoặc S để đi xuống!', action: 'press_key_and_eat', requiredKey: 'DOWN' },
-    { id: 5, title: 'Đi sang trái ⬅️', message: 'Nhấn ← hoặc A để đi trái!', action: 'press_key_and_eat', requiredKey: 'LEFT' },
+    { id: 4, title: 'Đi sang trái ⬅️', message: 'Nhấn ← hoặc A để đi trái!', action: 'press_key_and_eat', requiredKey: 'LEFT' },
+    { id: 5, title: 'Đi xuống ⬇️', message: 'Nhấn ↓ hoặc S để đi xuống!', action: 'press_key_and_eat', requiredKey: 'DOWN' },
     { id: 6, title: 'Cảnh báo! ⚠️', message: 'KHÔNG va vào tường và thân mình!', action: 'click_next', requiredKey: null },
     { id: 7, title: 'Hoàn thành! 🏆', message: 'Bạn đã sẵn sàng! Chúc may mắn!', action: 'finish', requiredKey: null }
 ];
@@ -84,6 +84,7 @@ const SnakeGame = () => {
     const foodRef = useRef(food);
     const gameStatusRef = useRef(gameStatus);
     const scoreRef = useRef(score);
+    const tutorialStepRef = useRef(tutorialStep);
     const typingRef = useRef(null);
 
     // Audio refs
@@ -92,6 +93,7 @@ const SnakeGame = () => {
     const turnSoundRef = useRef(null);
     const collisionSoundRef = useRef(null);
     const gameStartSoundRef = useRef(null);
+    const keyboardSoundRef = useRef(null);
 
     // Canvas size
     const canvasSize = boardSize * CELL_SIZE;
@@ -102,14 +104,15 @@ const SnakeGame = () => {
     useEffect(() => { foodRef.current = food; }, [food]);
     useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
     useEffect(() => { scoreRef.current = score; }, [score]);
+    useEffect(() => { tutorialStepRef.current = tutorialStep; }, [tutorialStep]);
 
-    // Initialize sounds
     useEffect(() => {
         eatSoundRef.current = new Audio('/sounds/eat.wav');
         failSoundRef.current = new Audio('/sounds/fail-game.wav');
         turnSoundRef.current = new Audio('/sounds/re-huong.wav');
         collisionSoundRef.current = new Audio('/sounds/vatuong-tucan.wav');
         gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
+        keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
 
         // Preload
         eatSoundRef.current.load();
@@ -117,13 +120,20 @@ const SnakeGame = () => {
         turnSoundRef.current.load();
         collisionSoundRef.current.load();
         gameStartSoundRef.current.load();
+        keyboardSoundRef.current.load();
     }, []);
 
-    // Play sound helper
     const playSound = useCallback((soundRef) => {
         if (soundRef.current) {
             soundRef.current.currentTime = 0;
             soundRef.current.play().catch(() => { });
+        }
+    }, []);
+
+    const stopSound = useCallback((soundRef) => {
+        if (soundRef.current) {
+            soundRef.current.pause();
+            soundRef.current.currentTime = 0;
         }
     }, []);
 
@@ -153,6 +163,35 @@ const SnakeGame = () => {
                 y: Math.floor(Math.random() * boardSize)
             };
         } while (currentSnake.some(seg => seg.x === newFood.x && seg.y === newFood.y));
+        return newFood;
+    }, [boardSize]);
+
+    // Generate tutorial food based on next step's required direction
+    const generateTutorialFood = useCallback((currentSnake, nextStepIndex) => {
+        const head = currentSnake[0];
+        const nextStep = TUTORIAL_STEPS[nextStepIndex];
+        const requiredDir = nextStep?.requiredKey;
+
+        // Calculate food position based on required direction (3 cells away)
+        const dirOffsets = {
+            RIGHT: { x: 3, y: 0 },
+            LEFT: { x: -3, y: 0 },
+            UP: { x: 0, y: -3 },
+            DOWN: { x: 0, y: 3 }
+        };
+
+        const offset = dirOffsets[requiredDir] || { x: 3, y: 0 };
+        let newFood = {
+            x: Math.max(1, Math.min(boardSize - 2, head.x + offset.x)),
+            y: Math.max(1, Math.min(boardSize - 2, head.y + offset.y))
+        };
+
+        // Make sure food isn't on snake
+        while (currentSnake.some(seg => seg.x === newFood.x && seg.y === newFood.y)) {
+            newFood.x = (newFood.x + 1) % boardSize;
+            newFood.y = (newFood.y + 1) % boardSize;
+        }
+
         return newFood;
     }, [boardSize]);
 
@@ -237,8 +276,9 @@ const SnakeGame = () => {
                 }
                 return newScore;
             });
-            setFood(generateFood(newSnake));
+            // In tutorial mode, don't place food here - it will be placed after snake stops
             if (gameStatusRef.current !== 'tutorial') {
+                setFood(generateFood(newSnake));
                 setSpeed(prev => Math.max(50, prev - 3));
             }
         } else {
@@ -483,7 +523,7 @@ const SnakeGame = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [gameStatus, tutorialStep, tutorialMoving]);
 
-    // Tutorial food advancement
+    // Tutorial food advancement - place food AFTER snake has stopped
     useEffect(() => {
         if (gameStatus !== 'tutorial') return;
         const currentStep = TUTORIAL_STEPS[tutorialStep];
@@ -491,10 +531,17 @@ const SnakeGame = () => {
             const expectedEaten = tutorialStep - 1;
             if (tutorialFoodEaten > expectedEaten) {
                 setTutorialMoving(false);
+                // Place food for next step AFTER snake has stopped at its final position
+                // Use setTimeout to ensure snake state has updated
+                setTimeout(() => {
+                    const currentSnake = snakeRef.current;
+                    const nextStepIndex = tutorialStep + 1;
+                    setFood(generateTutorialFood(currentSnake, nextStepIndex));
+                }, 50);
                 setTutorialStep(prev => prev + 1);
             }
         }
-    }, [tutorialFoodEaten, tutorialStep, gameStatus]);
+    }, [tutorialFoodEaten, tutorialStep, gameStatus, generateTutorialFood]);
 
     // Typewriter effect
     useEffect(() => {
@@ -506,6 +553,9 @@ const SnakeGame = () => {
         setIsTyping(true);
         setDisplayedTitle('');
         setDisplayedText('');
+
+        // Play keyboard typing sound
+        playSound(keyboardSoundRef);
 
         let titleIdx = 0, msgIdx = 0, phase = 'title';
         typingRef.current = setInterval(() => {
@@ -519,12 +569,18 @@ const SnakeGame = () => {
                 } else {
                     clearInterval(typingRef.current);
                     setIsTyping(false);
+                    // Stop keyboard sound when typing is done
+                    stopSound(keyboardSoundRef);
                 }
             }
         }, 40);
 
-        return () => clearInterval(typingRef.current);
-    }, [tutorialStep, gameStatus]);
+        return () => {
+            clearInterval(typingRef.current);
+            // Stop keyboard sound on cleanup
+            stopSound(keyboardSoundRef);
+        };
+    }, [tutorialStep, gameStatus, playSound, stopSound]);
 
     // Game controls
     const startGame = async () => {
@@ -622,11 +678,13 @@ const SnakeGame = () => {
         const initialSnake = [{ x: 5, y: 10 }];
         setSnake(initialSnake);
         setSmoothSnake([{ x: 5 * CELL_SIZE + CELL_SIZE / 2, y: 10 * CELL_SIZE + CELL_SIZE / 2 }]);
-        setFood({ x: 12, y: 10 });
+        // Place food to the RIGHT for step 1 (index 1 = "Đi sang phải")
+        setFood({ x: 8, y: 10 }); // 3 cells to the right
         setDirection(DIRECTIONS.RIGHT);
         directionRef.current = DIRECTIONS.RIGHT;
         setScore(0);
         setTutorialStep(0);
+        tutorialStepRef.current = 0;
         setTutorialFoodEaten(0);
         setTutorialMoving(false);
         setGameStatus('tutorial');
@@ -639,8 +697,10 @@ const SnakeGame = () => {
 
     const nextTutorialStep = () => {
         const step = TUTORIAL_STEPS[tutorialStep];
-        if (step?.action === 'finish') startGame();
-        else setTutorialStep(prev => prev + 1);
+        if (step?.action === 'finish') {
+            stopSound(keyboardSoundRef);
+            startGame();
+        } else setTutorialStep(prev => prev + 1);
     };
 
     const togglePause = () => {
