@@ -6,7 +6,7 @@ import useGameSession from '../../hooks/useGameSession';
 // Local modules
 import { 
   CELL_SIZE, DEFAULT_BOARD_SIZE, SWAP_DURATION, GRAVITY, BOUNCE_FACTOR, FALL_SPEED_LIMIT,
-  CANDY_COLORS, DIFFICULTY_SETTINGS, TUTORIAL_STEPS 
+  ALL_CANDY_ICONS, CANDY_COLORS, DIFFICULTY_SETTINGS, TUTORIAL_STEPS 
 } from './constants';
 import { clampWithElastic } from './utils';
 import { createBoard, findMatches, isAdjacent, getSwapTarget, findHint } from './gameLogic';
@@ -125,7 +125,7 @@ const Match3Game = () => {
     keyboardSoundRef.current.load();
   }, []);
 
-  const playSound = useCallback((soundRef) => {
+  const playSoundRef = useCallback((soundRef) => {
     if (soundRef.current) {
       soundRef.current.currentTime = 0;
       soundRef.current.play().catch(() => { });
