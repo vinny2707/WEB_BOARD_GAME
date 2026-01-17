@@ -24,7 +24,17 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
   const navigate = useNavigate();
 
   const handleMessageClick = () => {
-    navigate("/messages", { state: { selectedUserId: friend.id } });
+    navigate("/messages", {
+      state: {
+        selectedUserId: friend.id,
+        friendData: {
+          id: friend.id,
+          username: friend.username,
+          full_name: friend.full_name,
+          avatar_url: friend.avatar_url,
+        },
+      },
+    });
   };
 
   return (
@@ -48,7 +58,7 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
           <h3 className="font-semibold text-gray-900 dark:text-white truncate">
             {friend.full_name || friend.username}
           </h3>
-          
+
           <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             @{friend.username}
           </p>

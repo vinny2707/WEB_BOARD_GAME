@@ -6,8 +6,9 @@ import {
   Search,
   ArrowLeft,
   MoreVertical,
+  Users,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/api/axios";
 import { toast } from "sonner";
 import { getInitials } from "@/utils/Username";
@@ -30,9 +31,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUser } from "@/contexts/UserProvider";
 
 export default function Messages() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -43,6 +46,8 @@ export default function Messages() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const messagesEndRef = useRef(null);
+  const hasHandledNavigation = useRef(false);
+  const { isAuthenticated } = useUser();
 
   // Fetch conversations (inbox)
   const fetchConversations = async () => {
@@ -71,7 +76,11 @@ export default function Messages() {
       const response = await api.get(`/api/messages/conversation/${userId}`, {
         params: { limit: 50 },
       });
-      setMessages(response.data.data || []);
+      // Sort messages from oldest to newest (top to bottom)
+      const sortedMessages = (response.data.data || []).sort(
+        (a, b) => new Date(a.sent_at) - new Date(b.sent_at)
+      );
+      setMessages(sortedMessages);
       // Mark messages as read
       await api.put(`/api/messages/conversation/${userId}/read`);
       fetchUnreadCount();
@@ -94,20 +103,53 @@ export default function Messages() {
 
   // Handle navigation state (when coming from Friends page)
   useEffect(() => {
-    if (location.state?.selectedUserId && conversations.length > 0) {
-      const conversation = conversations.find(
-        (conv) => conv.user.id === location.state.selectedUserId
-      );
+    if (
+      location.state?.selectedUserId &&
+      !hasHandledNavigation.current &&
+      conversations.length > 0
+    ) {
+      const userId = location.state.selectedUserId;
+      const friendData = location.state.friendData;
+
+      let conversation = conversations.find((conv) => conv.user.id === userId);
+
+      // If conversation doesn't exist, create a virtual one
+      if (!conversation && friendData) {
+        conversation = {
+          user: {
+            id: friendData.id,
+            username: friendData.username,
+            full_name: friendData.full_name,
+            avatar_url: friendData.avatar_url,
+          },
+          last_message: null,
+          unread_count: 0,
+        };
+        // Add to conversations list
+        setConversations((prev) => [conversation, ...prev]);
+      }
+
       if (conversation) {
         handleSelectConversation(conversation);
       }
+
+      hasHandledNavigation.current = true;
+      // Clear the navigation state
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, conversations]);
+  }, [location.state, conversations, navigate]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Reset navigation handler when leaving the page
+  useEffect(() => {
+    return () => {
+      hasHandledNavigation.current = false;
+    };
+  }, []);
 
   // Handle select conversation
   const handleSelectConversation = (conversation) => {
@@ -129,7 +171,6 @@ export default function Messages() {
       setNewMessage("");
       fetchMessages(selectedConversation.user.id);
       fetchConversations();
-      toast.success("Message sent");
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -179,6 +220,29 @@ export default function Messages() {
     return date.toLocaleDateString();
   };
 
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+          <Users className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+            Vui lòng đăng nhập để xem danh sách tin nhắn
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-zinc-900/50 h-full">
       {/* Conversations List */}
@@ -205,6 +269,15 @@ export default function Messages() {
                 )}
               </div>
             </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/social")}
+              className="mr-1 cursor-pointer"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
           </div>
 
           {/* Search */}
@@ -348,11 +421,13 @@ export default function Messages() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-zinc-50 dark:bg-zinc-900/30">
               {messages.length === 0 ? (
-                <div className="text-center py-12">
-                  <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    Start your conversation
-                  </p>
+                <div className="w-full h-full flex items-center justify-center text-center py-12">
+                  <div className="">
+                    <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Start your conversation
+                    </p>
+                  </div>
                 </div>
               ) : (
                 messages.map((message) => (
@@ -423,7 +498,6 @@ export default function Messages() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      handleSendMessage(e);
                     }
                   }}
                   className="flex-1 resize-none dark:bg-zinc-800 dark:border-zinc-700 dark:text-white min-h-[40px] max-h-[120px]"

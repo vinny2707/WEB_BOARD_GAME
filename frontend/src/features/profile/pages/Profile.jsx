@@ -168,10 +168,12 @@ const Profile = () => {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+      <div className="w-full min-h-screen flex-1 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
           <User className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Bạn chưa đăng nhập
+          </h2>
           <p className="text-zinc-500 dark:text-zinc-400 mb-6">
             Vui lòng đăng nhập để xem profile của bạn
           </p>
