@@ -165,10 +165,31 @@ const Profile = () => {
     return colors[category] || colors.beginner;
   };
 
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="w-full flex-1 p-4 sm:p-6 flex items-center justify-center">
+        <div className="text-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-zinc-800 shadow-lg">
+          <User className="w-16 h-16 text-zinc-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold dark:text-white mb-2">Bạn chưa đăng nhập</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 mb-6">
+            Vui lòng đăng nhập để xem profile của bạn
+          </p>
+          <a
+            href="/auth"
+            className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg"
+          >
+            Đăng nhập
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6 dark:bg-zinc-900/50">
+    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Profile Card */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
           {/* Avatar with Image or Initials */}
           <div className="relative group">
@@ -362,7 +383,7 @@ const Profile = () => {
       </div>
 
       {/* Achievements Section */}
-      <div className="w-full bg-zinc-50 border-gray-200 dark:bg-zinc-900/50 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full bg-white/70 dark:bg-zinc-900/70 backdrop-blur-sm border-gray-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl">

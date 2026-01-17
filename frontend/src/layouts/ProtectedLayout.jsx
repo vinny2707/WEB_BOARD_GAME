@@ -4,12 +4,7 @@ import { useUser } from "@/contexts/UserProvider";
 import { Navigate } from "react-router-dom";
 
 const ProtectedLayout = () => {
-  const { isAuthenticated } = useUser();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/landing" replace />;
-  }
-
+  // Removed authentication check to allow access without login
   return <Outlet />;
 };
 
