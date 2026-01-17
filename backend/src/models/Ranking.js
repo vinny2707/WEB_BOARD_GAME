@@ -97,9 +97,11 @@ class Ranking {
                 r.updated_at,
                 u.username,
                 u.full_name,
-                u.email
+                u.email,
+                i.url as avatar_url
             FROM rankings r
             JOIN users u ON r.user_id = u.id
+            LEFT JOIN images i ON u.avatar_id = i.id
             WHERE ${whereClause}
             ORDER BY r.total_score DESC
             LIMIT ? OFFSET ?
@@ -114,7 +116,8 @@ class Ranking {
                 id: r.user_id,
                 username: r.username,
                 full_name: r.full_name,
-                email: r.email
+                email: r.email,
+                avatar_url: r.avatar_url || null
             },
             stats: {
                 total_games: r.total_games,
