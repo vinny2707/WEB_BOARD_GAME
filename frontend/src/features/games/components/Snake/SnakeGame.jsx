@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Play, Pause, RotateCcw, Settings, Trophy, BookOpen, X, ChevronRight } from 'lucide-react';
+import { Home, Play, Pause, RotateCcw, Settings, Trophy, BookOpen, X, ChevronRight, Save } from 'lucide-react';
 import useGameSession from '../../hooks/useGameSession';
 
 // Game Constants
@@ -41,10 +41,11 @@ const SnakeGame = () => {
     const gameTickRef = useRef(0);
 
     // Session tracking for rankings (gameId=4 for Snake)
-    const { completeGame, isAuthenticated } = useGameSession(4);
+    const { completeGame, startSession, saveProgress, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(4);
 
-    // Settings from lobby
+    // Settings from lobby and resume session
     const lobbySettings = location.state?.settings || {};
+    const resumeSession = location.state?.resumeSession;
     const boardSize = lobbySettings.boardSize || 20;
     const wallMode = lobbySettings.wallMode || 'solid';
     const initialDifficulty = lobbySettings.difficulty || 'medium';
@@ -82,6 +83,7 @@ const SnakeGame = () => {
     const snakeRef = useRef(snake);
     const foodRef = useRef(food);
     const gameStatusRef = useRef(gameStatus);
+    const scoreRef = useRef(score);
     const typingRef = useRef(null);
 
     // Audio refs
@@ -99,6 +101,7 @@ const SnakeGame = () => {
     useEffect(() => { snakeRef.current = snake; }, [snake]);
     useEffect(() => { foodRef.current = food; }, [food]);
     useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
+    useEffect(() => { scoreRef.current = score; }, [score]);
 
     // Initialize sounds
     useEffect(() => {
@@ -211,7 +214,7 @@ const SnakeGame = () => {
             if (isAuthenticated) {
                 completeGame({
                     result: 'loss',
-                    score: score,
+                    score: scoreRef.current,
                     gameState: { snake: currentSnake, food: currentFood },
                 });
             }
@@ -524,7 +527,7 @@ const SnakeGame = () => {
     }, [tutorialStep, gameStatus]);
 
     // Game controls
-    const startGame = () => {
+    const startGame = async () => {
         playSound(gameStartSoundRef);
         const center = Math.floor(boardSize / 2);
         const initialSnake = [{ x: center, y: center }];
@@ -537,7 +540,83 @@ const SnakeGame = () => {
         setSpeed(DIFFICULTY_SETTINGS[difficulty].speed);
         setGameOverOpacity(0);
         setGameStatus('playing');
+
+        // Start session for API tracking
+        if (isAuthenticated) {
+            await startSession(lobbySettings, { snake: initialSnake, food: generateFood(initialSnake) });
+        }
     };
+
+    // Save game progress manually
+    const handleSaveGame = async () => {
+        if (gameStatus !== 'playing' && gameStatus !== 'paused') return;
+
+        // Pause the game first
+        setGameStatus('paused');
+
+        const gameState = {
+            snake: snakeRef.current,
+            food: foodRef.current,
+            direction: Object.keys(DIRECTIONS).find(k => DIRECTIONS[k] === directionRef.current),
+            score: score,
+        };
+        await saveProgress(gameState);
+        import('sonner').then(({ toast }) => {
+            toast.success('Đã lưu game!', { duration: 2000 });
+        });
+    };
+
+    // Resume game from session if provided
+    useEffect(() => {
+        if (resumeSession?.id && gameStatus === 'idle') {
+            // Set session ID for completing later
+            setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+            // If we have saved game_state with snake data, restore it
+            if (resumeSession.game_state?.snake && resumeSession.game_state.snake.length > 0) {
+                const { snake: savedSnake, food: savedFood, score: savedScore, direction: savedDirection } = resumeSession.game_state;
+                setSnake(savedSnake);
+                setSmoothSnake(savedSnake.map(seg => ({
+                    x: seg.x * CELL_SIZE + CELL_SIZE / 2,
+                    y: seg.y * CELL_SIZE + CELL_SIZE / 2
+                })));
+                if (savedFood) setFood(savedFood);
+                if (savedScore) setScore(savedScore);
+                if (savedDirection && DIRECTIONS[savedDirection]) {
+                    setDirection(DIRECTIONS[savedDirection]);
+                    directionRef.current = DIRECTIONS[savedDirection];
+                }
+                setGameStatus('playing');
+                playSound(gameStartSoundRef);
+            } else {
+                // No game_state saved yet - start fresh game with same session
+                const center = Math.floor(boardSize / 2);
+                const initialSnake = [{ x: center, y: center }];
+                setSnake(initialSnake);
+                setSmoothSnake([{ x: center * CELL_SIZE + CELL_SIZE / 2, y: center * CELL_SIZE + CELL_SIZE / 2 }]);
+                setFood(generateFood(initialSnake));
+                setDirection(DIRECTIONS.RIGHT);
+                directionRef.current = DIRECTIONS.RIGHT;
+                setScore(0);
+                setSpeed(DIFFICULTY_SETTINGS[difficulty].speed);
+                setGameOverOpacity(0);
+                setGameStatus('playing');
+                playSound(gameStartSoundRef);
+            }
+        }
+    }, [resumeSession, setResumeSessionId, boardSize, difficulty, generateFood]);
+
+    // Update game state ref whenever state changes (for beforeunload save)
+    useEffect(() => {
+        if (gameStatus === 'playing' || gameStatus === 'paused') {
+            updateGameState({
+                snake: snakeRef.current,
+                food: foodRef.current,
+                direction: Object.keys(DIRECTIONS).find(k => DIRECTIONS[k] === directionRef.current),
+                score: score,
+            });
+        }
+    }, [snake, food, score, gameStatus, updateGameState]);
 
     const startTutorial = () => {
         const initialSnake = [{ x: 5, y: 10 }];
@@ -617,33 +696,19 @@ const SnakeGame = () => {
                         </>
                     )}
                 </div>
-                <button
-                    className="w-10 h-10 flex items-center justify-center bg-secondary rounded-lg text-muted-foreground hover:bg-accent transition-all"
-                    onClick={() => setShowSettings(!showSettings)}
-                >
-                    <Settings size={20} />
-                </button>
-            </div>
-
-            {/* Settings Panel */}
-            {showSettings && (
-                <div className="px-4 py-3 bg-card border-b border-border">
-                    <div className="text-sm font-semibold text-foreground mb-2">Độ khó</div>
-                    <div className="flex gap-2">
-                        {Object.entries(DIFFICULTY_SETTINGS).map(([key, { label }]) => (
-                            <button
-                                key={key}
-                                className={`flex-1 py-2 px-4 bg-secondary border-2 rounded-lg text-sm font-medium transition-all
-                                    ${difficulty === key ? 'bg-green-500 text-white border-green-500' :
-                                        'text-muted-foreground border-transparent hover:border-green-500'}`}
-                                onClick={() => handleDifficultyChange(key)}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
+                <div className="flex items-center gap-2">
+                    {/* Save Button - only during play/paused */}
+                    {(gameStatus === 'playing' || gameStatus === 'paused') && (
+                        <button
+                            className="w-10 h-10 flex items-center justify-center bg-emerald-500/20 rounded-lg text-emerald-500 hover:bg-emerald-500/30 transition-all"
+                            onClick={handleSaveGame}
+                            title="Lưu game"
+                        >
+                            <Save size={20} />
+                        </button>
+                    )}
                 </div>
-            )}
+            </div>
 
             {/* Score Bar */}
             <div className="flex items-center justify-center gap-8 p-4 bg-card">

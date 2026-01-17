@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { completeGame, startSession, saveSession, getSession } from '../../../api/sessionsApi';
+import { completeGame, startSession, saveSession, getSession, getInProgressSession } from '../../../api/sessionsApi';
 
 /**
  * Custom hook for managing game sessions
@@ -23,6 +23,7 @@ export const useGameSession = (gameId, options = {}) => {
     const movesCountRef = useRef(0);
     const autoSaveIntervalRef = useRef(null);
     const gameStateRef = useRef(null);
+    const sessionIdRef = useRef(null); // Use ref to ensure latest value in callbacks
 
     // Check if user is authenticated (has token)
     const isAuthenticated = useCallback(() => {
@@ -51,6 +52,7 @@ export const useGameSession = (gameId, options = {}) => {
             });
 
             if (response.success && response.data?.id) {
+                sessionIdRef.current = response.data.id;
                 setSessionId(response.data.id);
                 return response.data.id;
             }
@@ -98,7 +100,12 @@ export const useGameSession = (gameId, options = {}) => {
      * @param {Object} result.gameState - Final game state
      */
     const completeGameSession = useCallback((result) => {
-        if (!isAuthenticated() || !gameId) return;
+        // Use sessionIdRef to ensure we have the latest value (state might not be updated yet due to batching)
+        const currentSessionId = sessionIdRef.current || sessionId;
+        if (!isAuthenticated() || !gameId || !currentSessionId) {
+            console.warn('Cannot complete game: missing auth, gameId, or sessionId', { gameId, currentSessionId });
+            return;
+        }
 
         // Clear auto-save interval
         if (autoSaveIntervalRef.current) {
@@ -111,16 +118,15 @@ export const useGameSession = (gameId, options = {}) => {
 
         // Fire-and-forget: don't await, don't set loading state
         // This allows user to navigate away immediately
-        completeGame({
-            game_id: gameId,
+        completeGame(currentSessionId, {
             result: result.result, // 'win', 'loss', 'draw'
             score: result.score || 0,
             moves_count: result.moves_count || movesCountRef.current,
             time_elapsed: timeElapsed,
             game_state: result.gameState || gameStateRef.current,
-            started_at: startTimeRef.current,
         }).then((response) => {
             if (response.success) {
+                sessionIdRef.current = null;
                 setSessionId(null);
 
                 // Play notification sound
@@ -165,7 +171,7 @@ export const useGameSession = (gameId, options = {}) => {
         startTimeRef.current = null;
         movesCountRef.current = 0;
         gameStateRef.current = null;
-    }, [gameId, isAuthenticated]);
+    }, [gameId, isAuthenticated, sessionId]);
 
     /**
      * Resume a game from saved session
@@ -191,6 +197,47 @@ export const useGameSession = (gameId, options = {}) => {
         }
         return null;
     }, [isAuthenticated]);
+
+    /**
+     * Check if there's an in-progress session for this game
+     * @returns {Object|null} Session data if exists
+     */
+    const checkInProgressSession = useCallback(async () => {
+        if (!isAuthenticated() || !gameId) return null;
+
+        try {
+            const session = await getInProgressSession(gameId);
+            return session;
+        } catch (error) {
+            console.error('Failed to check in-progress session:', error);
+            return null;
+        }
+    }, [gameId, isAuthenticated]);
+
+    /**
+     * Update game state ref (for beforeunload save)
+     * @param {Object} state - Current game state
+     */
+    const updateGameState = useCallback((state) => {
+        gameStateRef.current = state;
+    }, []);
+
+    /**
+     * Set session ID from a resumed session
+     * Call this when resuming a game from history
+     * @param {string} id - Session ID from resumeSession
+     * @param {string} startedAt - Original start time
+     * @param {number} movesCount - Moves count so far
+     */
+    const setResumeSessionId = useCallback((id, startedAt = null, movesCount = 0) => {
+        if (id) {
+            sessionIdRef.current = id; // Set ref immediately for use in callbacks
+            setSessionId(id);
+            if (startedAt) startTimeRef.current = startedAt;
+            if (movesCount) movesCountRef.current = movesCount;
+            console.log('Resume session ID set:', id);
+        }
+    }, []);
 
     /**
      * Increment move count
@@ -231,6 +278,33 @@ export const useGameSession = (gameId, options = {}) => {
         };
     }, [autoSave, sessionId, saveInterval, saveProgress]);
 
+    // Setup beforeunload handler to save on unexpected exit
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionId && gameStateRef.current) {
+                // Use sendBeacon for reliable save on page unload
+                const token = localStorage.getItem('token');
+                const data = JSON.stringify({
+                    game_state: gameStateRef.current,
+                    moves_count: movesCountRef.current,
+                    time_elapsed: startTimeRef.current
+                        ? Math.floor((Date.now() - new Date(startTimeRef.current).getTime()) / 1000)
+                        : 0,
+                });
+
+                // Use sendBeacon API for reliable delivery during unload
+                const baseUrl = import.meta.env.VITE_API_URL || '';
+                navigator.sendBeacon(
+                    `${baseUrl}/api/sessions/${sessionId}/save`,
+                    new Blob([data], { type: 'application/json' })
+                );
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [sessionId]);
+
     return {
         // State
         sessionId,
@@ -243,9 +317,13 @@ export const useGameSession = (gameId, options = {}) => {
         saveProgress,
         completeGame: completeGameSession,
         resumeSession,
+        setResumeSessionId,
         incrementMoves,
         getElapsedTime,
+        checkInProgressSession,
+        updateGameState,
     };
 };
 
 export default useGameSession;
+

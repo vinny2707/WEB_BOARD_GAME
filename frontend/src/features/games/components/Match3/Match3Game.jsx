@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, RotateCcw, Settings, Trophy, Zap, BookOpen, X, ChevronRight } from "lucide-react";
+import { Home, RotateCcw, Settings, Trophy, Zap, BookOpen, X, ChevronRight, Save } from "lucide-react";
+import useGameSession from '../../hooks/useGameSession';
 
 // Game Constants
 const CELL_SIZE = 50;
@@ -105,13 +106,17 @@ const Match3Game = () => {
   const gameStartSoundRef = useRef(null);
   const victorySoundRef = useRef(null);
 
-  // Settings
+  // Settings and resume session
   const lobbySettings = location.state?.settings || {};
+  const resumeSession = location.state?.resumeSession;
   const boardSize = lobbySettings.boardSize || DEFAULT_BOARD_SIZE;
   const initialMoves = lobbySettings.moves || 30;
   const targetScore = lobbySettings.targetScore || 5000;
   const difficulty = lobbySettings.difficulty || 'medium';
   const candyCount = DIFFICULTY_SETTINGS[difficulty]?.candies || 6;
+
+  // Session tracking (gameId=6 for Match3)
+  const { completeGame, startSession, saveProgress, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(6);
 
   // Game state
   const [board, setBoard] = useState(() => createBoard(boardSize, candyCount));
@@ -629,15 +634,37 @@ const Match3Game = () => {
       if (score >= targetScore) {
         setGameStatus("win");
         playSound(victorySoundRef);
+        // Complete session with win
+        if (isAuthenticated) {
+          const simplifiedBoard = boardRef.current.map(cell => cell.type);
+          const movesUsed = initialMoves - moves; // Actual moves made
+          completeGame({
+            result: 'win',
+            score,
+            moves_count: movesUsed, // Pass actual moves count
+            gameState: { board: simplifiedBoard, score, moves, combo: comboRef.current }
+          });
+        }
       } else if (moves <= 0) {
         setGameStatus("gameover");
         playSound(failSoundRef);
+        // Complete session with loss
+        if (isAuthenticated) {
+          const simplifiedBoard = boardRef.current.map(cell => cell.type);
+          const movesUsed = initialMoves; // Used all moves
+          completeGame({
+            result: 'loss',
+            score,
+            moves_count: movesUsed, // Pass actual moves count
+            gameState: { board: simplifiedBoard, score, moves, combo: comboRef.current }
+          });
+        }
       }
     }
-  }, [gameStatus, isAnimating, score, moves, targetScore, playSound]);
+  }, [gameStatus, isAnimating, score, moves, targetScore, playSound, isAuthenticated, completeGame, initialMoves]);
 
   // Game controls
-  const startGame = () => {
+  const startGame = async () => {
     playSound(gameStartSoundRef);
     const newBoard = createBoard(boardSize, candyCount);
     boardRef.current = newBoard;
@@ -653,7 +680,92 @@ const Match3Game = () => {
     swapAnimRef.current = null;
     fallingRef.current = false;
     setGameStatus("playing");
+
+    // Start session for API tracking
+    if (isAuthenticated) {
+      const simplifiedBoard = newBoard.map(cell => cell.type);
+      await startSession(lobbySettings, { board: simplifiedBoard, score: 0, moves: initialMoves });
+    }
   };
+
+  // Save game progress manually
+  const handleSaveGame = async () => {
+    if (gameStatus !== 'playing') return;
+
+    // Pause is not applicable for Match3, just save
+    const simplifiedBoard = boardRef.current.map(cell => cell.type);
+    await saveProgress({
+      board: simplifiedBoard,
+      score,
+      moves,
+      combo: comboRef.current
+    });
+    import('sonner').then(({ toast }) => {
+      toast.success('Đã lưu game!', { duration: 2000 });
+    });
+  };
+
+  // Resume game from session if provided
+  useEffect(() => {
+    if (resumeSession?.id && gameStatus === 'idle') {
+      // Set session ID for completing later
+      setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+      // If we have saved game_state with board, restore it
+      if (resumeSession.game_state?.board && resumeSession.game_state.board.length > 0) {
+        const { board: savedBoard, score: savedScore, moves: savedMoves, combo: savedCombo } = resumeSession.game_state;
+        // Reconstruct full board from simplified types
+        const restoredBoard = savedBoard.map((type, i) => ({
+          type: typeof type === 'number' ? type : (type?.type ?? 0),
+          key: Date.now() + i,
+          y: Math.floor(i / boardSize) * CELL_SIZE + CELL_SIZE / 2,
+          targetY: Math.floor(i / boardSize) * CELL_SIZE + CELL_SIZE / 2,
+          vy: 0,
+          scale: 1
+        }));
+        boardRef.current = restoredBoard;
+        setBoard(restoredBoard);
+        if (savedScore !== undefined) setScore(savedScore);
+        if (savedMoves !== undefined) setMoves(savedMoves);
+        if (savedCombo !== undefined) {
+          comboRef.current = savedCombo;
+          setCombo(savedCombo);
+        }
+        setGameStatus('playing');
+        playSound(gameStartSoundRef);
+      } else {
+        // No game_state saved yet - start fresh game with same session
+        const newBoard = createBoard(boardSize, candyCount);
+        boardRef.current = newBoard;
+        setBoard(newBoard);
+        setScore(0);
+        setMoves(initialMoves);
+        setCombo(0);
+        comboRef.current = 0;
+        setSelectedCell(null);
+        setIsAnimating(false);
+        particlesRef.current = [];
+        floatingTextsRef.current = [];
+        swapAnimRef.current = null;
+        fallingRef.current = false;
+        setGameStatus('playing');
+        playSound(gameStartSoundRef);
+      }
+    }
+  }, [resumeSession, boardSize, setResumeSessionId, candyCount, initialMoves]);
+
+  // Update game state for beforeunload save
+  useEffect(() => {
+    if (gameStatus === 'playing') {
+      const simplifiedBoard = boardRef.current.map(cell => cell.type);
+      updateGameState({
+        board: simplifiedBoard,
+        score,
+        moves,
+        combo: comboRef.current
+      });
+    }
+  }, [board, score, moves, gameStatus, updateGameState]);
 
   const startTutorial = () => {
     const newBoard = createBoard(boardSize, candyCount);
@@ -716,7 +828,18 @@ const Match3Game = () => {
             </>
           )}
         </div>
-        <div className="w-10" />
+        {/* Save Button - only during playing */}
+        {gameStatus === 'playing' ? (
+          <button
+            className="w-10 h-10 flex items-center justify-center bg-pink-500/20 rounded-lg text-pink-500 hover:bg-pink-500/30 transition-all"
+            onClick={handleSaveGame}
+            title="Lưu game"
+          >
+            <Save size={20} />
+          </button>
+        ) : (
+          <div className="w-10" />
+        )}
       </div>
 
       {/* Score */}

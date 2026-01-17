@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft } from 'lucide-react';
+import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
+import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
 import {
     fetchGameSettings,
@@ -27,23 +29,11 @@ const DIFFICULTY_SETTINGS = {
     hard: { speed: 80, label: 'Khó' }
 };
 
-// Sample leaderboard data
-const sampleLeaderboard = [
-    { rank: 1, name: 'SnakeMaster', score: 2850, flag: '🇻🇳' },
-    { rank: 2, name: 'SpeedSnake', score: 2420, flag: '🇰🇷' },
-    { rank: 3, name: 'NomNom', score: 2180, flag: '🇨🇳' },
-    { rank: 4, name: 'SlitherKing', score: 1920, flag: '🇯🇵' },
-    { rank: 5, name: 'AppleHunter', score: 1750, flag: '🇺🇸' },
-    { rank: 6, name: 'LongBoi', score: 1580, flag: '🇫🇷' },
-    { rank: 7, name: 'ScaleMaster', score: 1420, flag: '🇬🇧' },
-    { rank: 8, name: 'SnakePro', score: 1280, flag: '🇩🇪' },
-];
+
 
 const SnakeLobby = () => {
     const navigate = useNavigate();
     const playClick = useClickSound();
-    const [countdown, setCountdown] = useState({ hours: 2, minutes: 15, seconds: 45 });
-    const [currentUserRank, setCurrentUserRank] = useState({ rank: 456, name: 'You', score: 980 });
     const [highScore, setHighScore] = useState(() => {
         const saved = localStorage.getItem('snakeHighScore');
         return saved ? parseInt(saved, 10) : 0;
@@ -55,6 +45,9 @@ const SnakeLobby = () => {
     const [isCustomMode, setIsCustomMode] = useState(false);
     const [apiSettings, setApiSettings] = useState(null);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // In-progress session state (controlled by GameSessionHistory callback)
+    const [inProgressSession, setInProgressSession] = useState(null);
 
     // Fetch game settings from API (Snake has gameId = 4)
     useEffect(() => {
@@ -107,6 +100,43 @@ const SnakeLobby = () => {
         navigate('/games/snake/play', { state: { settings: gameSettings } });
     };
 
+    // Handler for when history updates in_progress status
+    const handleInProgressChange = (hasInProgress, firstInProgressSession) => {
+        if (hasInProgress && firstInProgressSession) {
+            setInProgressSession(firstInProgressSession);
+        } else {
+            setInProgressSession(null);
+        }
+    };
+
+    const handleResumeGame = async () => {
+        if (!inProgressSession?.id) return;
+        playClick();
+
+        try {
+            // Fetch full session data with game_state
+            const response = await getSession(inProgressSession.id);
+            const fullSession = response?.data || inProgressSession;
+
+            // Navigate to game with full session data for restoration
+            navigate('/games/snake/play', {
+                state: {
+                    settings: fullSession.settings || gameSettings,
+                    resumeSession: fullSession,
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch session:', error);
+            // Fallback: try with existing data
+            navigate('/games/snake/play', {
+                state: {
+                    settings: inProgressSession.settings || gameSettings,
+                    resumeSession: inProgressSession,
+                }
+            });
+        }
+    };
+
     const handlePlayWithFriend = () => {
         playClick();
         alert('Tính năng chơi với bạn bè đang được phát triển!');
@@ -154,52 +184,7 @@ const SnakeLobby = () => {
             <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
                 {/* Left Side - Leaderboard */}
                 <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
-                        <div className="flex flex-col gap-2">
-                            {sampleLeaderboard.map((player) => (
-                                <div
-                                    key={player.rank}
-                                    className={`flex items - center gap - 3 px - 3 py - 2 rounded - lg transition - colors hover: bg - accent
-                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''} `}
-                                >
-                                    <div className="w-7 text-center">
-                                        {getRankIcon(player.rank)}
-                                    </div>
-                                    <div className="text-xl">
-                                        {player.flag}
-                                    </div>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
-                                    <span className="text-sm font-semibold text-muted-foreground">{player.score.toLocaleString()}</span>
-                                </div>
-                            ))}
-
-                            {/* Current User */}
-                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-green-500/15 to-transparent border border-green-500/30 mt-2">
-                                <div className="w-7 text-center">
-                                    <span className="text-sm font-semibold text-green-500">{currentUserRank.rank}.</span>
-                                </div>
-                                <div className="text-xl">🎮</div>
-                                <span className="flex-1 text-sm font-medium text-foreground">{currentUserRank.name}</span>
-                                <span className="text-sm font-semibold text-muted-foreground">{currentUserRank.score.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-3 mt-2 bg-transparent border-none text-green-500 text-sm font-medium cursor-pointer hover:text-green-600 transition-colors">
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <GameRankings gameId={4} themeColor="green" />
                 </div>
 
                 {/* Center - Play Modes */}
@@ -214,6 +199,20 @@ const SnakeLobby = () => {
                                     <div className="text-xl font-bold text-yellow-500">{highScore}</div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Resume Game Button */}
+                        {inProgressSession && (
+                            <button
+                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse"
+                                onClick={handleResumeGame}
+                            >
+                                <Play size={20} />
+                                <div className="flex-1 flex flex-col text-left">
+                                    <span className="font-semibold">Tiếp tục chơi</span>
+                                    <span className="text-xs opacity-80">Bạn có ván chơi dở - Điểm: {inProgressSession.score || 0}</span>
+                                </div>
+                            </button>
                         )}
 
                         {/* Play Now Button with Settings */}
@@ -265,7 +264,7 @@ const SnakeLobby = () => {
                         </button>
 
                         {/* Game Session History */}
-                        <GameSessionHistory gameId={4} limit={5} />
+                        <GameSessionHistory gameId={4} limit={5} gamePath="/games/snake/play" onInProgressChange={handleInProgressChange} />
                     </div>
 
                     {/* How to Play */}

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft } from 'lucide-react';
+import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft, Play, Save } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
+import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
+import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
 import {
     fetchGameSettings,
@@ -14,17 +16,7 @@ import {
     extractSettingValues
 } from '../../utils/settingsConfig';
 
-// Sample leaderboard data (replace with real API data later)
-const sampleLeaderboard = [
-    { rank: 1, name: 'ProGamer99', score: 11322, flag: '🇻🇳' },
-    { rank: 2, name: 'ChessKing', score: 9308, flag: '🇺🇸' },
-    { rank: 3, name: 'TicTacPro', score: 5579, flag: '🇯🇵' },
-    { rank: 4, name: 'GameMaster', score: 5520, flag: '🇰🇷' },
-    { rank: 5, name: 'WinnerX', score: 4792, flag: '🇬🇧' },
-    { rank: 6, name: 'Player123', score: 3091, flag: '🇫🇷' },
-    { rank: 7, name: 'StarPlayer', score: 3081, flag: '🇩🇪' },
-    { rank: 8, name: 'TopScorer', score: 3014, flag: '🇮🇹' },
-];
+
 
 // Default game settings
 const DEFAULT_SETTINGS = {
@@ -38,8 +30,6 @@ const DEFAULT_SETTINGS = {
 const TicTacToeLobby = () => {
     const navigate = useNavigate();
     const playClick = useClickSound();
-    const [countdown, setCountdown] = useState({ hours: 1, minutes: 48, seconds: 32 });
-    const [currentUserRank, setCurrentUserRank] = useState({ rank: 1385, name: 'You', score: 1002 });
 
     // Settings modal state
     const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -48,6 +38,10 @@ const TicTacToeLobby = () => {
     const [isCustomMode, setIsCustomMode] = useState(false);
     const [apiSettings, setApiSettings] = useState(null);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+
+    // In-progress session state (controlled by GameSessionHistory callback)
+    const [inProgressSession, setInProgressSession] = useState(null);
+    const [latestInProgressId, setLatestInProgressId] = useState(null);
 
     // Fetch game settings from API (TicTacToe has gameId = 3)
     useEffect(() => {
@@ -66,6 +60,17 @@ const TicTacToeLobby = () => {
         };
         loadSettings();
     }, []);
+
+    // Handler for when history updates in_progress status
+    const handleInProgressChange = async (hasInProgress, firstInProgressSession) => {
+        if (hasInProgress && firstInProgressSession) {
+            setInProgressSession(firstInProgressSession);
+            setLatestInProgressId(firstInProgressSession.id);
+        } else {
+            setInProgressSession(null);
+            setLatestInProgressId(null);
+        }
+    };
 
     // Countdown timer for daily leaderboard
     useEffect(() => {
@@ -109,6 +114,34 @@ const TicTacToeLobby = () => {
     const handlePlayVsRobot = () => {
         playClick();
         navigate('/games/tic-tac-toe/play', { state: { settings: gameSettings } });
+    };
+
+    const handleResumeGame = async () => {
+        if (!inProgressSession?.id) return;
+        playClick();
+
+        try {
+            // Fetch full session data with game_state
+            const response = await getSession(inProgressSession.id);
+            const fullSession = response?.data || inProgressSession;
+
+            // Navigate to game with full session data for restoration
+            navigate('/games/tic-tac-toe/play', {
+                state: {
+                    settings: fullSession.settings || gameSettings,
+                    resumeSession: fullSession,
+                }
+            });
+        } catch (error) {
+            console.error('Failed to fetch session:', error);
+            // Fallback: try with existing data
+            navigate('/games/tic-tac-toe/play', {
+                state: {
+                    settings: inProgressSession.settings || gameSettings,
+                    resumeSession: inProgressSession,
+                }
+            });
+        }
     };
 
     const handlePlayWithFriend = () => {
@@ -211,57 +244,27 @@ const TicTacToeLobby = () => {
             <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
                 {/* Left Side - Leaderboard */}
                 <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
-                    <div className="bg-card rounded-2xl p-4 border border-border">
-                        <h3 className="text-base font-semibold text-foreground mb-4 m-0">Bảng xếp hạng</h3>
-                        <div className="flex flex-col gap-2">
-                            {sampleLeaderboard.map((player) => (
-                                <div
-                                    key={player.rank}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-accent
-                                        ${player.rank <= 3 ? 'bg-yellow-500/15' : ''}`}
-                                >
-                                    <div className="w-7 text-center">
-                                        {getRankIcon(player.rank)}
-                                    </div>
-                                    <div className="text-xl">
-                                        {player.flag}
-                                    </div>
-                                    <span className="flex-1 text-sm font-medium text-foreground">{player.name}</span>
-                                    <span className="text-sm font-semibold text-muted-foreground">{player.score.toLocaleString()}</span>
-                                </div>
-                            ))}
-
-                            {/* Current User */}
-                            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500/15 to-transparent border border-emerald-500/30 mt-2">
-                                <div className="w-7 text-center">
-                                    <span className="text-sm font-semibold text-emerald-500">{currentUserRank.rank}.</span>
-                                </div>
-                                <div className="text-xl">🎮</div>
-                                <span className="flex-1 text-sm font-medium text-foreground">{currentUserRank.name}</span>
-                                <span className="text-sm font-semibold text-muted-foreground">{currentUserRank.score.toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        <button className="w-full py-3 mt-2 bg-transparent border-none text-emerald-500 text-sm font-medium cursor-pointer hover:text-emerald-600 transition-colors">
-                            Xem tất cả
-                        </button>
-
-                        <div className="text-center pt-3 border-t border-border mt-2">
-                            <span className="block text-xs text-muted-foreground mb-2">Bảng xếp hạng ngày, kết thúc sau</span>
-                            <div className="flex items-center justify-center gap-1 font-mono text-xl font-semibold text-foreground">
-                                <span>{String(countdown.hours).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.minutes).padStart(2, '0')}</span>
-                                <span className="text-muted-foreground">:</span>
-                                <span>{String(countdown.seconds).padStart(2, '0')}</span>
-                            </div>
-                        </div>
-                    </div>
+                    <GameRankings gameId={3} themeColor="emerald" />
                 </div>
 
                 {/* Center - Play Modes */}
                 <div className="flex-1 max-w-[400px] max-lg:max-w-full max-lg:order-1">
                     <div className="flex flex-col gap-3">
+                        {/* Resume Game Button - shown when in-progress session exists */}
+                        {inProgressSession && (
+                            <button
+                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse"
+                                onClick={handleResumeGame}
+                            >
+                                <Play size={20} />
+                                <div className="flex-1 flex flex-col text-left">
+                                    <span className="font-semibold">Tiếp tục chơi</span>
+                                    <span className="text-xs opacity-80">
+                                        Bạn có ván chơi dở - {inProgressSession.moves_count || 0} nước
+                                    </span>
+                                </div>
+                            </button>
+                        )}
                         <div className="flex items-center gap-2">
                             <button
                                 className="flex-1 flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-emerald-500"
@@ -316,7 +319,7 @@ const TicTacToeLobby = () => {
                         </button>
 
                         {/* Game Session History */}
-                        <GameSessionHistory gameId={3} limit={5} />
+                        <GameSessionHistory gameId={3} limit={5} gamePath="/games/tic-tac-toe/play" onInProgressChange={handleInProgressChange} />
                     </div>
                 </div>
 

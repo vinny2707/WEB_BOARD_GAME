@@ -6,18 +6,17 @@ import api from './axios';
 
 /**
  * Complete a game session - Submit game results
+ * @param {string} sessionId - Session ID from start API
  * @param {Object} data - Game completion data
- * @param {number} data.game_id - Game ID
  * @param {string} data.result - Result: 'win', 'loss', 'draw'
  * @param {number} [data.score] - Score achieved
  * @param {number} [data.moves_count] - Number of moves
  * @param {number} [data.time_elapsed] - Time played in seconds
  * @param {Object} [data.game_state] - Final game state
  * @param {Object} [data.settings] - Game settings used
- * @param {string} [data.started_at] - ISO 8601 start time
  */
-export const completeGame = async (data) => {
-    const response = await api.post('/api/sessions/complete', data);
+export const completeGame = async (sessionId, data) => {
+    const response = await api.put(`/api/sessions/${sessionId}/complete`, data);
     return response.data;
 };
 
@@ -84,6 +83,34 @@ export const deleteSession = async (id) => {
     return response.data;
 };
 
+/**
+ * Get the latest in-progress session for a specific game
+ * Useful for checking if user has a resumable game
+ * @param {number} gameId - Game ID to check
+ * @returns {Object|null} - Session data if exists, null otherwise
+ */
+export const getInProgressSession = async (gameId) => {
+    try {
+        const response = await api.get(`/api/sessions/history`, {
+            params: {
+                game_id: gameId,
+                status: 'in_progress',
+                limit: 1,
+                page: 1,
+            }
+        });
+
+        if (response.data?.success && response.data?.data?.sessions?.length > 0) {
+            // Return the most recent in-progress session
+            return response.data.data.sessions[0];
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to get in-progress session:', error);
+        return null;
+    }
+};
+
 export default {
     completeGame,
     getHistory,
@@ -91,4 +118,5 @@ export default {
     getSession,
     saveSession,
     deleteSession,
+    getInProgressSession,
 };

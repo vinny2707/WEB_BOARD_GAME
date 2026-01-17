@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft } from 'lucide-react';
+import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft, Save } from 'lucide-react';
 import CaroBoard from './CaroBoard';
 import { createCaroAI } from './CaroAI';
 import useGameSession from '../../hooks/useGameSession';
@@ -66,10 +66,11 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     const location = useLocation();
 
     // Session tracking for rankings
-    const { completeGame, incrementMoves, isAuthenticated } = useGameSession(gameId);
+    const { completeGame, incrementMoves, isAuthenticated, startSession, saveProgress, updateGameState, setResumeSessionId } = useGameSession(gameId);
 
-    // Get settings from lobby navigation state
+    // Get settings and possible resume session from lobby navigation state
     const lobbySettings = location.state?.settings || {};
+    const resumeSession = location.state?.resumeSession || null;
     const boardSize = lobbySettings.boardSize || defaultBoardSize;
     const timePerTurn = lobbySettings.timePerTurn ?? 40; // seconds (0 = unlimited)
     const timePerPlayer = lobbySettings.timePerPlayer ?? 240; // seconds (0 = unlimited)
@@ -432,7 +433,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         setHintCell(null);
     };
 
-    const startGame = () => {
+    const startGame = async () => {
         playSound(gameStartSoundRef);
         setBoard(Array(boardSize * boardSize).fill(null));
         // Determine who starts based on firstPlayer setting
@@ -453,7 +454,80 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         setTurnTime(timePerTurn);
         setHintCell(null);
         setIsAIThinking(false);
+
+        // Start a new session for tracking
+        if (isAuthenticated) {
+            await startSession({ boardSize, timePerTurn, timePerPlayer, difficulty, winCount });
+        }
     };
+
+    // Handle manual save game
+    const handleSaveGame = async () => {
+        if (gameStatus !== 'playing') return;
+        const gameState = {
+            board,
+            isXNext,
+            playerTime,
+            aiTime,
+            moveHistory,
+            boardSize,
+        };
+        await saveProgress(gameState);
+        // Show toast notification
+        import('sonner').then(({ toast }) => {
+            toast.success('Đã lưu game!', { duration: 2000 });
+        });
+    };
+
+    // Resume game from session if provided
+    useEffect(() => {
+        if (resumeSession?.id && gameStatus === 'idle') {
+            // Set session ID for completing later
+            setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+            // If we have saved game_state, restore it
+            if (resumeSession.game_state?.board) {
+                const { board: savedBoard, isXNext: savedIsXNext, playerTime: savedPlayerTime, aiTime: savedAiTime, moveHistory: savedMoveHistory } = resumeSession.game_state;
+                setBoard(savedBoard);
+                setIsXNext(savedIsXNext ?? true);
+                setPlayerTime(savedPlayerTime ?? timePerPlayer);
+                setAiTime(savedAiTime ?? timePerPlayer);
+                setMoveHistory(savedMoveHistory ?? []);
+                setGameStatus('playing');
+                playSound(gameStartSoundRef);
+            } else {
+                // No game_state saved yet - start fresh game with same session
+                setBoard(Array(boardSize * boardSize).fill(null));
+                if (firstPlayer === 'ai') {
+                    setIsXNext(false);
+                } else if (firstPlayer === 'random') {
+                    setIsXNext(Math.random() > 0.5);
+                } else {
+                    setIsXNext(true);
+                }
+                setGameStatus('playing');
+                setPlayerTime(timePerPlayer);
+                setAiTime(timePerPlayer);
+                setTurnTime(timePerTurn);
+                setMoveHistory([]);
+                playSound(gameStartSoundRef);
+            }
+        }
+    }, [resumeSession, setResumeSessionId, boardSize, firstPlayer, timePerPlayer, timePerTurn]);
+
+    // Update game state ref whenever state changes (for beforeunload save)
+    useEffect(() => {
+        if (gameStatus === 'playing') {
+            updateGameState({
+                board,
+                isXNext,
+                playerTime,
+                aiTime,
+                moveHistory,
+                boardSize,
+            });
+        }
+    }, [board, isXNext, playerTime, aiTime, moveHistory, gameStatus, updateGameState]);
 
     const startTutorial = () => {
         setBoard(Array(boardSize * boardSize).fill(null));
@@ -733,6 +807,14 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
                         >
                             <RotateCcw size={18} />
                             <span>Quay lại</span>
+                        </button>
+
+                        <button
+                            className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-blue-500 transition-all hover:bg-blue-500/15 hover:text-blue-600"
+                            onClick={handleSaveGame}
+                        >
+                            <Save size={18} />
+                            <span>Lưu game</span>
                         </button>
 
                         <button

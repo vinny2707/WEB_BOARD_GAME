@@ -8,6 +8,7 @@ import {
   BookOpen,
   X,
   ChevronRight,
+  Save,
 } from "lucide-react";
 import TicTacToeBoard from "./TicTacToeBoard";
 import { findBestMove, getHint, checkWinner, isDraw, getWinningLine } from "./TicTacToeAI";
@@ -146,10 +147,11 @@ const TicTacToeGame = () => {
   const location = useLocation();
 
   // Session tracking for rankings (gameId=3 for TicTacToe)
-  const { completeGame, incrementMoves, isAuthenticated } = useGameSession(3);
+  const { completeGame, incrementMoves, isAuthenticated, startSession, saveProgress, updateGameState, setResumeSessionId } = useGameSession(3);
 
-  // Get settings from lobby navigation state
+  // Get settings and possible resume session from lobby navigation state
   const lobbySettings = location.state?.settings || {};
+  const resumeSession = location.state?.resumeSession || null;
   const boardSize = lobbySettings.boardSize || 3;
   const timePerTurn = lobbySettings.timePerTurn || 30; // seconds
   const timePerPlayer = lobbySettings.timePerPlayer || 120; // seconds (0 = unlimited)
@@ -476,7 +478,7 @@ const TicTacToeGame = () => {
     setIsAIThinking(false);
   }, [initialBoard, timePerPlayer, timePerTurn]);
 
-  const startGame = () => {
+  const startGame = async () => {
     playSound(gameStartSoundRef);
     setBoard(initialBoard);
     // Determine who starts based on firstPlayer setting
@@ -496,7 +498,81 @@ const TicTacToeGame = () => {
     setTurnTime(timePerTurn);
     setHintCell(null);
     setIsAIThinking(false);
+
+    // Start a new session for tracking
+    if (isAuthenticated) {
+      await startSession({ boardSize, timePerTurn, timePerPlayer, difficulty });
+    }
   };
+
+  // Handle manual save game
+  const handleSaveGame = async () => {
+    if (gameStatus !== 'playing') return;
+    const gameState = {
+      board,
+      isXNext,
+      playerTime,
+      aiTime,
+      moveHistory,
+      boardSize,
+    };
+    await saveProgress(gameState);
+    // Show toast notification
+    import('sonner').then(({ toast }) => {
+      toast.success('Đã lưu game!', { duration: 2000 });
+    });
+  };
+
+  // Resume game from session if provided
+  useEffect(() => {
+    if (resumeSession?.id && gameStatus === 'idle') {
+      // Set session ID for completing later
+      setResumeSessionId(resumeSession.id, resumeSession.started_at, resumeSession.moves_count);
+
+      // If we have saved game_state, restore it
+      if (resumeSession.game_state?.board) {
+        const { board: savedBoard, isXNext: savedIsXNext, playerTime: savedPlayerTime, aiTime: savedAiTime, moveHistory: savedMoveHistory } = resumeSession.game_state;
+        setBoard(savedBoard);
+        setIsXNext(savedIsXNext ?? true);
+        setPlayerTime(savedPlayerTime ?? timePerPlayer);
+        setAiTime(savedAiTime ?? timePerPlayer);
+        setMoveHistory(savedMoveHistory ?? []);
+        setGameStatus('playing');
+        playSound(gameStartSoundRef);
+      } else {
+        // No game_state saved yet (session just started) - start fresh game with same session
+        setBoard(initialBoard);
+        // Determine who starts based on firstPlayer setting
+        if (firstPlayer === 'ai') {
+          setIsXNext(false);
+        } else if (firstPlayer === 'random') {
+          setIsXNext(Math.random() > 0.5);
+        } else {
+          setIsXNext(true);
+        }
+        setGameStatus('playing');
+        setPlayerTime(timePerPlayer);
+        setAiTime(timePerPlayer);
+        setTurnTime(timePerTurn);
+        setMoveHistory([]);
+        playSound(gameStartSoundRef);
+      }
+    }
+  }, [resumeSession, setResumeSessionId, initialBoard, firstPlayer, timePerPlayer, timePerTurn]);
+
+  // Update game state ref whenever state changes (for beforeunload save)
+  useEffect(() => {
+    if (gameStatus === 'playing') {
+      updateGameState({
+        board,
+        isXNext,
+        playerTime,
+        aiTime,
+        moveHistory,
+        boardSize,
+      });
+    }
+  }, [board, isXNext, playerTime, aiTime, moveHistory, gameStatus, updateGameState]);
 
   const startTutorial = () => {
     setBoard(Array(9).fill(null));
@@ -841,6 +917,14 @@ const TicTacToeGame = () => {
             >
               <ArrowLeft size={18} />
               <span>Quay lại</span>
+            </button>
+
+            <button
+              className="flex items-center gap-2 px-5 py-3 bg-secondary rounded-xl text-sm font-medium text-blue-500 transition-all hover:bg-blue-500/15 hover:text-blue-600"
+              onClick={handleSaveGame}
+            >
+              <Save size={18} />
+              <span>Lưu game</span>
             </button>
 
             <button
