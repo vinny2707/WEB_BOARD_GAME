@@ -97,11 +97,9 @@ const TopPlayersTable = ({
                   {/* Score */}
                   <div className="flex-shrink-0 text-right">
                     <p className="font-bold text-foreground">
-                      {player.total_wins}/{player.total_games}{" "}
+                      {player.total_score ? player.total_score : player.total_games}{" "}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Wins/Games
-                    </p>
+                    <p className="text-xs text-muted-foreground">{player.total_score ? "Score" : "Games"}</p>
                   </div>
                 </motion.div>
               ))

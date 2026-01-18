@@ -105,6 +105,7 @@ const PieChartComponent = ({
                 nameKey={nameKey}
                 animationDuration={1500}
                 animationEasing="ease-out"
+                stroke="none"
               >
                 {dataWithPercentage.map((entry, index) => (
                   <Cell

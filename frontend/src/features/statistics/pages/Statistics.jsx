@@ -17,6 +17,7 @@ import {
   useHotGames,
   useUserStatistics,
   useReviewStats,
+  useGameStatistics,
 } from "@/hooks/useStatistics";
 import {
   StatCard,
@@ -26,6 +27,7 @@ import {
   HotGameCard,
   TopPlayersTable,
   DateRangePicker,
+  GameDetailsModal,
   SkeletonCard,
   SkeletonChart,
   SkeletonList,
@@ -39,6 +41,9 @@ const Statistics = () => {
     from_date: format(subDays(new Date(), 7), "yyyy-MM-dd"),
     to_date: format(new Date(), "yyyy-MM-dd"),
   }));
+
+  // Selected game for details modal
+  const [selectedGameId, setSelectedGameId] = useState(null);
 
   // Fetch data using custom hooks
   const {
@@ -70,12 +75,28 @@ const Statistics = () => {
     refetch: refetchReviewStats,
   } = useReviewStats();
 
+  const {
+    data: gameDetails,
+    loading: gameDetailsLoading,
+    error: gameDetailsError,
+  } = useGameStatistics(selectedGameId, dateRange);
+
   // Refresh all data
   const handleRefresh = () => {
     refetchOverview();
     refetchHotGames();
     refetchUserStats();
     refetchReviewStats();
+  };
+
+  // Handle game card click
+  const handleGameClick = (gameId) => {
+    setSelectedGameId(gameId);
+  };
+
+  // Close game details modal
+  const handleCloseModal = () => {
+    setSelectedGameId(null);
   };
 
   // Prepare chart data
@@ -368,6 +389,7 @@ const Statistics = () => {
                         rank={index + 1}
                         game={game}
                         delay={index}
+                        onClick={() => handleGameClick(game.game_id)}
                       />
                     ))}
                   </div>
@@ -441,6 +463,15 @@ const Statistics = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Game Details Modal */}
+      <GameDetailsModal
+        isOpen={!!selectedGameId}
+        onClose={handleCloseModal}
+        gameData={gameDetails}
+        loading={gameDetailsLoading}
+        error={gameDetailsError}
+      />
     </div>
   );
 };

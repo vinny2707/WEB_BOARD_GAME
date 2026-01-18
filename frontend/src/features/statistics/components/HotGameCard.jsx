@@ -10,7 +10,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Flame, TrendingUp, Users, Clock, Target } from "lucide-react";
 
-const HotGameCard = ({ rank, game, delay = 0, className = "" }) => {
+const HotGameCard = ({ rank, game, delay = 0, className = "", onClick }) => {
   const { game_name, game_type, game_icon, stats } = game;
 
   const getRankColor = () => {
@@ -53,7 +53,10 @@ const HotGameCard = ({ rank, game, delay = 0, className = "" }) => {
       whileHover={{ scale: 1.02, y: -2 }}
       className="relative"
     >
-      <Card className={cn("relative overflow-hidden", className)}>
+      <Card 
+        className={cn("relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow", className)}
+        onClick={onClick}
+      >
         {getRankBadge()}
 
         <CardContent className="pt-6 pb-4">
