@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import { getSession } from '../../../../api/sessionsApi';
@@ -34,11 +34,16 @@ const DIFFICULTY_SETTINGS = {
 
 const Match3Lobby = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const playClick = useClickSound();
     const [highScore, setHighScore] = useState(() => {
         const saved = localStorage.getItem('match3HighScore');
         return saved ? parseInt(saved, 10) : 0;
     });
+
+    // Get game data from navigation state (passed from Games page)
+    const gameData = location.state?.game;
+    const gameId = gameData?.id;
 
     // Settings modal state
     const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -50,11 +55,12 @@ const Match3Lobby = () => {
     // In-progress session state (controlled by GameSessionHistory callback)
     const [inProgressSession, setInProgressSession] = useState(null);
 
-    // Fetch game settings from API (Match3 has gameId = 6)
+    // Fetch game settings from API using dynamic gameId
     useEffect(() => {
         const loadSettings = async () => {
+            if (!gameId) return;
             setIsLoadingSettings(true);
-            const { settings } = await fetchGameSettings(6);
+            const { settings } = await fetchGameSettings(gameId);
             if (settings) {
                 setApiSettings(settings);
                 const values = extractSettingValues(settings);
@@ -66,7 +72,7 @@ const Match3Lobby = () => {
             setIsLoadingSettings(false);
         };
         loadSettings();
-    }, []);
+    }, [gameId]);
 
 
 
@@ -85,7 +91,7 @@ const Match3Lobby = () => {
 
     const handlePlayNow = () => {
         playClick();
-        navigate('/games/match3/play', { state: { settings: gameSettings } });
+        navigate('/games/match3/play', { state: { settings: gameSettings, gameId } });
     };
 
     // Handler for when history updates in_progress status
@@ -111,6 +117,7 @@ const Match3Lobby = () => {
                 state: {
                     settings: fullSession.settings || gameSettings,
                     resumeSession: fullSession,
+                    gameId,
                 }
             });
         } catch (error) {
@@ -120,6 +127,7 @@ const Match3Lobby = () => {
                 state: {
                     settings: inProgressSession.settings || gameSettings,
                     resumeSession: inProgressSession,
+                    gameId,
                 }
             });
         }
@@ -167,7 +175,7 @@ const Match3Lobby = () => {
             <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
                 {/* Left Side - Leaderboard */}
                 <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
-                    <GameRankings gameId={6} themeColor="orange" />
+                    <GameRankings gameId={gameId} themeColor="orange" />
                 </div>
 
                 {/* Center - Play Modes */}
@@ -265,12 +273,12 @@ const Match3Lobby = () => {
                     </div>
 
                     {/* Game Session History */}
-                    <GameSessionHistory gameId={6} limit={5} gamePath="/games/match3/play" onInProgressChange={handleInProgressChange} />
+                    <GameSessionHistory gameId={gameId} limit={5} gamePath="/games/match3/play" onInProgressChange={handleInProgressChange} />
                 </div>
 
                 {/* Right Side - Reviews */}
                 <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3">
-                    <GameReviews gameId={6} />
+                    <GameReviews gameId={gameId} />
                 </div>
             </div>
 
@@ -373,102 +381,67 @@ const Match3Lobby = () => {
                                 </>
                             ) : (
                                 <>
-                                    {/* Custom Settings Editor */}
+                                    {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {/* Board Size */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Kích thước bàn:</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {[6, 8, 10].map(size => (
-                                                    <button
-                                                        key={size}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === size
-                                                            ? 'bg-pink-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, boardSize: size }))}
-                                                    >
-                                                        {size}x{size}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Moves */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Số lượt:</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                {[20, 30, 40, 50].map(moves => (
-                                                    <button
-                                                        key={moves}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.moves === moves
-                                                            ? 'bg-pink-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, moves }))}
-                                                    >
-                                                        {moves}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Target Score */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Mục tiêu:</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 flex-wrap justify-end">
-                                                {[3000, 5000, 8000, 10000].map(score => (
-                                                    <button
-                                                        key={score}
-                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${gameSettings.targetScore === score
-                                                            ? 'bg-pink-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, targetScore: score }))}
-                                                    >
-                                                        {score.toLocaleString()}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Difficulty */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Trophy size={16} className="text-muted-foreground" />
-                                                <span className="text-sm text-muted-foreground">Độ khó:</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {[
-                                                    { key: 'easy', label: 'Dễ', color: 'text-green-500 bg-green-500' },
-                                                    { key: 'medium', label: 'TB', color: 'text-yellow-500 bg-yellow-500' },
-                                                    { key: 'hard', label: 'Khó', color: 'text-red-500 bg-red-500' }
-                                                ].map(diff => (
-                                                    <button
-                                                        key={diff.key}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === diff.key
-                                                            ? `${diff.color} text-white`
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, difficulty: diff.key }))}
-                                                    >
-                                                        {diff.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                            const options = getSettingOptions(apiSettings, settingKey);
+                                            const label = getSettingLabel(apiSettings, settingKey);
+                                            
+                                            if (options.length === 0) return null;
+                                            
+                                            // Color mapping for Tailwind (static classes)
+                                            const colorMap = {
+                                                green: { selected: 'bg-green-500 text-white', unselected: 'text-green-500' },
+                                                yellow: { selected: 'bg-yellow-500 text-white', unselected: 'text-yellow-500' },
+                                                red: { selected: 'bg-red-500 text-white', unselected: 'text-red-500' },
+                                                blue: { selected: 'bg-blue-500 text-white', unselected: 'text-blue-500' },
+                                                purple: { selected: 'bg-purple-500 text-white', unselected: 'text-purple-500' },
+                                                orange: { selected: 'bg-orange-500 text-white', unselected: 'text-orange-500' },
+                                            };
+                                            
+                                            return (
+                                                <div key={settingKey} className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-muted-foreground">{label}:</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 flex-wrap justify-end max-w-[220px]">
+                                                        {options.map(option => {
+                                                            const isSelected = gameSettings[settingKey] === option.value;
+                                                            const colorStyles = option.color && colorMap[option.color];
+                                                            
+                                                            let buttonClass = 'bg-secondary text-foreground hover:bg-accent';
+                                                            if (isSelected) {
+                                                                buttonClass = colorStyles?.selected || 'bg-pink-500 text-white';
+                                                            }
+                                                            
+                                                            return (
+                                                                <button
+                                                                    key={option.value}
+                                                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${buttonClass}`}
+                                                                    onClick={() => setGameSettings(prev => ({ ...prev, [settingKey]: option.value }))}
+                                                                >
+                                                                    {option.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
                                     {/* Quick Reset */}
                                     <button
                                         className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setGameSettings({ ...DEFAULT_SETTINGS })}
+                                        onClick={() => {
+                                            // Reset to default values from API
+                                            if (apiSettings) {
+                                                const defaultValues = extractSettingValues(apiSettings);
+                                                setGameSettings(prev => ({ ...prev, ...defaultValues }));
+                                            } else {
+                                                setGameSettings({ ...DEFAULT_SETTINGS });
+                                            }
+                                        }}
                                     >
                                         Đặt lại mặc định
                                     </button>
