@@ -1,6 +1,7 @@
 import React from "react";
 import { useTheme } from "../../../contexts/ThemeProvider";
 import { Spinner } from "@/components/ui/spinner";
+import { Pagination } from "@/components/ui/pagination";
 
 // Custom Hook
 import { useUserManagement } from "../hooks/useUserManagement";
@@ -9,7 +10,6 @@ import { useUserManagement } from "../hooks/useUserManagement";
 import UserSearchHeader from "../components/UserSearchHeader";
 import UserTable from "../components/UserTable";
 import UserMobileCard from "../components/UserMobileCard";
-import UserPagination from "../components/UserPagination";
 import UserDeleteDialog from "../components/UserDeleteDialog";
 import UserDetailDialog from "../components/UserDetailDialog";
 import UserStatusDialog from "../components/UserStatusDialog";
@@ -26,6 +26,7 @@ const UserManagement = () => {
     error,
     currentPage,
     totalPages,
+    totalUsers,
     searchTerm,
     statusFilter,
     showDetailDialog,
@@ -48,6 +49,7 @@ const UserManagement = () => {
     fetchUsers,
     handleSearch,
     handleStatusFilter,
+    handleLimitChange,
     handleDelete,
     confirmDelete,
     handleStatusChange,
@@ -108,17 +110,24 @@ const UserManagement = () => {
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
             />
+
+            {/* Pagination - inside scroll area */}
+            {users.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalUsers}
+                  limit={limit}
+                  onPageChange={(page) => fetchUsers(page, searchTerm, statusFilter)}
+                  onLimitChange={handleLimitChange}
+                  limitOptions={[10, 20, 50, 100]}
+                />
+              </div>
+            )}
           </>
         )}
       </div>
-
-      {/* Pagination */}
-      <UserPagination
-        isDarkMode={isDarkMode}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={(page) => fetchUsers(page, searchTerm, statusFilter)}
-      />
 
       {/* Delete Confirmation Dialog */}
       <UserDeleteDialog

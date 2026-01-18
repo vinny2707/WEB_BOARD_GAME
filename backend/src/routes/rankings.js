@@ -92,5 +92,52 @@ router.get('/game/:gameId/me', authenticateJWT, rankingController.getMyGameRanki
  */
 router.get('/game/:gameId', authenticateJWT, rankingController.getGameRankings);
 
-module.exports = router;
+/**
+ * @swagger
+ * /api/rankings/achievements:
+ *   get:
+ *     summary: Get achievement rankings (leaderboard by achievement points)
+ *     tags: [Rankings]
+ *     security:
+ *       - apiKeyAuth: []
+ *         bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: scope
+ *         schema:
+ *           type: string
+ *           enum: [global, friends]
+ *           default: global
+ *         description: Ranking scope
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Achievement rankings retrieved
+ */
+router.get('/achievements', authenticateJWT, rankingController.getAchievementRankings);
 
+/**
+ * @swagger
+ * /api/rankings/achievements/me:
+ *   get:
+ *     summary: Get current user's achievement ranking
+ *     tags: [Rankings]
+ *     security:
+ *       - apiKeyAuth: []
+ *         bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User's achievement ranking retrieved
+ */
+router.get('/achievements/me', authenticateJWT, rankingController.getMyAchievementRanking);
+
+module.exports = router;

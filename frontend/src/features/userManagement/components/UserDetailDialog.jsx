@@ -26,7 +26,7 @@ const UserDetailDialog = ({ isDarkMode, isOpen, onOpenChange, user }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`max-w-3xl ${
+        className={`max-w-3xl max-h-[85vh] overflow-y-auto ${
           isDarkMode ? "bg-slate-800 border-slate-700" : ""
         }`}
       >
@@ -63,21 +63,30 @@ const UserDetailDialog = ({ isDarkMode, isOpen, onOpenChange, user }) => {
               <div className="flex items-start gap-6">
                 {/* Avatar */}
                 <div
-                  className={`relative flex-shrink-0 w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold ${
+                  className={`relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center text-4xl font-bold group ${
                     isDarkMode
                       ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white"
                       : "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
                   } shadow-lg`}
                 >
-                  {getInitials(user.username)}
-                  <div className="absolute -bottom-2 -right-2">
-                    <div
-                      className={`px-2 py-1 rounded-lg text-xs font-bold ${getRoleColor(
-                        user.role
-                      )} shadow-lg`}
-                    >
-                      {user.role.toUpperCase()}
-                    </div>
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.username}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
+                    />
+                  ) : (
+                    getInitials(user.username)
+                  )}
+                </div>
+                {/* Role Badge - outside avatar to prevent cutoff */}
+                <div className="absolute bottom-4 left-20">
+                  <div
+                    className={`px-2 py-1 rounded-lg text-xs font-bold ${getRoleColor(
+                      user.role
+                    )} shadow-lg`}
+                  >
+                    {user.role.toUpperCase()}
                   </div>
                 </div>
 

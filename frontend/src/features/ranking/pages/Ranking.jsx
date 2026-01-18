@@ -35,7 +35,7 @@ export default function Ranking() {
     totalPages: 1,
     total: 0,
   });
-  const itemsPerPage = 10;
+  const [limit, setLimit] = useState(10);
 
   // Fetch games list
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function Ranking() {
     setLoading(true);
     try {
       const response = await api.get(`/api/rankings/game/${selectedGame}`, {
-        params: { scope, page, limit: itemsPerPage },
+        params: { scope, page, limit },
       });
       setRankings(response.data.data || []);
       setPagination({
@@ -128,6 +128,12 @@ export default function Ranking() {
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     fetchRankings(newPage);
+  };
+
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    fetchRankings(1); // Reset to page 1 when changing limit
   };
 
   // Get trophy/medal icon based on rank
@@ -445,14 +451,15 @@ export default function Ranking() {
 
       {/* Pagination - Outside card */}
       {rankings.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-6 border-t pt-4">
           <Pagination
             currentPage={pagination.page}
             totalPages={pagination.totalPages}
             totalItems={pagination.total}
-            limit={itemsPerPage}
+            limit={limit}
             onPageChange={handlePageChange}
-            limitOptions={[10, 20, 50]}
+            onLimitChange={handleLimitChange}
+            limitOptions={[10, 20, 50, 100]}
           />
         </div>
       )}

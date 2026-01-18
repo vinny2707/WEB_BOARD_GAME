@@ -40,7 +40,6 @@ const Caro4Lobby = () => {
             theme="amber"
             icon={<Caro4Icon />}
             defaultBoardSize={10}
-            showBoardSizeSelector={true}
             gameId={2}
         />
     );

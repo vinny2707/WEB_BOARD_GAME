@@ -7,26 +7,57 @@ const db = require('../config/database');
 
 class UserAchievement {
     /**
-     * Get all achievements for a user with progress info (with pagination)
+     * Get all achievements for a user with progress info (with pagination, filter, sort)
      * @param {number} userId 
-     * @param {Object} options - { page, limit }
+     * @param {Object} options - { page, limit, status, category, sortBy, sortOrder }
      * @returns {Promise<Object>} - { achievements, pagination, summary }
      */
     static async findByUser(userId, options = {}) {
         const page = parseInt(options.page) || 1;
         const limit = parseInt(options.limit) || 10;
         const offset = (page - 1) * limit;
+        const status = options.status || 'all'; // all, unlocked, in_progress, locked
+        const category = options.category; // beginner, expert, social, special
+        const sortBy = options.sortBy || 'category'; // category, points, name, unlocked_at
+        const sortOrder = options.sortOrder || 'asc'; // asc, desc
 
-        // Get total count of achievements
-        const [{ count: total }] = await db('achievements').count('id as count');
+        // Function to build base query with filters (without select)
+        const buildBaseQuery = () => {
+            let q = db('achievements as a')
+                .leftJoin('user_achievements as ua', function() {
+                    this.on('a.id', '=', 'ua.achievement_id')
+                        .andOn('ua.user_id', '=', db.raw('?', [userId]));
+                });
 
-        // Get all achievements with user's progress (left join) WITH pagination
-        // Note: unlock_criteria NOT included - use findById for details
-        const results = await db('achievements as a')
-            .leftJoin('user_achievements as ua', function() {
-                this.on('a.id', '=', 'ua.achievement_id')
-                    .andOn('ua.user_id', '=', db.raw('?', [userId]));
-            })
+            // Apply category filter
+            if (category) {
+                q = q.where('a.category', category);
+            }
+
+            // Apply status filter (PostgreSQL JSON syntax)
+            if (status === 'unlocked') {
+                q = q.whereNotNull('ua.unlocked_at');
+            } else if (status === 'in_progress') {
+                q = q.whereNull('ua.unlocked_at')
+                    .whereNotNull('ua.progress')
+                    .whereRaw("(ua.progress->>'current')::int > 0");
+            } else if (status === 'locked') {
+                q = q.where(function() {
+                    this.whereNull('ua.progress')
+                        .orWhereRaw("(ua.progress->>'current')::int = 0");
+                }).whereNull('ua.unlocked_at');
+            }
+            // 'all' = no status filter
+
+            return q;
+        };
+
+        // Get total count (separate query without select columns)
+        const countResult = await buildBaseQuery().count('a.id as count').first();
+        const total = parseInt(countResult?.count || 0);
+
+        // Build main query with select columns
+        let query = buildBaseQuery()
             .select(
                 'a.id',
                 'a.name',
@@ -36,12 +67,28 @@ class UserAchievement {
                 'a.points',
                 'ua.progress',
                 'ua.unlocked_at'
-            )
-            .orderBy('a.category', 'asc')
-            .orderBy('a.points', 'asc')
-            .limit(limit)
-            .offset(offset);
+            );
 
+        // Apply sorting
+        const validSortFields = ['category', 'points', 'name', 'unlocked_at'];
+        const sortField = validSortFields.includes(sortBy) ? sortBy : 'category';
+        const sortDirection = sortOrder === 'desc' ? 'desc' : 'asc';
+        
+        if (sortField === 'unlocked_at') {
+            query = query.orderByRaw(`ua.unlocked_at ${sortDirection} NULLS LAST`);
+        } else {
+            query = query.orderBy(`a.${sortField}`, sortDirection);
+        }
+        
+        // Secondary sort for consistency
+        if (sortField !== 'points') {
+            query = query.orderBy('a.points', 'asc');
+        }
+
+        // Apply pagination
+        query = query.limit(limit).offset(offset);
+
+        const results = await query;
         const totalPages = Math.ceil(total / limit);
 
         // Parse JSON fields and compute status
@@ -64,7 +111,7 @@ class UserAchievement {
             pagination: {
                 page,
                 limit,
-                total: parseInt(total),
+                total,
                 totalPages
             }
         };

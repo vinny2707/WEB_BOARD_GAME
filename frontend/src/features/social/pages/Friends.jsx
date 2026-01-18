@@ -38,13 +38,13 @@ const Friends = () => {
     sent: { page: 1, totalPages: 1, total: 0 },
     blocked: { page: 1, totalPages: 1, total: 0 },
   });
-  const itemsPerPage = 10;
+  const [limit, setLimit] = useState(10);
 
   // Fetch friends list
   const fetchFriends = async (page = 1) => {
     try {
       const response = await api.get("/api/friends", {
-        params: { page, limit: itemsPerPage },
+        params: { page, limit },
       });
       setFriends(response.data.data || []);
       setPagination((prev) => ({
@@ -65,7 +65,7 @@ const Friends = () => {
   const fetchPendingRequests = async (page = 1) => {
     try {
       const response = await api.get("/api/friends/requests/pending", {
-        params: { page, limit: itemsPerPage },
+        params: { page, limit },
       });
       setPendingRequests(response.data.data || []);
       setPagination((prev) => ({
@@ -86,7 +86,7 @@ const Friends = () => {
   const fetchSentRequests = async (page = 1) => {
     try {
       const response = await api.get("/api/friends/requests/sent", {
-        params: { page, limit: itemsPerPage },
+        params: { page, limit },
       });
       setSentRequests(response.data.data || []);
       setPagination((prev) => ({
@@ -107,7 +107,7 @@ const Friends = () => {
   const fetchBlockedUsers = async (page = 1) => {
     try {
       const response = await api.get("/api/friends", {
-        params: { status: "blocked", page, limit: itemsPerPage },
+        params: { status: "blocked", page, limit },
       });
       setBlockedUsers(response.data.data || []);
       setPagination((prev) => ({
@@ -309,6 +309,26 @@ const Friends = () => {
     }
   };
 
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    // Refresh current tab with new limit (reset to page 1)
+    switch (activeTab) {
+      case "friends":
+        fetchFriends(1);
+        break;
+      case "pending":
+        fetchPendingRequests(1);
+        break;
+      case "sent":
+        fetchSentRequests(1);
+        break;
+      case "blocked":
+        fetchBlockedUsers(1);
+        break;
+    }
+  };
+
   // Render pagination component
   const renderPagination = () => {
     const currentPagination = pagination[activeTab];
@@ -320,9 +340,10 @@ const Friends = () => {
           currentPage={page}
           totalPages={totalPages}
           totalItems={total}
-          limit={itemsPerPage}
+          limit={limit}
           onPageChange={handlePageChange}
-          limitOptions={[10, 20, 50]}
+          onLimitChange={handleLimitChange}
+          limitOptions={[10, 20, 50, 100]}
         />
       </div>
     );

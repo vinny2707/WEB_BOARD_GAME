@@ -12,6 +12,7 @@ export const useUserManagement = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState("");
@@ -19,7 +20,7 @@ export const useUserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // Status change confirmation
   const [showStatusDialog, setShowStatusDialog] = useState(false);
@@ -45,6 +46,7 @@ export const useUserManagement = () => {
 
       setUsers(data.users || []);
       setTotalPages(data.pagination?.totalPages || 1);
+      setTotalUsers(data.pagination?.total || 0);
       setCurrentPage(page);
       setError(null);
     } catch (err) {
@@ -72,6 +74,13 @@ export const useUserManagement = () => {
     setStatusFilter(status);
     setCurrentPage(1);
     fetchUsers(1, searchTerm, status);
+  };
+
+  // Handle limit change
+  const handleLimitChange = (newLimit) => {
+    setLimit(newLimit);
+    setCurrentPage(1);
+    fetchUsers(1, searchTerm, statusFilter);
   };
 
   // Handle delete
@@ -162,6 +171,7 @@ export const useUserManagement = () => {
     error,
     currentPage,
     totalPages,
+    totalUsers,
     searchTerm,
     statusFilter,
     showDetailDialog,
@@ -184,6 +194,7 @@ export const useUserManagement = () => {
     fetchUsers,
     handleSearch,
     handleStatusFilter,
+    handleLimitChange,
     handleDelete,
     confirmDelete,
     handleStatusChange,

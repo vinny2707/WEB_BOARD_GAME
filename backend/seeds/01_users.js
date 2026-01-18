@@ -3,12 +3,13 @@ const bcrypt = require('bcryptjs');
 /**
  * Seed: Users
  * Creates sample users with different roles
+ * Updated to match production data
+ * Note: 00_images.js handles TRUNCATE for all tables
  */
 
 exports.seed = async function(knex) {
-  // Truncate ALL tables (CASCADE will handle foreign keys automatically)
-  await knex.raw('TRUNCATE TABLE rankings, user_achievements, messages, friends, game_sessions, achievements, games, users RESTART IDENTITY CASCADE');
-
+  // 00_images.js already handles truncation, just delete users
+  await knex('users').del();
 
   // Hash password for all users (password: "123456")
   const passwordHash = await bcrypt.hash('123456', 10);
@@ -18,12 +19,13 @@ exports.seed = async function(knex) {
     {
       id: 1,
       username: 'admin',
-      email: 'admin@boardgame.com',
+      email: 'admin@gmail.com',
       password_hash: passwordHash,
-      full_name: 'Admin User',
+      full_name: 'Admin',
       dob: '1985-01-15',
       role: 'admin',
       status: 'active',
+      avatar_id: 14,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -36,6 +38,7 @@ exports.seed = async function(knex) {
       dob: '1990-05-20',
       role: 'user',
       status: 'active',
+      avatar_id: 3,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -48,6 +51,7 @@ exports.seed = async function(knex) {
       dob: '1992-08-12',
       role: 'user',
       status: 'active',
+      avatar_id: 2,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -60,6 +64,7 @@ exports.seed = async function(knex) {
       dob: '1988-03-25',
       role: 'user',
       status: 'active',
+      avatar_id: 4,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -72,6 +77,7 @@ exports.seed = async function(knex) {
       dob: '1995-11-30',
       role: 'user',
       status: 'active',
+      avatar_id: 5,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -82,8 +88,9 @@ exports.seed = async function(knex) {
       password_hash: passwordHash,
       full_name: 'David Brown',
       dob: '1987-07-08',
-      role: 'user',
+      role: 'admin',
       status: 'active',
+      avatar_id: 6,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -96,6 +103,7 @@ exports.seed = async function(knex) {
       dob: '1993-02-14',
       role: 'user',
       status: 'active',
+      avatar_id: 7,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -108,6 +116,7 @@ exports.seed = async function(knex) {
       dob: '1991-09-05',
       role: 'user',
       status: 'active',
+      avatar_id: 8,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -120,6 +129,7 @@ exports.seed = async function(knex) {
       dob: '1994-12-22',
       role: 'user',
       status: 'active',
+      avatar_id: 9,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -132,6 +142,7 @@ exports.seed = async function(knex) {
       dob: '1989-06-18',
       role: 'user',
       status: 'active',
+      avatar_id: 10,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -144,6 +155,7 @@ exports.seed = async function(knex) {
       dob: '1990-01-01',
       role: 'user',
       status: 'banned',
+      avatar_id: 11,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     },
@@ -156,11 +168,51 @@ exports.seed = async function(knex) {
       dob: '1992-03-15',
       role: 'user',
       status: 'inactive',
+      avatar_id: 12,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 13,
+      username: 'tranquocvy',
+      email: 'quocvy23072005@gmail.com',
+      password_hash: passwordHash,
+      full_name: 'Trần Quốc Vỹ',
+      dob: '2005-07-23',
+      role: 'user',
+      status: 'active',
+      avatar_id: 15,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 14,
+      username: 'nkvuong',
+      email: 'khacvuong2707@gmail.com',
+      password_hash: passwordHash,
+      full_name: 'Nguyễn Khắc Vượng',
+      dob: '2000-07-27',
+      role: 'admin',
+      status: 'active',
+      avatar_id: 13,
+      created_at: knex.fn.now(),
+      updated_at: knex.fn.now()
+    },
+    {
+      id: 15,
+      username: 'caoty113',
+      email: 'caoty113@gmail.com',
+      password_hash: passwordHash,
+      full_name: 'Cao Quoc Ty',
+      dob: '2000-01-13',
+      role: 'user',
+      status: 'active',
+      avatar_id: 16,
       created_at: knex.fn.now(),
       updated_at: knex.fn.now()
     }
   ]);
 
-  // Reset sequence
+  // Reset sequences
   await knex.raw('SELECT setval(\'users_id_seq\', (SELECT MAX(id) FROM users))');
 };

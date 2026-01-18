@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const Achievement = require('../models/Achievement');
 const UserAchievement = require('../models/UserAchievement');
+const Ranking = require('../models/Ranking');
 
 /**
  * Achievement Service
@@ -37,6 +38,14 @@ class AchievementService {
                         achievement.id, 
                         result.progress
                     );
+                    
+                    // Update achievement points in rankings (game_id = 0)
+                    try {
+                        await Ranking.updateAchievementPoints(userId, achievement.points);
+                    } catch (err) {
+                        console.error('Failed to update achievement points:', err.message);
+                    }
+                    
                     newlyUnlocked.push(unlockedAchievement);
                 } else if (result.progress.current > 0) {
                     // Update progress

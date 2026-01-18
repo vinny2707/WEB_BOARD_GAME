@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, Clock, User, Shuffle, Minus, Plus, ChevronLeft, Play } from 'lucide-react';
+import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
@@ -39,7 +39,6 @@ const CaroLobby = ({
     theme = 'emerald',
     icon,
     defaultBoardSize = 15,
-    showBoardSizeSelector = false, // true for Caro4, false for Gomoku
     gameId = null, // Game ID for reviews
 }) => {
     const navigate = useNavigate();
@@ -117,17 +116,6 @@ const CaroLobby = ({
 
     const colors = themeColors[theme] || themeColors.emerald;
 
-
-
-    const formatTime = (seconds) => {
-        if (seconds === 0) return 'Không giới hạn';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        if (mins > 0 && secs === 0) return `${mins} phút`;
-        if (mins > 0) return `${mins}p ${secs}s`;
-        return `${secs} giây`;
-    };
-
     const openSettings = (e) => {
         e.stopPropagation();
         playClick();
@@ -148,22 +136,6 @@ const CaroLobby = ({
             ...prev,
             timePerTurn: 0,
             timePerPlayer: 0
-        }));
-    };
-
-    const adjustTimePerTurn = (delta) => {
-        playClick();
-        setGameSettings(prev => ({
-            ...prev,
-            timePerTurn: Math.max(0, prev.timePerTurn + delta)
-        }));
-    };
-
-    const adjustTimePerPlayer = (delta) => {
-        playClick();
-        setGameSettings(prev => ({
-            ...prev,
-            timePerPlayer: Math.max(0, prev.timePerPlayer + delta)
         }));
     };
 
@@ -382,46 +354,37 @@ const CaroLobby = ({
                         </div>
 
                         {/* Settings Content */}
-                        <div className="px-6 py-5 space-y-4">
+                        <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">
                             {!isCustomMode ? (
                                 <>
-                                    {/* Current Settings Summary */}
+                                    {/* Current Settings Summary - Dynamic from API */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        {/* Board Size - Only for Caro4 and if API has this setting */}
-                                        {showBoardSizeSelector && hasApiSetting(apiSettings, 'boardSize') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Board size:</span>
-                                                <span className="font-semibold text-foreground">{gameSettings.boardSize}x{gameSettings.boardSize}</span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'timePerTurn') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Time per turn:</span>
-                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerTurn)}</span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'timePerPlayer') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Minutes per player:</span>
-                                                <span className="font-semibold text-foreground">{formatTime(gameSettings.timePerPlayer)}</span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'firstPlayer') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">{getSettingLabel(apiSettings, 'firstPlayer')}</span>
-                                                <span className="font-semibold text-foreground">
-                                                    {getOptionLabel(apiSettings, 'firstPlayer', gameSettings.firstPlayer)}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'difficulty') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">{getSettingLabel(apiSettings, 'difficulty')}</span>
-                                                <span className={`font-semibold ${getOptionColor(apiSettings, 'difficulty', gameSettings.difficulty) || 'text-foreground'}`}>
-                                                    {getOptionLabel(apiSettings, 'difficulty', gameSettings.difficulty)}
-                                                </span>
-                                            </div>
-                                        )}
+                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                            const currentValue = gameSettings[settingKey];
+                                            const options = getSettingOptions(apiSettings, settingKey);
+                                            const option = options.find(opt => opt.value === currentValue);
+                                            
+                                            // Color map for Tailwind
+                                            const colorTextMap = {
+                                                green: 'text-green-500',
+                                                yellow: 'text-yellow-500',
+                                                red: 'text-red-500',
+                                                blue: 'text-blue-500',
+                                            };
+                                            const colorClass = option?.color ? colorTextMap[option.color] : 'text-foreground';
+                                            
+                                            return (
+                                                <div key={settingKey} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground">
+                                                        {getSettingLabel(apiSettings, settingKey)}
+                                                    </span>
+                                                    <span className={`font-semibold ${colorClass}`}>
+                                                        {option?.icon ? `${option.icon} ` : ''}
+                                                        {getOptionLabel(apiSettings, settingKey, currentValue)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                         {/* Show message if no settings available */}
                                         {!apiSettings && !isLoadingSettings && (
                                             <div className="text-sm text-muted-foreground text-center py-2">
@@ -442,7 +405,7 @@ const CaroLobby = ({
                                                 className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
                                                 onClick={handleSetUnlimitedTime}
                                             >
-                                                Set unlimited time
+                                                Không giới hạn thời gian
                                             </button>
                                         )}
                                         {apiSettings && Object.keys(apiSettings).length > 0 && (
@@ -450,145 +413,101 @@ const CaroLobby = ({
                                                 className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
                                                 onClick={() => setIsCustomMode(true)}
                                             >
-                                                Custom options
+                                                Tùy chỉnh
                                             </button>
                                         )}
                                     </div>
                                 </>
                             ) : (
                                 <>
-                                    {/* Custom Settings Editor */}
+                                    {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {/* Board Size - Only show for Caro4 and if API has this setting */}
-                                        {showBoardSizeSelector && hasApiSetting(apiSettings, 'boardSize') && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'boardSize')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    {getSettingOptions(apiSettings, 'boardSize').map(opt => (
-                                                        <button
-                                                            key={opt.value}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.boardSize === opt.value
-                                                                ? `${colors.btnBg} text-white`
-                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                            const options = getSettingOptions(apiSettings, settingKey);
+                                            const settingType = apiSettings[settingKey]?.type || 'select';
+                                            
+                                            // Skip if no options available
+                                            if (options.length === 0) return null;
+                                            
+                                            // Color map for Tailwind (can't use dynamic classes)
+                                            const colorMap = {
+                                                green: { selected: 'bg-green-500 text-white', unselected: 'text-green-600' },
+                                                yellow: { selected: 'bg-yellow-500 text-white', unselected: 'text-yellow-600' },
+                                                red: { selected: 'bg-red-500 text-white', unselected: 'text-red-600' },
+                                                blue: { selected: 'bg-blue-500 text-white', unselected: 'text-blue-600' },
+                                            };
+                                            
+                                            return (
+                                                <div key={settingKey} className="flex items-center justify-between">
+                                                    {/* Setting Label */}
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {getSettingLabel(apiSettings, settingKey)}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Options - Render based on type */}
+                                                    <div className="flex items-center gap-1 flex-wrap justify-end max-w-[220px]">
+                                                        {settingType === 'toggle' ? (
+                                                            // Toggle switch
+                                                            <button
+                                                                className={`relative w-12 h-6 rounded-full transition-all ${
+                                                                    gameSettings[settingKey] 
+                                                                        ? `${colors.btnBg}` 
+                                                                        : 'bg-secondary'
                                                                 }`}
-                                                            onClick={() => setGameSettings(prev => ({ ...prev, boardSize: opt.value }))}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    ))}
+                                                                onClick={() => setGameSettings(prev => ({ 
+                                                                    ...prev, 
+                                                                    [settingKey]: !prev[settingKey] 
+                                                                }))}
+                                                            >
+                                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${
+                                                                    gameSettings[settingKey] ? 'right-0.5' : 'left-0.5'
+                                                                }`} />
+                                                            </button>
+                                                        ) : (
+                                                            // Select buttons
+                                                            options.map(opt => {
+                                                                const isSelected = gameSettings[settingKey] === opt.value;
+                                                                const optColor = opt.color;
+                                                                const colorClasses = optColor && colorMap[optColor];
+                                                                
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                                            isSelected
+                                                                                ? (colorClasses?.selected || `${colors.btnBg} text-white`)
+                                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                                        }`}
+                                                                        onClick={() => setGameSettings(prev => ({ 
+                                                                            ...prev, 
+                                                                            [settingKey]: opt.value 
+                                                                        }))}
+                                                                    >
+                                                                        {opt.icon ? `${opt.icon} ` : ''}{opt.label}
+                                                                    </button>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        )}
-
-                                        {/* Time per Turn */}
-                                        {hasApiSetting(apiSettings, 'timePerTurn') && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock size={16} className="text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">Time per turn:</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                        onClick={() => adjustTimePerTurn(-10)}
-                                                    >
-                                                        <Minus size={16} />
-                                                    </button>
-                                                    <span className="text-sm font-semibold text-foreground w-24 text-center">
-                                                        {formatTime(gameSettings.timePerTurn)}
-                                                    </span>
-                                                    <button
-                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                        onClick={() => adjustTimePerTurn(10)}
-                                                    >
-                                                        <Plus size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Minutes per Player */}
-                                        {hasApiSetting(apiSettings, 'timePerPlayer') && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <User size={16} className="text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">Minutes per player:</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                        onClick={() => adjustTimePerPlayer(-60)}
-                                                    >
-                                                        <Minus size={16} />
-                                                    </button>
-                                                    <span className="text-sm font-semibold text-foreground w-24 text-center">
-                                                        {formatTime(gameSettings.timePerPlayer)}
-                                                    </span>
-                                                    <button
-                                                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary text-foreground hover:bg-accent transition-all"
-                                                        onClick={() => adjustTimePerPlayer(60)}
-                                                    >
-                                                        <Plus size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Who Plays First */}
-                                        {hasApiSetting(apiSettings, 'firstPlayer') && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Shuffle size={16} className="text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'firstPlayer')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    {getSettingOptions(apiSettings, 'firstPlayer').map(opt => (
-                                                        <button
-                                                            key={opt.value}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.firstPlayer === opt.value
-                                                                ? `${colors.btnBg} text-white`
-                                                                : 'bg-secondary text-foreground hover:bg-accent'
-                                                                }`}
-                                                            onClick={() => setGameSettings(prev => ({ ...prev, firstPlayer: opt.value }))}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Difficulty */}
-                                        {hasApiSetting(apiSettings, 'difficulty') && (
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Trophy size={16} className="text-muted-foreground" />
-                                                    <span className="text-sm text-muted-foreground">{getSettingLabel(apiSettings, 'difficulty')}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    {getSettingOptions(apiSettings, 'difficulty').map(opt => (
-                                                        <button
-                                                            key={opt.value}
-                                                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.difficulty === opt.value
-                                                                ? `${opt.color ? `bg-${opt.color}-500` : colors.btnBg} text-white`
-                                                                : 'bg-secondary text-foreground hover:bg-accent'
-                                                                }`}
-                                                            onClick={() => setGameSettings(prev => ({ ...prev, difficulty: opt.value }))}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
+                                            );
+                                        })}
                                     </div>
 
                                     {/* Quick Reset */}
                                     <button
                                         className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setGameSettings({ ...DEFAULT_SETTINGS, boardSize: defaultBoardSize })}
+                                        onClick={() => {
+                                            // Reset to API default values
+                                            if (apiSettings) {
+                                                const defaultValues = extractSettingValues(apiSettings);
+                                                setGameSettings(prev => ({ ...prev, ...defaultValues }));
+                                            } else {
+                                                setGameSettings({ ...DEFAULT_SETTINGS, boardSize: defaultBoardSize });
+                                            }
+                                        }}
                                     >
                                         Đặt lại mặc định
                                     </button>

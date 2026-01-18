@@ -107,10 +107,11 @@ const UserTable = ({
           {users.map((user, index) => (
             <tr
               key={user.id}
-              className={`border-b transition-colors ${
+              onClick={() => onViewDetails(user)}
+              className={`border-b transition-colors cursor-pointer ${
                 isDarkMode
-                  ? "border-slate-700 hover:bg-slate-700/50"
-                  : "border-gray-200 hover:bg-gray-100/50"
+                  ? "border-slate-700 hover:bg-slate-700/70"
+                  : "border-gray-200 hover:bg-gray-100"
               }`}
             >
               <td
@@ -120,17 +121,14 @@ const UserTable = ({
               >
                 {(currentPage - 1) * limit + index + 1}
               </td>
-              <td
-                className="px-6 py-4 cursor-pointer hover:underline"
-                onClick={() => onViewDetails(user)}
-              >
+              <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center text-white text-sm font-bold shrink-0 group">
                     {user.avatar_url ? (
                       <img
                         src={user.avatar_url}
                         alt={user.username}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-125"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-165"
                       />
                     ) : (
                       getInitials(user.username)
@@ -152,7 +150,7 @@ const UserTable = ({
               >
                 {user.email}
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                 <Select
                   value={user.role}
                   onValueChange={(value) => onRoleChange(user.id, value, user)}
@@ -175,7 +173,7 @@ const UserTable = ({
                   </SelectContent>
                 </Select>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                 <Select
                   value={user.status}
                   onValueChange={(value) => onStatusChange(user.id, value, user)}
@@ -199,7 +197,7 @@ const UserTable = ({
                   </SelectContent>
                 </Select>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => onDelete(user)}
                   className={`p-2 rounded-lg transition-all cursor-pointer ${

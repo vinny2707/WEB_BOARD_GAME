@@ -246,6 +246,178 @@ class Ranking {
             updated_at: r.updated_at
         }));
     }
+
+    /**
+     * Get achievement rankings (game_id = 0)
+     * @param {Object} options - { scope, userId, page, limit }
+     * @returns {Promise<Object>} - { data, pagination }
+     */
+    static async getAchievementRankings(options = {}) {
+        const ACHIEVEMENT_GAME_ID = 0;
+        const scope = options.scope || 'global';
+        const userId = options.userId;
+        const page = parseInt(options.page) || 1;
+        const limit = parseInt(options.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        let whereClause = 'r.game_id = ?';
+        let params = [ACHIEVEMENT_GAME_ID];
+
+        // Apply scope filter
+        if (scope === 'friends' && userId) {
+            const friendships = await db('friends')
+                .where(function () {
+                    this.where('user_id', userId)
+                        .orWhere('friend_id', userId);
+                })
+                .andWhere('status', 'accepted')
+                .select('user_id', 'friend_id');
+
+            const friendIds = friendships.map(f =>
+                f.user_id === userId ? f.friend_id : f.user_id
+            );
+            friendIds.push(userId);
+
+            whereClause += ' AND r.user_id = ANY(?)';
+            params.push(friendIds);
+        }
+
+        // Get total count
+        const countResult = await db.raw(`
+            SELECT COUNT(*) as count FROM rankings r WHERE ${whereClause}
+        `, params);
+        const total = parseInt(countResult.rows[0].count);
+
+        // Get rankings with rank calculation
+        const result = await db.raw(`
+            SELECT 
+                ROW_NUMBER() OVER (ORDER BY r.total_score DESC) as rank,
+                r.user_id,
+                r.total_score as achievement_points,
+                r.created_at,
+                r.updated_at,
+                u.username,
+                u.full_name,
+                i.url as avatar_url
+            FROM rankings r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN images i ON u.avatar_id = i.id
+            WHERE ${whereClause}
+            ORDER BY r.total_score DESC
+            LIMIT ? OFFSET ?
+        `, [...params, limit, offset]);
+
+        const rankings = result.rows;
+
+        const data = rankings.map(r => ({
+            rank: parseInt(r.rank),
+            user: {
+                id: r.user_id,
+                username: r.username,
+                full_name: r.full_name,
+                avatar_url: r.avatar_url || null
+            },
+            achievement_points: r.achievement_points || 0,
+            created_at: r.created_at,
+            updated_at: r.updated_at
+        }));
+
+        return {
+            data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    /**
+     * Update achievement points for a user (upsert)
+     * @param {number} userId 
+     * @param {number} pointsToAdd - points to add (can be negative to subtract)
+     * @returns {Promise<Object>} - updated ranking record
+     */
+    static async updateAchievementPoints(userId, pointsToAdd) {
+        const ACHIEVEMENT_GAME_ID = 0;
+
+        // Check if record exists
+        const existing = await db('rankings')
+            .where({ user_id: userId, game_id: ACHIEVEMENT_GAME_ID })
+            .first();
+
+        if (existing) {
+            // Update existing record
+            const [updated] = await db('rankings')
+                .where({ user_id: userId, game_id: ACHIEVEMENT_GAME_ID })
+                .update({
+                    total_score: db.raw('total_score + ?', [pointsToAdd]),
+                    updated_at: db.fn.now()
+                })
+                .returning('*');
+            return updated;
+        } else {
+            // Insert new record
+            const [inserted] = await db('rankings')
+                .insert({
+                    user_id: userId,
+                    game_id: ACHIEVEMENT_GAME_ID,
+                    total_games: 0,
+                    total_wins: 0,
+                    total_losses: 0,
+                    total_draws: 0,
+                    win_rate: 0,
+                    total_score: pointsToAdd,
+                    best_score: pointsToAdd,
+                    global_rank: 0,
+                    created_at: db.fn.now(),
+                    updated_at: db.fn.now()
+                })
+                .returning('*');
+            return inserted;
+        }
+    }
+
+    /**
+     * Get user's achievement ranking
+     * @param {number} userId 
+     * @returns {Promise<Object|null>}
+     */
+    static async getUserAchievementRanking(userId) {
+        const ACHIEVEMENT_GAME_ID = 0;
+
+        const ranking = await db('rankings')
+            .where({ user_id: userId, game_id: ACHIEVEMENT_GAME_ID })
+            .first();
+
+        if (!ranking) {
+            return null;
+        }
+
+        // Calculate rank
+        const [{ count }] = await db('rankings')
+            .where('game_id', ACHIEVEMENT_GAME_ID)
+            .andWhere('total_score', '>', ranking.total_score)
+            .count('* as count');
+
+        const rank = parseInt(count) + 1;
+
+        // Get total players
+        const [{ total }] = await db('rankings')
+            .where('game_id', ACHIEVEMENT_GAME_ID)
+            .count('* as total');
+
+        const totalPlayers = parseInt(total);
+
+        return {
+            rank,
+            total_players: totalPlayers,
+            achievement_points: ranking.total_score,
+            created_at: ranking.created_at,
+            updated_at: ranking.updated_at
+        };
+    }
 }
 
 module.exports = Ranking;

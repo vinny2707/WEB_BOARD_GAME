@@ -2,7 +2,7 @@ import React from "react";
 import Admin_Sidebar from "../components/Admin_Sidebar.jsx";
 import MobileNav from "../components/MobileNav.jsx";
 import { Outlet } from "react-router-dom";
-import { Users, BarChart3, Gamepad2, User } from "lucide-react";
+import { Users, BarChart3, Gamepad2, User, Trophy } from "lucide-react";
 
 const AdminLayout = () => {
   const navItems = [
@@ -20,6 +20,11 @@ const AdminLayout = () => {
       icon: Gamepad2,
       label: "Game Config",
       path: "/admin/game-config",
+    },
+    {
+      icon: Trophy,
+      label: "Achievements",
+      path: "/admin/achievements",
     },
     {
       icon: User,

@@ -5,7 +5,6 @@ import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
 import {
     fetchGameSettings,
-    hasApiSetting,
     getSettingOptions,
     getSettingLabel,
     getOptionLabel,
@@ -310,35 +309,42 @@ const DrawingLobby = () => {
                         </div>
 
                         {/* Settings Content */}
-                        <div className="px-6 py-5 space-y-4">
+                        <div className="px-6 py-5 space-y-4 max-h-[50vh] overflow-y-auto">
                             {!isCustomMode ? (
                                 <>
-                                    {/* Current Settings Summary */}
+                                    {/* Current Settings Summary - Dynamic from API */}
                                     <div className="p-4 bg-secondary/50 rounded-xl space-y-2">
-                                        {hasApiSetting(apiSettings, 'canvasSize') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Kích thước canvas:</span>
-                                                <span className="font-semibold text-foreground">
-                                                    {CANVAS_SIZES[gameSettings.canvasSize]?.label} ({CANVAS_SIZES[gameSettings.canvasSize]?.width}x{CANVAS_SIZES[gameSettings.canvasSize]?.height})
-                                                </span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'background') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Nền:</span>
-                                                <span className="font-semibold text-foreground">
-                                                    {BACKGROUNDS[gameSettings.background]?.icon} {BACKGROUNDS[gameSettings.background]?.label}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {hasApiSetting(apiSettings, 'showGrid') && (
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-muted-foreground">Lưới hỗ trợ:</span>
-                                                <span className={`font-semibold ${gameSettings.showGrid ? 'text-green-500' : 'text-muted-foreground'}`}>
-                                                    {gameSettings.showGrid ? 'Bật' : 'Tắt'}
-                                                </span>
-                                            </div>
-                                        )}
+                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                            const currentValue = gameSettings[settingKey];
+                                            const options = getSettingOptions(apiSettings, settingKey);
+                                            const option = options.find(opt => opt.value === currentValue);
+                                            
+                                            const colorTextMap = {
+                                                green: 'text-green-500',
+                                                yellow: 'text-yellow-500',
+                                                red: 'text-red-500',
+                                                blue: 'text-blue-500',
+                                            };
+                                            const colorClass = option?.color ? colorTextMap[option.color] : 'text-foreground';
+                                            
+                                            // Handle boolean values for display
+                                            let displayValue = getOptionLabel(apiSettings, settingKey, currentValue);
+                                            if (typeof currentValue === 'boolean') {
+                                                displayValue = currentValue ? 'Bật' : 'Tắt';
+                                            }
+                                            
+                                            return (
+                                                <div key={settingKey} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground">
+                                                        {getSettingLabel(apiSettings, settingKey)}
+                                                    </span>
+                                                    <span className={`font-semibold ${colorClass}`}>
+                                                        {option?.icon ? `${option.icon} ` : ''}
+                                                        {displayValue}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
                                         {!apiSettings && !isLoadingSettings && (
                                             <div className="text-sm text-muted-foreground text-center py-2">
                                                 Không có cài đặt khả dụng
@@ -363,85 +369,85 @@ const DrawingLobby = () => {
                                 </>
                             ) : (
                                 <>
-                                    {/* Custom Settings Editor */}
+                                    {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {/* Canvas Size */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Kích thước:</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {Object.entries(CANVAS_SIZES).map(([key, { label }]) => (
-                                                    <button
-                                                        key={key}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.canvasSize === key
-                                                            ? 'bg-teal-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, canvasSize: key }))}
-                                                    >
-                                                        {label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Background */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Nền:</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {Object.entries(BACKGROUNDS).map(([key, { label, icon }]) => (
-                                                    <button
-                                                        key={key}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.background === key
-                                                            ? 'bg-teal-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, background: key }))}
-                                                        title={label}
-                                                    >
-                                                        {icon}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Grid Guide */}
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-muted-foreground">Lưới hỗ trợ:</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                {[
-                                                    { value: false, label: 'Tắt' },
-                                                    { value: true, label: 'Bật' }
-                                                ].map(option => (
-                                                    <button
-                                                        key={String(option.value)}
-                                                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${gameSettings.showGrid === option.value
-                                                            ? 'bg-teal-500 text-white'
-                                                            : 'bg-secondary text-foreground hover:bg-accent'
-                                                            }`}
-                                                        onClick={() => setGameSettings(prev => ({ ...prev, showGrid: option.value }))}
-                                                    >
-                                                        {option.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Info about grid */}
-                                        <div className="text-xs text-muted-foreground text-center p-2 bg-secondary/50 rounded-lg">
-                                            💡 Lưới hỗ trợ giúp bạn vẽ thẳng hàng hơn
-                                        </div>
+                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                            const options = getSettingOptions(apiSettings, settingKey);
+                                            const settingType = apiSettings[settingKey]?.type || 'select';
+                                            
+                                            const colorMap = {
+                                                green: { selected: 'bg-green-500 text-white' },
+                                                yellow: { selected: 'bg-yellow-500 text-white' },
+                                                red: { selected: 'bg-red-500 text-white' },
+                                                blue: { selected: 'bg-blue-500 text-white' },
+                                            };
+                                            
+                                            return (
+                                                <div key={settingKey} className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                        <span className="text-sm text-muted-foreground">
+                                                            {getSettingLabel(apiSettings, settingKey)}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-1 flex-wrap justify-end max-w-[220px]">
+                                                        {settingType === 'toggle' ? (
+                                                            <button
+                                                                className={`relative w-12 h-6 rounded-full transition-all ${
+                                                                    gameSettings[settingKey] 
+                                                                        ? 'bg-teal-500' 
+                                                                        : 'bg-secondary'
+                                                                }`}
+                                                                onClick={() => setGameSettings(prev => ({ 
+                                                                    ...prev, 
+                                                                    [settingKey]: !prev[settingKey] 
+                                                                }))}
+                                                            >
+                                                                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow ${
+                                                                    gameSettings[settingKey] ? 'right-0.5' : 'left-0.5'
+                                                                }`} />
+                                                            </button>
+                                                        ) : options.length > 0 ? (
+                                                            options.map(opt => {
+                                                                const isSelected = gameSettings[settingKey] === opt.value;
+                                                                const optColor = opt.color;
+                                                                const colorClasses = optColor && colorMap[optColor];
+                                                                
+                                                                return (
+                                                                    <button
+                                                                        key={opt.value}
+                                                                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                                                            isSelected
+                                                                                ? (colorClasses?.selected || 'bg-teal-500 text-white')
+                                                                                : 'bg-secondary text-foreground hover:bg-accent'
+                                                                        }`}
+                                                                        onClick={() => setGameSettings(prev => ({ 
+                                                                            ...prev, 
+                                                                            [settingKey]: opt.value 
+                                                                        }))}
+                                                                    >
+                                                                        {opt.icon ? `${opt.icon} ` : ''}{opt.label}
+                                                                    </button>
+                                                                );
+                                                            })
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
 
                                     {/* Quick Reset */}
                                     <button
                                         className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                                        onClick={() => setGameSettings({ ...DEFAULT_SETTINGS })}
+                                        onClick={() => {
+                                            if (apiSettings) {
+                                                const defaultValues = extractSettingValues(apiSettings);
+                                                setGameSettings(prev => ({ ...prev, ...defaultValues }));
+                                            } else {
+                                                setGameSettings({ ...DEFAULT_SETTINGS });
+                                            }
+                                        }}
                                     >
                                         Đặt lại mặc định
                                     </button>

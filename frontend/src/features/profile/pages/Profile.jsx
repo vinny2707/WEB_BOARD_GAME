@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@/contexts/UserProvider";
 import { getInitials } from "@/utils/Username";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Dialog,
   DialogClose,
@@ -50,6 +51,15 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [achievementPagination, setAchievementPagination] = useState({
+    page: 1,
+    totalPages: 1,
+    total: 0,
+  });
+  const [achievementLimit, setAchievementLimit] = useState(10);
+  const [achievementCategory, setAchievementCategory] = useState(""); // empty = all
+  const [achievementSort, setAchievementSort] = useState("category"); // category, points, name, unlocked_at
+  const [achievementSortOrder, setAchievementSortOrder] = useState("asc");
 
   const {
     register,
@@ -68,24 +78,45 @@ const Profile = () => {
   });
 
   // Fetch achievements
-  useEffect(() => {
-    const fetchAchievements = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/api/achievements/me");
-        setAchievements(response.data.data);
-      } catch (error) {
-        console.error("Error fetching achievements:", error);
-        toast.error("Failed to load achievements");
-      } finally {
-        setLoading(false);
+  const fetchAchievements = async (page = 1, status = 'all') => {
+    try {
+      setLoading(true);
+      const params = { 
+        page, 
+        limit: achievementLimit, 
+        status,
+        sortBy: achievementSort,
+        sortOrder: achievementSortOrder,
+      };
+      // Only add category if selected
+      if (achievementCategory) {
+        params.category = achievementCategory;
       }
-    };
-
-    if (user) {
-      fetchAchievements();
+      const response = await api.get("/api/achievements/me", { params });
+      const responseData = response.data.data;
+      setAchievements(responseData);
+      // Pagination is inside response.data.data
+      if (responseData?.pagination) {
+        setAchievementPagination({
+          page: responseData.pagination.page || 1,
+          totalPages: responseData.pagination.totalPages || 1,
+          total: responseData.pagination.total || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+      toast.error("Failed to load achievements");
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
+  };
+
+  // Re-fetch when filters change
+  useEffect(() => {
+    if (user) {
+      fetchAchievements(1, activeTab);
+    }
+  }, [user, achievementLimit, activeTab, achievementCategory, achievementSort, achievementSortOrder]);
 
   useEffect(() => {
     if (user) {
@@ -141,24 +172,34 @@ const Profile = () => {
     }
   };
 
-  // Filter achievements based on active tab
+  // Get achievements list - handles both flat and grouped response formats
   const getFilteredAchievements = () => {
     if (!achievements) return [];
 
+    // When filtering by specific status (unlocked/in_progress/locked), API returns flat array
+    if (Array.isArray(achievements.achievements)) {
+      return achievements.achievements;
+    }
+
+    // For 'all' status, API returns grouped object - combine all
+    if (activeTab === 'all') {
+      return [
+        ...(achievements.achievements?.unlocked || []),
+        ...(achievements.achievements?.in_progress || []),
+        ...(achievements.achievements?.locked || []),
+      ];
+    }
+
+    // Fallback for grouped format with specific tab (shouldn't happen with new API)
     switch (activeTab) {
       case "unlocked":
-        return achievements.achievements.unlocked || [];
+        return achievements.achievements?.unlocked || [];
       case "in_progress":
-        return achievements.achievements.in_progress || [];
+        return achievements.achievements?.in_progress || [];
       case "locked":
-        return achievements.achievements.locked || [];
-      case "all":
+        return achievements.achievements?.locked || [];
       default:
-        return [
-          ...(achievements.achievements.unlocked || []),
-          ...(achievements.achievements.in_progress || []),
-          ...(achievements.achievements.locked || []),
-        ];
+        return [];
     }
   };
 
@@ -171,6 +212,17 @@ const Profile = () => {
       special: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     };
     return colors[category] || colors.beginner;
+  };
+
+  // Handle achievement pagination
+  const handleAchievementPageChange = (newPage) => {
+    if (newPage < 1 || newPage > achievementPagination.totalPages) return;
+    fetchAchievements(newPage, activeTab);
+  };
+
+  const handleAchievementLimitChange = (newLimit) => {
+    setAchievementLimit(newLimit);
+    // fetchAchievements will be called by useEffect when limit changes
   };
 
   // Check authentication
@@ -487,6 +539,47 @@ const Profile = () => {
               ))}
             </div>
 
+            {/* Filters Row */}
+            <div className="flex flex-wrap gap-4 mb-6 items-center">
+              {/* Category Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 dark:text-slate-400">Category:</span>
+                <select
+                  value={achievementCategory}
+                  onChange={(e) => setAchievementCategory(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg border text-sm cursor-pointer bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:outline-none"
+                >
+                  <option value="">All Categories</option>
+                  <option value="beginner">🌱 Beginner</option>
+                  <option value="expert">⭐ Expert</option>
+                  <option value="social">👥 Social</option>
+                  <option value="special">🎯 Special</option>
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 dark:text-slate-400">Sort:</span>
+                <select
+                  value={achievementSort}
+                  onChange={(e) => setAchievementSort(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg border text-sm cursor-pointer bg-slate-100 border-slate-300 text-slate-900 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:outline-none"
+                >
+                  <option value="category">Category</option>
+                  <option value="points">Points</option>
+                  <option value="name">Name</option>
+                  <option value="unlocked_at">Unlock Date</option>
+                </select>
+                <button
+                  onClick={() => setAchievementSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className="px-2 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
+                  title={achievementSortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                >
+                  {achievementSortOrder === 'asc' ? '↑' : '↓'}
+                </button>
+              </div>
+            </div>
+
             {/* Achievement Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {getFilteredAchievements().map((achievement) => (
@@ -604,6 +697,21 @@ const Profile = () => {
           </div>
         )}
       </div>
+
+      {/* Achievements Pagination - Outside card */}
+      {achievements && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+          <Pagination
+            currentPage={achievementPagination.page}
+            totalPages={achievementPagination.totalPages}
+            totalItems={achievementPagination.total}
+            limit={achievementLimit}
+            onPageChange={handleAchievementPageChange}
+            onLimitChange={handleAchievementLimitChange}
+            limitOptions={[10, 20, 50, 100]}
+          />
+        </div>
+      )}
     </div>
   );
 };

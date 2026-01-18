@@ -10,10 +10,12 @@ import Auth from "../features/auth/pages/Auth.jsx";
 import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
 import Games from "../features/games/pages/Games.jsx";
 import Ranking from "../features/ranking/pages/Ranking.jsx";
+import AchievementRanking from "../features/ranking/pages/AchievementRanking.jsx";
 import Friends from "../features/social/pages/Friends.jsx";
 import Messages from "../features/social/pages/Messages.jsx";
 import Profile from "../features/profile/pages/Profile.jsx";
 import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
+import AchievementManagement from "../features/achievementManagement/pages/AchievementManagement.jsx";
 import NotFound from "@/features/errors/pages/NotFound.jsx";
 import Statistics from "@/features/statistics/pages/Statistics.jsx";
 import GameConfig from "@/features/gameConfig/pages/GameConfig.jsx";
@@ -91,6 +93,10 @@ const router = createBrowserRouter([
           {
             element: <Profile />,
             path: "profile",
+          },
+          {
+            element: <AchievementRanking />,
+            path: "achievement-ranking",
           },
           {
             // TicTacToe Lobby
@@ -192,6 +198,10 @@ const router = createBrowserRouter([
               {
                 element: <GameConfig />,
                 path: "game-config",
+              },
+              {
+                element: <AchievementManagement />,
+                path: "achievements",
               },
               {
                 element: <Profile />,

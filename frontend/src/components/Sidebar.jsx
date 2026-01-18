@@ -5,6 +5,7 @@ import {
   Sun,
   Moon,
   Trophy,
+  Award,
   Gamepad2,
   Users,
   User,
@@ -96,6 +97,12 @@ const Sidebar = () => {
       label: "Profile",
       page: "profile",
       active: currentPage === "profile",
+    },
+    {
+      icon: Award,
+      label: "Achievements",
+      page: "achievement-ranking",
+      active: currentPage === "achievement-ranking",
     },
   ];
 

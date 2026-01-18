@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   House,
+  Trophy,
 } from "lucide-react";
 import { useUser } from "../contexts/UserProvider.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -54,6 +55,12 @@ const Admin_Sidebar = () => {
       label: "Game Config",
       page: "game-config",
       active: activeSection === "game-config",
+    },
+    {
+      icon: Trophy,
+      label: "Achievements",
+      page: "achievements",
+      active: activeSection === "achievements",
     },
   ];
 

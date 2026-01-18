@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const achievementController = require('../controllers/achievementController');
-const { authenticateJWT } = require('../middleware/auth');
+const { authenticateJWT, authorize } = require('../middleware/auth');
 
 /**
  * @swagger
@@ -53,8 +53,8 @@ const { authenticateJWT } = require('../middleware/auth');
  * @swagger
  * /api/achievements:
  *   get:
- *     summary: Get all achievements (paginated)
- *     description: Returns paginated list of all available achievements
+ *     summary: Get all achievements (paginated, filtered, sorted)
+ *     description: Returns paginated list of all available achievements with filter, sort, and search capabilities
  *     tags: [Achievements]
  *     security:
  *       - apiKeyAuth: []
@@ -77,6 +77,25 @@ const { authenticateJWT } = require('../middleware/auth');
  *           type: integer
  *           default: 10
  *         description: Items per page (default 10)
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [category, points, name, created_at]
+ *           default: category
+ *         description: Sort field
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort direction
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name or description
  *     responses:
  *       200:
  *         description: Achievements list with pagination
@@ -112,8 +131,8 @@ router.get('/', achievementController.getAllAchievements);
  * @swagger
  * /api/achievements/me:
  *   get:
- *     summary: Get current user's achievements (paginated)
- *     description: Returns user's achievements with progress, grouped by status with pagination
+ *     summary: Get current user's achievements (paginated, filtered, sorted)
+ *     description: Returns user's achievements with progress. When status=all (default), achievements are grouped by status. When filtering by specific status, returns flat list.
  *     tags: [Achievements]
  *     security:
  *       - apiKeyAuth: []
@@ -131,6 +150,33 @@ router.get('/', achievementController.getAllAchievements);
  *           type: integer
  *           default: 10
  *         description: Items per page (default 10)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [all, unlocked, in_progress, locked]
+ *           default: all
+ *         description: Filter by achievement status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [beginner, expert, social, special]
+ *         description: Filter by category
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [category, points, name, unlocked_at]
+ *           default: category
+ *         description: Sort field
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: asc
+ *         description: Sort direction
  *     responses:
  *       200:
  *         description: User achievements with progress and pagination
@@ -151,14 +197,18 @@ router.get('/', achievementController.getAllAchievements);
  *                     total_count:
  *                       type: integer
  *                     achievements:
- *                       type: object
- *                       properties:
- *                         unlocked:
- *                           type: array
- *                         in_progress:
- *                           type: array
- *                         locked:
- *                           type: array
+ *                       oneOf:
+ *                         - type: object
+ *                           description: Grouped achievements (when status=all)
+ *                           properties:
+ *                             unlocked:
+ *                               type: array
+ *                             in_progress:
+ *                               type: array
+ *                             locked:
+ *                               type: array
+ *                         - type: array
+ *                           description: Flat list (when filtering by specific status)
  *                     pagination:
  *                       type: object
  *                       properties:
@@ -194,5 +244,122 @@ router.get('/me', authenticateJWT, achievementController.getMyAchievements);
  *         description: Achievement not found
  */
 router.get('/:id', achievementController.getAchievementById);
+
+// ============================================
+// ADMIN ENDPOINTS
+// ============================================
+
+/**
+ * @swagger
+ * /api/achievements:
+ *   post:
+ *     summary: Create new achievement (Admin only)
+ *     tags: [Achievements]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *                 default: 🏆
+ *               category:
+ *                 type: string
+ *                 enum: [beginner, expert, social, special]
+ *               points:
+ *                 type: integer
+ *                 default: 10
+ *               unlock_criteria:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Achievement created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin only
+ */
+router.post('/', authenticateJWT, authorize('admin'), achievementController.createAchievement);
+
+/**
+ * @swagger
+ * /api/achievements/{id}:
+ *   put:
+ *     summary: Update achievement (Admin only)
+ *     tags: [Achievements]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *                 enum: [beginner, expert, social, special]
+ *               points:
+ *                 type: integer
+ *               unlock_criteria:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Achievement updated successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: Achievement not found
+ */
+router.put('/:id', authenticateJWT, authorize('admin'), achievementController.updateAchievement);
+
+/**
+ * @swagger
+ * /api/achievements/{id}:
+ *   delete:
+ *     summary: Delete achievement (Admin only)
+ *     tags: [Achievements]
+ *     security:
+ *       - apiKeyAuth: []
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Achievement deleted successfully
+ *       404:
+ *         description: Achievement not found
+ */
+router.delete('/:id', authenticateJWT, authorize('admin'), achievementController.deleteAchievement);
 
 module.exports = router;

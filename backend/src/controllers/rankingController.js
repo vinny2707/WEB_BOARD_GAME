@@ -86,8 +86,63 @@ const getMyRankings = async (req, res, next) => {
     }
 };
 
+/**
+ * Get achievement rankings (game_id = 0)
+ * Public leaderboard for achievement points
+ */
+const getAchievementRankings = async (req, res, next) => {
+    try {
+        const { scope, page, limit } = req.query;
+        const userId = req.user?.id;
+
+        // Validate scope
+        const validScopes = ['global', 'friends'];
+        const selectedScope = scope || 'global';
+        if (!validScopes.includes(selectedScope)) {
+            return error(res, 'Invalid scope. Must be: global or friends', 400);
+        }
+
+        // Get achievement rankings
+        const result = await Ranking.getAchievementRankings({
+            scope: selectedScope,
+            userId,
+            page,
+            limit
+        });
+
+        return success(res, result.data, 'Achievement rankings retrieved successfully', 200, result.pagination);
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get current user's achievement ranking
+ */
+const getMyAchievementRanking = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+
+        const ranking = await Ranking.getUserAchievementRanking(userId);
+
+        if (!ranking) {
+            return success(res, { 
+                rank: null, 
+                total_players: 0, 
+                achievement_points: 0 
+            }, 'No achievement points yet');
+        }
+
+        return success(res, ranking, 'Your achievement ranking retrieved successfully');
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     getGameRankings,
     getMyGameRanking,
-    getMyRankings
+    getMyRankings,
+    getAchievementRankings,
+    getMyAchievementRanking
 };
