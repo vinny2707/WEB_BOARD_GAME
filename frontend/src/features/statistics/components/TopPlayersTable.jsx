@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { Trophy, Medal, Award, Crown, Star } from "lucide-react";
+import { getInitials } from "@/utils/Username";
 
 const getRankIcon = (rank) => {
   if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500" />;
@@ -68,16 +69,16 @@ const TopPlayersTable = ({
 
                   {/* Avatar */}
                   <div className="flex-shrink-0">
-                    {player.avatar ? (
+                    {player.avatar_url ? (
                       <img
-                        src={player.avatar}
+                        src={player.avatar_url}
                         alt={player.username}
                         className="w-10 h-10 rounded-full object-cover ring-2 ring-border"
                       />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-sm font-semibold text-primary">
-                          {player.username?.charAt(0)?.toUpperCase() || "?"}
+                          {getInitials(player.username) || "?"}
                         </span>
                       </div>
                     )}
@@ -89,22 +90,17 @@ const TopPlayersTable = ({
                       {player.username || "Unknown Player"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {player.sessions_count?.toLocaleString() || 0} sessions
-                      played
+                      {player.win_rate?.toFixed(1) || 0}% win rate
                     </p>
                   </div>
 
                   {/* Score */}
                   <div className="flex-shrink-0 text-right">
                     <p className="font-bold text-foreground">
-                      {player.total_score?.toLocaleString() ||
-                        player.avg_score?.toLocaleString() ||
-                        0}
+                      {player.total_wins}/{player.total_games}{" "}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {player.total_score !== undefined
-                        ? "total score"
-                        : "avg score"}
+                      Wins/Games
                     </p>
                   </div>
                 </motion.div>

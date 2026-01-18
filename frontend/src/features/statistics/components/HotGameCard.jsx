@@ -25,7 +25,7 @@ const HotGameCard = ({ rank, game, delay = 0, className = "" }) => {
       return (
         <div
           className={cn(
-            "absolute -top-1 -left-1 w-8 h-8 rounded-full flex items-center justify-center",
+            "absolute top-1 left-1 w-8 h-8 rounded-full flex items-center justify-center",
             "bg-gradient-to-br text-white font-bold text-sm shadow-lg",
             getRankColor(),
           )}
@@ -35,7 +35,7 @@ const HotGameCard = ({ rank, game, delay = 0, className = "" }) => {
       );
     }
     return (
-      <div className="absolute -top-1 -left-1 w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground font-bold text-sm">
+      <div className="absolute top-1 left-1 w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground font-bold text-sm">
         {rank}
       </div>
     );

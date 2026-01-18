@@ -19,6 +19,18 @@ const DateRangePicker = ({ dateRange, onDateRangeChange, className = "" }) => {
     { label: "Last 90 days", days: 90 },
   ];
 
+  // Check if a preset is currently selected
+  const isPresetSelected = (days) => {
+    if (!dateRange.from_date || !dateRange.to_date) return false;
+    const to = new Date();
+    const from = subDays(to, days);
+    const selectedFrom = format(new Date(dateRange.from_date), "yyyy-MM-dd");
+    const selectedTo = format(new Date(dateRange.to_date), "yyyy-MM-dd");
+    const presetFrom = format(from, "yyyy-MM-dd");
+    const presetTo = format(to, "yyyy-MM-dd");
+    return selectedFrom === presetFrom && selectedTo === presetTo;
+  };
+
   const handlePresetClick = (days) => {
     const to = new Date();
     const from = subDays(to, days);
@@ -47,9 +59,13 @@ const DateRangePicker = ({ dateRange, onDateRangeChange, className = "" }) => {
         {presets.map((preset) => (
           <Button
             key={preset.days}
-            variant="outline"
+            variant={isPresetSelected(preset.days) ? "default" : "outline"}
             size="sm"
-            className="h-8 text-xs"
+            className={cn(
+              "h-8 text-xs transition-all cursor-pointer",
+              isPresetSelected(preset.days) &&
+                "bg-blue-500 hover:bg-blue-600 text-white shadow-md",
+            )}
             onClick={() => handlePresetClick(preset.days)}
           >
             {preset.label}
