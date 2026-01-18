@@ -1,281 +1,187 @@
 /**
  * Seed: Game Sessions
- * Creates sample game session records
- * Now includes settings field for custom game configuration per session
+ * Tạo game sessions cho 100 users dựa trên rankings
+ * Mỗi user có sessions tương ứng với total_games trong rankings
+ * Dữ liệu trải dài 4 tháng
  */
 
-exports.seed = async function(knex) {
-  // Deletes ALL existing entries
-  await knex('game_sessions').del();
+const DATA_SPREAD_DAYS = 120;
 
-  // Insert game sessions
-  const sessions = [
-    // John's sessions (user_id: 2)
-    {
-      user_id: 2,
-      game_id: 1, // Caro Hàng 5
-      game_state: JSON.stringify({
-        board: Array(15).fill(Array(15).fill(null)),
-        lastMove: { row: 7, col: 8 },
-        playerO: 'win',
-        moveHistory: []
-      }),
-      settings: JSON.stringify({
-        turnTimeLimit: 60 // 60 seconds per turn
-      }),
-      result: 'win',
-      score: 1200,
-      moves_count: 42,
-      time_elapsed: 1800, // 30 minutes
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '2 days'"),
-      ended_at: knex.raw("NOW() - INTERVAL '2 days' + INTERVAL '30 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '2 days' + INTERVAL '30 minutes'")
-    },
-    {
-      user_id: 2,
-      game_id: 4, // Rắn Săn Mồi
-      game_state: JSON.stringify({
-        snake: [[10,10], [10,9], [10,8]],
-        food: [15, 15],
-        direction: 'right',
-        score: 380
-      }),
-      settings: JSON.stringify({
-        speed: 'fast',
-        obstacles: true
-      }),
-      result: 'loss',
-      score: 380,
-      moves_count: 95,
-      time_elapsed: 900,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '1 day'"),
-      ended_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '15 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '15 minutes'")
-    },
-    {
-      user_id: 2,
-      game_id: 3, // Tic Tac Toe
-      game_state: JSON.stringify({
-        board: [['X', 'O', 'X'], ['O', 'X', 'O'], ['O', 'X', 'X']],
-        winner: 'X'
-      }),
-      settings: null, // Using default settings
-      result: 'win',
-      score: 100,
-      moves_count: 9,
-      time_elapsed: 120,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '5 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '5 hours' + INTERVAL '2 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '5 hours' + INTERVAL '2 minutes'")
-    },
+const GAME_TYPES = {
+    1: 'caro_5',
+    2: 'caro_4',
+    3: 'tictactoe',
+    4: 'snake',
+    5: 'match3',
+    6: 'memory_cards',
+    7: 'drawing_board'
+};
 
-    // Jane's sessions (user_id: 3)
-    {
-      user_id: 3,
-      game_id: 2, // Caro Hàng 4
-      game_state: JSON.stringify({
-        board: Array(10).fill(Array(10).fill(null)),
-        lastMove: { row: 5, col: 5 },
-        winner: 'X'
-      }),
-      result: 'win',
-      score: 1350,
-      moves_count: 55,
-      time_elapsed: 2400,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '3 days'"),
-      ended_at: knex.raw("NOW() - INTERVAL '3 days' + INTERVAL '40 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '3 days' + INTERVAL '40 minutes'")
-    },
-    {
-      user_id: 3,
-      game_id: 5, // Ghép Hàng 3
-      game_state: JSON.stringify({
-        grid: Array(8).fill(Array(8).fill(0)),
-        score: 9500,
-        moves: 20,
-        candiesCleared: 45
-      }),
-      result: 'win',
-      score: 950,
-      moves_count: 48,
-      time_elapsed: 1500,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '1 day'"),
-      ended_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '25 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '25 minutes'")
-    },
+const DIFFICULTIES = ['easy', 'medium', 'hard'];
+const RESULTS = ['win', 'loss', 'draw'];
 
-    // Mike's sessions (user_id: 4)
-    {
-      user_id: 4,
-      game_id: 6, // Cờ Trí Nhớ
-      game_state: JSON.stringify({
-        grid: Array(4).fill(Array(4).fill({ revealed: false, matched: false })),
-        matchedPairs: 6,
-        moves: 42
-      }),
-      result: 'draw',
-      score: 500,
-      moves_count: 42,
-      time_elapsed: 600,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '12 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '12 hours' + INTERVAL '10 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '12 hours' + INTERVAL '10 minutes'")
-    },
-    {
-      user_id: 4,
-      game_id: 1, // Caro Hàng 5 - in progress
-      game_state: JSON.stringify({
-        board: Array(15).fill(Array(15).fill(null)),
-        lastMove: null
-      }),
-      result: null,
-      score: 0,
-      moves_count: 15,
-      time_elapsed: 450,
-      status: 'in_progress',
-      started_at: knex.raw("NOW() - INTERVAL '1 hour'"),
-      ended_at: null,
-      saved_at: knex.raw("NOW() - INTERVAL '5 minutes'")
-    },
-
-    // Sarah's sessions (user_id: 5)
-    {
-      user_id: 5,
-      game_id: 7, // Bảng Vẽ Tự Do
-      game_state: JSON.stringify({
-        canvas: 'base64_image_data',
-        strokes: 150,
-        timeSpent: 1800,
-        saved: true
-      }),
-      result: 'win',
-      score: 1100,
-      moves_count: 64,
-      time_elapsed: 1800,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '2 days'"),
-      ended_at: knex.raw("NOW() - INTERVAL '2 days' + INTERVAL '30 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '2 days' + INTERVAL '30 minutes'")
-    },
-    {
-      user_id: 5,
-      game_id: 2, // Caro Hàng 4 - Abandoned
-      game_state: JSON.stringify({
-        board: Array(10).fill(Array(10).fill(null)),
-        lastMove: { row: 2, col: 3 }
-      }),
-      result: null,
-      score: 0,
-      moves_count: 8,
-      time_elapsed: 240,
-      status: 'abandoned',
-      started_at: knex.raw("NOW() - INTERVAL '6 hours'"),
-      ended_at: null,
-      saved_at: knex.raw("NOW() - INTERVAL '5 hours'")
-    },
-
-    // David's sessions (user_id: 6)
-    {
-      user_id: 6,
-      game_id: 3, // Tic Tac Toe
-      game_state: JSON.stringify({
-        board: [['X', 'O', null], ['O', 'X', null], [null, null, 'X']],
-        winner: 'X'
-      }),
-      result: 'win',
-      score: 100,
-      moves_count: 7,
-      time_elapsed: 90,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '8 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '8 hours' + INTERVAL '90 seconds'"),
-      saved_at: knex.raw("NOW() - INTERVAL '8 hours' + INTERVAL '90 seconds'")
-    },
-
-    // Emily's sessions (user_id: 7) - Fast win (Speed Demon achievement)
-    {
-      user_id: 7,
-      game_id: 6, // Cờ Trí Nhớ - Fast complete
-      game_state: JSON.stringify({
-        grid: Array(4).fill(Array(4).fill({ matched: true })),
-        matchedPairs: 8,
-        moves: 12
-      }),
-      result: 'win',
-      score: 1500,
-      moves_count: 12,
-      time_elapsed: 58, // Chưa đến 1 phút - Bộ Nhớ Siêu Phàm achievement
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '10 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '58 seconds'"),
-      saved_at: knex.raw("NOW() - INTERVAL '10 hours' + INTERVAL '58 seconds'")
-    },
-
-    // Robert's sessions (user_id: 8)
-    {
-      user_id: 8,
-      game_id: 4, // Rắn Săn Mồi
-      game_state: JSON.stringify({
-        snake: [[5,5], [5,4], [5,3], [5,2]],
-        food: [10, 10],
-        finalLength: 8,
-        score: 250
-      }),
-      result: 'loss',
-      score: 250,
-      moves_count: 38,
-      time_elapsed: 1200,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '4 days'"),
-      ended_at: knex.raw("NOW() - INTERVAL '4 days' + INTERVAL '20 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '4 days' + INTERVAL '20 minutes'")
-    },
-
-    // Lisa's sessions (user_id: 9)
-    {
-      user_id: 9,
-      game_id: 1, // Caro Hàng 5
-      game_state: JSON.stringify({
-        board: Array(15).fill(Array(15).fill(null)),
-        lastMove: { row: 7, col: 8 },
-        winner: 'black'
-      }),
-      result: 'win',
-      score: 1050,
-      moves_count: 41,
-      time_elapsed: 1350,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '1 day'"),
-      ended_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '22 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '1 day' + INTERVAL '22 minutes'")
-    },
-
-    // Chris's sessions (user_id: 10)
-    {
-      user_id: 10,
-      game_id: 5, // Ghép Hàng 3
-      game_state: JSON.stringify({
-        grid: Array(8).fill(Array(8).fill(0)),
-        score: 8500,
-        moves: 15,
-        combo: 5
-      }),
-      result: 'win',
-      score: 850,
-      moves_count: 28,
-      time_elapsed: 480,
-      status: 'completed',
-      started_at: knex.raw("NOW() - INTERVAL '3 hours'"),
-      ended_at: knex.raw("NOW() - INTERVAL '3 hours' + INTERVAL '8 minutes'"),
-      saved_at: knex.raw("NOW() - INTERVAL '3 hours' + INTERVAL '8 minutes'")
+/**
+ * Generate game state mẫu cho từng loại game
+ */
+function generateGameState(gameType, result) {
+    switch (gameType) {
+        case 'caro_5':
+        case 'caro_4':
+            return {
+                board: [],
+                lastMove: { row: 7, col: 8 },
+                winner: result === 'win' ? 'player' : result === 'loss' ? 'ai' : null
+            };
+        case 'tictactoe':
+            return {
+                board: [['X', 'O', 'X'], ['O', 'X', 'O'], ['O', 'X', 'X']],
+                winner: result === 'win' ? 'X' : result === 'loss' ? 'O' : null
+            };
+        case 'snake':
+            return {
+                snake: [[10, 10], [10, 9], [10, 8]],
+                food: [15, 15],
+                direction: 'right',
+                gameOver: true
+            };
+        case 'match3':
+            return {
+                grid: [],
+                movesLeft: 0,
+                candiesCleared: 45
+            };
+        case 'memory_cards':
+            return {
+                matchedPairs: 8,
+                totalFlips: 24,
+                completed: true
+            };
+        default:
+            return {};
     }
-  ];
+}
 
-  await knex('game_sessions').insert(sessions);
+/**
+ * Generate settings cho từng loại game
+ */
+function generateSettings(gameType, difficulty) {
+    const base = { difficulty: { value: difficulty } };
+    
+    switch (gameType) {
+        case 'caro_5':
+            return { ...base, boardSize: { value: 15 }, timePerTurn: { value: 40 } };
+        case 'caro_4':
+            return { ...base, boardSize: { value: 10 }, timePerTurn: { value: 30 } };
+        case 'tictactoe':
+            return { ...base, boardSize: { value: 3 }, timePerTurn: { value: 30 } };
+        case 'snake':
+            return { ...base, boardSize: { value: 20 }, wallMode: { value: 'solid' } };
+        case 'match3':
+            return { ...base, boardSize: { value: 8 }, targetScore: { value: 5000 }, moves: { value: 30 } };
+        case 'memory_cards':
+            return { ...base, gridSize: { value: 4 }, theme: { value: 'fruits' } };
+        default:
+            return base;
+    }
+}
+
+/**
+ * Generate score/elo change dựa trên result và difficulty
+ */
+function generateScore(result, difficulty) {
+    // ELO change dựa trên result
+    let baseChange;
+    if (result === 'win') {
+        baseChange = difficulty === 'easy' ? 8 : difficulty === 'medium' ? 15 : 25;
+    } else if (result === 'loss') {
+        baseChange = difficulty === 'easy' ? -20 : difficulty === 'medium' ? -12 : -5;
+    } else {
+        baseChange = difficulty === 'easy' ? -5 : difficulty === 'medium' ? 2 : 8;
+    }
+    
+    // Thêm variance
+    return baseChange + (Math.floor(Math.random() * 10) - 5);
+}
+
+exports.seed = async function(knex) {
+    await knex('game_sessions').del();
+    
+    // Lấy rankings để biết mỗi user chơi bao nhiêu game
+    const rankings = await knex('rankings').select('user_id', 'game_id', 'total_games', 'total_wins', 'total_losses', 'total_draws');
+    
+    const sessions = [];
+    
+    for (const ranking of rankings) {
+        const gameType = GAME_TYPES[ranking.game_id];
+        if (!gameType || gameType === 'drawing_board') continue;
+        
+        // Tạo sessions dựa trên total_games
+        const numSessions = Math.min(ranking.total_games, 20); // Max 20 sessions per user per game
+        
+        let wins = Math.min(ranking.total_wins, numSessions);
+        let losses = Math.min(ranking.total_losses, numSessions - wins);
+        let draws = numSessions - wins - losses;
+        
+        for (let i = 0; i < numSessions; i++) {
+            // Determine result
+            let result;
+            if (wins > 0) {
+                result = 'win';
+                wins--;
+            } else if (losses > 0) {
+                result = 'loss';
+                losses--;
+            } else {
+                result = 'draw';
+                draws--;
+            }
+            
+            const difficulty = DIFFICULTIES[i % 3];
+            // Trải dữ liệu trong 4 tháng
+            const daysAgo = Math.floor((i / numSessions) * DATA_SPREAD_DAYS) + 1;
+            
+            sessions.push({
+                user_id: ranking.user_id,
+                game_id: ranking.game_id,
+                game_state: JSON.stringify(generateGameState(gameType, result)),
+                settings: JSON.stringify(generateSettings(gameType, difficulty)),
+                result: result,
+                score: generateScore(result, difficulty),
+                moves_count: 10 + (i * 3) % 50,
+                time_elapsed: 60 + (i * 30) % 1800,
+                status: 'completed',
+                started_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days'`),
+                ended_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days' + INTERVAL '${10 + i % 30} minutes'`),
+                saved_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days' + INTERVAL '${10 + i % 30} minutes'`)
+            });
+        }
+    }
+    
+    // Thêm vài sessions in_progress cho một số users (giảm xuống 10 users)
+    for (let userId = 1; userId <= 10; userId++) {
+        const gameId = (userId % 6) + 1;
+        const gameType = GAME_TYPES[gameId];
+        
+        sessions.push({
+            user_id: userId,
+            game_id: gameId,
+            game_state: JSON.stringify(generateGameState(gameType, null)),
+            settings: JSON.stringify(generateSettings(gameType, 'medium')),
+            result: null,
+            score: 0,
+            moves_count: 5 + (userId % 20),
+            time_elapsed: 60 + (userId % 300),
+            status: 'in_progress',
+            started_at: knex.raw(`NOW() - INTERVAL '${userId % 24} hours'`),
+            ended_at: null,
+            saved_at: knex.raw(`NOW() - INTERVAL '${userId % 60} minutes'`)
+        });
+    }
+    
+    // Insert theo batch
+    const batchSize = 500;
+    for (let i = 0; i < sessions.length; i += batchSize) {
+        const batch = sessions.slice(i, i + batchSize);
+        await knex('game_sessions').insert(batch);
+    }
 };

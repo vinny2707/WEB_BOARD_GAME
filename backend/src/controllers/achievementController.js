@@ -59,12 +59,19 @@ const getAchievementById = async (req, res, next) => {
 /**
  * Get current user's achievements with progress (paginated, filtered, sorted)
  * GET /api/achievements/me?page=1&limit=10&status=all&category=expert&sortBy=points&sortOrder=desc
+ * 
+ * Response includes:
+ * - total_points: Tổng điểm achievement đã mở khóa
+ * - summary: { unlocked, in_progress, locked, total } - Số lượng từng loại
+ * - achievements: Danh sách achievements (đã sort theo status: unlocked -> in_progress -> locked)
+ * - pagination: Thông tin phân trang
  */
 const getMyAchievements = async (req, res, next) => {
     try {
         const userId = req.user.id;
         const { page, limit, status, category, sortBy, sortOrder } = req.query;
         
+        // Get achievements with pagination (already sorted by status in model)
         const result = await UserAchievement.findByUser(userId, { 
             page, 
             limit, 
@@ -73,34 +80,32 @@ const getMyAchievements = async (req, res, next) => {
             sortBy, 
             sortOrder 
         });
+        
+        // Get total points
         const totalPoints = await UserAchievement.getTotalPoints(userId);
-
-        // If filtering by specific status, return flat list
-        if (status && status !== 'all') {
-            return success(res, {
-                total_points: totalPoints,
-                unlocked_count: status === 'unlocked' ? result.achievements.length : null,
-                total_count: result.pagination.total,
-                achievements: result.achievements,
-                pagination: result.pagination
-            }, 'User achievements retrieved successfully');
-        }
-
-        // For 'all' status, group by status for backward compatibility
-        const achievements = result.achievements;
-        const unlocked = achievements.filter(a => a.is_unlocked);
-        const inProgress = achievements.filter(a => !a.is_unlocked && a.progress.current > 0);
-        const locked = achievements.filter(a => !a.is_unlocked && a.progress.current === 0);
+        
+        // Get summary counts (all statuses, no pagination)
+        const summaryResult = await UserAchievement.findByUser(userId, { 
+            page: 1, 
+            limit: 9999, 
+            status: 'all', 
+            category 
+        });
+        
+        const allAchievements = summaryResult.achievements;
+        const unlockedCount = allAchievements.filter(a => a.is_unlocked).length;
+        const inProgressCount = allAchievements.filter(a => !a.is_unlocked && a.progress.current > 0).length;
+        const lockedCount = allAchievements.filter(a => !a.is_unlocked && a.progress.current === 0).length;
 
         return success(res, {
             total_points: totalPoints,
-            unlocked_count: unlocked.length,
-            total_count: result.pagination.total,
-            achievements: {
-                unlocked,
-                in_progress: inProgress,
-                locked
+            summary: {
+                unlocked: unlockedCount,
+                in_progress: inProgressCount,
+                locked: lockedCount,
+                total: unlockedCount + inProgressCount + lockedCount
             },
+            achievements: result.achievements,
             pagination: result.pagination
         }, 'User achievements retrieved successfully');
     } catch (err) {

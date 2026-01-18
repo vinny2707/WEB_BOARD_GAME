@@ -48,7 +48,7 @@ class GameSession {
                 .first();
             
             const gameType = game?.type;
-            const difficulty = data.settings?.difficulty || 'NORMAL';
+            const difficulty = data.settings?.difficulty?.value || data.settings?.difficulty || 'medium';
 
             // 2. Get or create ranking record
             let existingRanking = await trx('rankings')
@@ -57,15 +57,18 @@ class GameSession {
 
             // Current Elo (total_score is used as Elo, default 1000)
             const currentElo = existingRanking?.total_score || 1000;
+            const totalGames = existingRanking?.total_games || 0;
 
-            // 3. Calculate Elo change
+            // 3. Calculate Elo change với hệ thống ELO mới
             const eloResult = eloService.calculateGameElo({
                 playerElo: currentElo,
                 gameType: gameType,
                 difficulty: difficulty,
                 result: data.result,
                 score: data.score || 0,
-                wrongFlips: data.score || 0  // For memory_cards, score = wrong_flips
+                totalFlips: data.totalFlips || data.score || 0,  // For memory_cards
+                totalGames: totalGames,
+                settings: data.settings || {}
             });
 
             // Elo change value to store in score field

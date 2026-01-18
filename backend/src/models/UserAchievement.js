@@ -69,7 +69,17 @@ class UserAchievement {
                 'ua.unlocked_at'
             );
 
-        // Apply sorting
+        // PRIMARY SORT: Always sort by status first (unlocked -> in_progress -> locked)
+        // Using CASE WHEN to create priority: 0 = unlocked, 1 = in_progress, 2 = locked
+        query = query.orderByRaw(`
+            CASE 
+                WHEN ua.unlocked_at IS NOT NULL THEN 0
+                WHEN ua.progress IS NOT NULL AND (ua.progress->>'current')::int > 0 THEN 1
+                ELSE 2
+            END ASC
+        `);
+
+        // SECONDARY SORT: Apply user's sort preference within each status group
         const validSortFields = ['category', 'points', 'name', 'unlocked_at'];
         const sortField = validSortFields.includes(sortBy) ? sortBy : 'category';
         const sortDirection = sortOrder === 'desc' ? 'desc' : 'asc';
@@ -80,7 +90,7 @@ class UserAchievement {
             query = query.orderBy(`a.${sortField}`, sortDirection);
         }
         
-        // Secondary sort for consistency
+        // Tertiary sort for consistency
         if (sortField !== 'points') {
             query = query.orderBy('a.points', 'asc');
         }

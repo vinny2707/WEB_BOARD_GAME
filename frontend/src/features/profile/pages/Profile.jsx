@@ -172,35 +172,16 @@ const Profile = () => {
     }
   };
 
-  // Get achievements list - handles both flat and grouped response formats
+  // Get achievements list - response always returns flat array now
   const getFilteredAchievements = () => {
     if (!achievements) return [];
 
-    // When filtering by specific status (unlocked/in_progress/locked), API returns flat array
+    // New API always returns flat array in achievements field
     if (Array.isArray(achievements.achievements)) {
       return achievements.achievements;
     }
 
-    // For 'all' status, API returns grouped object - combine all
-    if (activeTab === 'all') {
-      return [
-        ...(achievements.achievements?.unlocked || []),
-        ...(achievements.achievements?.in_progress || []),
-        ...(achievements.achievements?.locked || []),
-      ];
-    }
-
-    // Fallback for grouped format with specific tab (shouldn't happen with new API)
-    switch (activeTab) {
-      case "unlocked":
-        return achievements.achievements?.unlocked || [];
-      case "in_progress":
-        return achievements.achievements?.in_progress || [];
-      case "locked":
-        return achievements.achievements?.locked || [];
-      default:
-        return [];
-    }
+    return [];
   };
 
   // Get category badge color
@@ -481,7 +462,7 @@ const Profile = () => {
                       Unlocked
                     </p>
                     <p className="text-2xl font-bold dark:text-white">
-                      {achievements.unlocked_count}/{achievements.total_count}
+                      {achievements.summary?.unlocked || 0}/{achievements.summary?.total || 0}
                     </p>
                   </div>
                 </div>
@@ -509,7 +490,7 @@ const Profile = () => {
                       In Progress
                     </p>
                     <p className="text-2xl font-bold dark:text-white">
-                      {achievements.achievements.in_progress?.length || 0}
+                      {achievements.summary?.in_progress || 0}
                     </p>
                   </div>
                 </div>

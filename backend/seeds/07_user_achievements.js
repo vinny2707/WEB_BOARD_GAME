@@ -1,220 +1,188 @@
 /**
  * Seed: User Achievements
- * Tracks which achievements users have unlocked
- * Progress format follows achievements.unlock_criteria structure from database_documentation.md
+ * Gán achievements cho 100 users dựa trên stats từ rankings
+ * Dữ liệu trải dài 4 tháng
  */
 
+const DATA_SPREAD_DAYS = 120;
+
 exports.seed = async function(knex) {
-  // Deletes ALL existing entries
-  await knex('user_achievements').del();
-
-  // Insert user achievements
-  // Progress format: { current, required, percentage, last_updated }
-  await knex('user_achievements').insert([
-    // John (user_id: 2)
-    {
-      user_id: 2,
-      achievement_id: 1, // First Steps (total_games >= 1)
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '2 days'")
-    },
-    {
-      user_id: 2,
-      achievement_id: 2, // Getting Started (total_wins >= 1)
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '2 days'")
-    },
-    {
-      user_id: 2,
-      achievement_id: 3, // Social Butterfly (friend_count >= 1)
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '30 days'")
-    },
-
-    // Jane (user_id: 3)
-    {
-      user_id: 3,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 10, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '3 days'")
-    },
-    {
-      user_id: 3,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 7, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '3 days'")
-    },
-    {
-      user_id: 3,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 4, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '28 days'")
-    },
-
-    // Mike (user_id: 4)
-    {
-      user_id: 4,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '12 hours'")
-    },
-    {
-      user_id: 4,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '22 days'")
-    },
-
-    // Sarah (user_id: 5)
-    {
-      user_id: 5,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '2 days'")
-    },
-    {
-      user_id: 5,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '2 days'")
-    },
-    {
-      user_id: 5,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 4, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '25 days'")
-    },
-
-    // David (user_id: 6)
-    {
-      user_id: 6,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 4, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '8 hours'")
-    },
-    {
-      user_id: 6,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '8 hours'")
-    },
-    {
-      user_id: 6,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '20 days'")
-    },
-
-    // Emily (user_id: 7) - Speed player
-    {
-      user_id: 7,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 5, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '10 hours'")
-    },
-    {
-      user_id: 7,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 5, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '10 hours'")
-    },
-    {
-      user_id: 7,
-      achievement_id: 11, // Speed Demon (win_time <= 300 seconds) - 180s < 300s = UNLOCKED
-      progress: JSON.stringify({ current: 180, required: 300, percentage: 100 }), // For time: current <= required = 100%
-      unlocked_at: knex.raw("NOW() - INTERVAL '10 hours'")
-    },
-    {
-      user_id: 7,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '15 days'")
-    },
-
-    // Robert (user_id: 8)
-    {
-      user_id: 8,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '4 days'")
-    },
-    {
-      user_id: 8,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '16 days'")
-    },
-
-    // Lisa (user_id: 9)
-    {
-      user_id: 9,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 5, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '1 day'")
-    },
-    {
-      user_id: 9,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 4, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '1 day'")
-    },
-    {
-      user_id: 9,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '10 days'")
-    },
-
-    // Chris (user_id: 10)
-    {
-      user_id: 10,
-      achievement_id: 1,
-      progress: JSON.stringify({ current: 3, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '3 hours'")
-    },
-    {
-      user_id: 10,
-      achievement_id: 2,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '3 hours'")
-    },
-    {
-      user_id: 10,
-      achievement_id: 3,
-      progress: JSON.stringify({ current: 2, required: 1, percentage: 100 }),
-      unlocked_at: knex.raw("NOW() - INTERVAL '12 days'")
-    },
-
-    // In-progress achievements (not yet unlocked)
-    {
-      user_id: 2,
-      achievement_id: 4, // Winning Streak (win_streak >= 10)
-      progress: JSON.stringify({ current: 3, required: 10, percentage: 30 }),
-      unlocked_at: null
-    },
-    {
-      user_id: 3,
-      achievement_id: 5, // Century Player (total_games >= 100)
-      progress: JSON.stringify({ current: 10, required: 100, percentage: 10 }),
-      unlocked_at: null
-    },
-    {
-      user_id: 3,
-      achievement_id: 7, // Cao Thủ Caro (game_wins caro_5 >= 20)
-      progress: JSON.stringify({ current: 4, required: 20, percentage: 20 }),
-      unlocked_at: null
-    },
-    {
-      user_id: 5,
-      achievement_id: 10, // Chatterbox (messages_sent >= 100)
-      progress: JSON.stringify({ current: 15, required: 100, percentage: 15 }),
-      unlocked_at: null
-    },
-    {
-      user_id: 9,
-      achievement_id: 8, // Rắn Săn Mồi Pro (high_score snake >= 500)
-      progress: JSON.stringify({ current: 350, required: 500, percentage: 70 }),
-      unlocked_at: null
+    await knex('user_achievements').del();
+    
+    // Lấy tất cả achievements
+    const achievements = await knex('achievements').select('*');
+    
+    // Lấy rankings để tính stats
+    const rankings = await knex('rankings').select('*');
+    
+    // Lấy friends count
+    const friendCounts = await knex('friends')
+        .where({ status: 'accepted' })
+        .select('user_id')
+        .count('* as count')
+        .groupBy('user_id');
+    const friendCountMap = {};
+    friendCounts.forEach(f => friendCountMap[f.user_id] = parseInt(f.count));
+    
+    // Lấy message counts
+    const messageCounts = await knex('messages')
+        .select('sender_id')
+        .count('* as count')
+        .groupBy('sender_id');
+    const messageCountMap = {};
+    messageCounts.forEach(m => messageCountMap[m.sender_id] = parseInt(m.count));
+    
+    // Tính tổng stats cho mỗi user (exclude game_id = 0 vì đó là tổng achievement)
+    const userStats = {};
+    for (const ranking of rankings) {
+        // Skip game_id = 0 (achievement total) để không đếm trùng
+        if (ranking.game_id === 0) continue;
+        
+        if (!userStats[ranking.user_id]) {
+            userStats[ranking.user_id] = {
+                total_games: 0,
+                total_wins: 0,
+                game_stats: {},
+                best_rank: Infinity
+            };
+        }
+        userStats[ranking.user_id].total_games += ranking.total_games;
+        userStats[ranking.user_id].total_wins += ranking.total_wins;
+        userStats[ranking.user_id].game_stats[ranking.game_id] = {
+            wins: ranking.total_wins,
+            score: ranking.total_score,
+            rank: ranking.global_rank
+        };
+        if (ranking.global_rank && ranking.global_rank < userStats[ranking.user_id].best_rank) {
+            userStats[ranking.user_id].best_rank = ranking.global_rank;
+        }
     }
-  ]);
+    
+    const userAchievements = [];
+    let id = 1;
+    
+    // Helper để parse criteria an toàn
+    const parseCriteria = (criteriaData) => {
+        if (typeof criteriaData === 'object') return criteriaData;
+        try {
+            return JSON.parse(criteriaData);
+        } catch {
+            return { type: 'unknown', required_count: 1 };
+        }
+    };
+    
+    // Check từng user có đủ điều kiện unlock achievement nào
+    for (let userId = 1; userId <= 100; userId++) {
+        const stats = userStats[userId] || { total_games: 0, total_wins: 0, game_stats: {}, best_rank: Infinity };
+        const friendCount = friendCountMap[userId] || 0;
+        const messageCount = messageCountMap[userId] || 0;
+        
+        for (const achievement of achievements) {
+            const criteria = parseCriteria(achievement.unlock_criteria);
+            let unlocked = false;
+            let progress = { current: 0, required: criteria.required_count || 1 };
+            
+            switch (criteria.type) {
+                case 'total_games':
+                    if (criteria.game_type) {
+                        // Game-specific
+                        const gameId = getGameId(criteria.game_type);
+                        progress.current = stats.game_stats[gameId]?.wins + (stats.game_stats[gameId]?.wins || 0) || 0;
+                        // Estimate total games from wins (assume 50% win rate)
+                        progress.current = Math.floor(progress.current * 2);
+                    } else {
+                        progress.current = stats.total_games;
+                    }
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'total_wins':
+                    progress.current = stats.total_wins;
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'game_wins':
+                    const gId = getGameId(criteria.game_type);
+                    progress.current = stats.game_stats[gId]?.wins || 0;
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'high_score':
+                    const gIdScore = getGameId(criteria.game_type);
+                    progress.current = stats.game_stats[gIdScore]?.score || 0;
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'friend_count':
+                    progress.current = friendCount;
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'messages_sent':
+                    progress.current = messageCount;
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                case 'global_rank':
+                    progress.current = stats.best_rank === Infinity ? 0 : stats.best_rank;
+                    unlocked = progress.current > 0 && progress.current <= progress.required;
+                    break;
+                    
+                case 'win_streak':
+                    // Estimate win streak from win rate
+                    const winRate = stats.total_games > 0 ? stats.total_wins / stats.total_games : 0;
+                    progress.current = Math.floor(winRate * 10); // Rough estimate
+                    unlocked = progress.current >= progress.required;
+                    break;
+                    
+                default:
+                    // Các loại special achievement - unlock random cho một số users
+                    if ((userId + achievement.id) % 10 === 0) {
+                        unlocked = true;
+                        progress.current = progress.required;
+                    }
+                    break;
+            }
+            
+            // Chỉ insert nếu đã unlock hoặc có progress > 0
+            if (unlocked || progress.current > 0) {
+                // Trải dữ liệu trong 4 tháng
+                const daysAgo = Math.floor(((userId + achievement.id) / 150) * DATA_SPREAD_DAYS) + 1;
+                
+                userAchievements.push({
+                    id: id++,
+                    user_id: userId,
+                    achievement_id: achievement.id,
+                    progress: JSON.stringify({
+                        current: progress.current,
+                        required: progress.required,
+                        percentage: Math.min(100, Math.floor(progress.current / progress.required * 100))
+                    }),
+                    unlocked_at: unlocked ? knex.raw(`NOW() - INTERVAL '${daysAgo} days'`) : null
+                });
+            }
+        }
+    }
+    
+    // Insert theo batch
+    const batchSize = 500;
+    for (let i = 0; i < userAchievements.length; i += batchSize) {
+        const batch = userAchievements.slice(i, i + batchSize);
+        await knex('user_achievements').insert(batch);
+    }
+    
+    await knex.raw('SELECT setval(\'user_achievements_id_seq\', (SELECT MAX(id) FROM user_achievements))');
 };
+
+function getGameId(gameType) {
+    const map = {
+        'caro_5': 1,
+        'caro_4': 2,
+        'tictactoe': 3,
+        'snake': 4,
+        'match3': 5,
+        'memory_cards': 6,
+        'drawing_board': 7
+    };
+    return map[gameType] || 0;
+}

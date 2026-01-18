@@ -1,140 +1,88 @@
 /**
- * Seed: Friends (Unidirectional)
- * Creates friend relationships between users
- * Note: Only one record per friendship (not bidirectional in DB)
+ * Seed: Friends
+ * Tạo mối quan hệ bạn bè giữa 100 users
+ * Mỗi user có khoảng 3-10 bạn
+ * Status: 'pending', 'accepted', 'blocked'
+ * Dữ liệu trải dài 4 tháng
  */
 
-exports.seed = async function (knex) {
-  // Deletes ALL existing entries
-  await knex('friends').del();
+const STATUSES = ['accepted', 'pending', 'blocked'];
+const DATA_SPREAD_DAYS = 120;
 
-  // Reset ID sequence to 1
-  await knex.raw('ALTER SEQUENCE friends_id_seq RESTART WITH 1');
-
-  // Insert friend relationships (UNIDIRECTIONAL)
-  // Rule: Only store once per relationship
-  await knex('friends').insert([
-    // User 2's relationships
-    {
-      user_id: 2,
-      friend_id: 3,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '30 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '30 days'")
-    },
-    {
-      user_id: 2,
-      friend_id: 5,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '25 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '25 days'")
-    },
-    {
-      user_id: 2,
-      friend_id: 6,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '20 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '20 days'")
-    },
-    {
-      user_id: 2,
-      friend_id: 8,
-      status: 'pending',
-      created_at: knex.raw("NOW() - INTERVAL '2 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '2 days'")
-    },
-
-    // User 3's relationships (removed duplicate with user 2)
-    {
-      user_id: 3,
-      friend_id: 4,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '28 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '28 days'")
-    },
-    {
-      user_id: 3,
-      friend_id: 7,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '15 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '15 days'")
-    },
-    {
-      user_id: 3,
-      friend_id: 9,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '10 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '10 days'")
-    },
-
-    // User 4's relationships (removed duplicate with user 3)
-    {
-      user_id: 4,
-      friend_id: 10,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '12 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '12 days'")
-    },
-
-    // User 5's relationships (removed duplicates)
-    {
-      user_id: 5,
-      friend_id: 7,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '14 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '14 days'")
-    },
-    {
-      user_id: 5,
-      friend_id: 9,
-      status: 'pending',
-      created_at: knex.raw("NOW() - INTERVAL '1 day'"),
-      updated_at: knex.raw("NOW() - INTERVAL '1 day'")
-    },
-
-    // User 6's relationships (removed duplicates)
-    {
-      user_id: 6,
-      friend_id: 8,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '16 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '16 days'")
-    },
-
-    // User 7's relationships (removed duplicates)
-    {
-      user_id: 7,
-      friend_id: 10,
-      status: 'pending',
-      created_at: knex.raw("NOW() - INTERVAL '3 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '3 days'")
-    },
-
-    // User 8's relationships (removed duplicates)
-    {
-      user_id: 8,
-      friend_id: 9,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '11 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '11 days'")
-    },
-
-    // User 9's relationships (removed duplicates)
-    {
-      user_id: 9,
-      friend_id: 10,
-      status: 'accepted',
-      created_at: knex.raw("NOW() - INTERVAL '8 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '8 days'")
-    },
-
-    // Blocked relationships
-    {
-      user_id: 6,
-      friend_id: 11, // Banned user
-      status: 'blocked',
-      created_at: knex.raw("NOW() - INTERVAL '5 days'"),
-      updated_at: knex.raw("NOW() - INTERVAL '5 days'")
+exports.seed = async function(knex) {
+    await knex('friends').del();
+    
+    const friends = [];
+    const existingPairs = new Set(); // Tránh duplicate
+    let id = 1;
+    
+    // Mỗi user gửi yêu cầu kết bạn cho 2-8 người khác
+    for (let userId = 1; userId <= 100; userId++) {
+        // Số lượng bạn dựa trên userId
+        const numFriends = 2 + (userId % 7);
+        
+        for (let f = 0; f < numFriends; f++) {
+            // Chọn friend_id ngẫu nhiên nhưng deterministic
+            let friendId = ((userId * 7 + f * 13) % 99) + 1;
+            
+            // Không tự kết bạn với chính mình
+            if (friendId === userId) friendId = (friendId % 100) + 1;
+            if (friendId === userId) continue;
+            
+            // Tạo pair key để check duplicate
+            const pairKey = userId < friendId 
+                ? `${userId}-${friendId}` 
+                : `${friendId}-${userId}`;
+            
+            if (existingPairs.has(pairKey)) continue;
+            existingPairs.add(pairKey);
+            
+            // Status: phần lớn là accepted (rejected không còn trong DB)
+            let status;
+            const statusSeed = (userId + f) % 100;
+            if (statusSeed < 80) status = 'accepted';      // 80% accepted
+            else if (statusSeed < 97) status = 'pending';  // 17% pending
+            else status = 'blocked';                        // 3% blocked
+            
+            // Trải dữ liệu trong 4 tháng
+            const daysAgo = Math.floor(((userId + f) / 150) * DATA_SPREAD_DAYS) + 1;
+            
+            friends.push({
+                id: id++,
+                user_id: userId,
+                friend_id: friendId,
+                status: status,
+                created_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days'`),
+                updated_at: knex.raw(`NOW() - INTERVAL '${Math.max(1, daysAgo - 1)} days'`)
+            });
+        }
     }
-  ]);
+    
+    // Team members là bạn của nhau (user 1-4)
+    const teamMembers = [1, 2, 3, 4];
+    for (let i = 0; i < teamMembers.length; i++) {
+        for (let j = i + 1; j < teamMembers.length; j++) {
+            const pairKey = `${teamMembers[i]}-${teamMembers[j]}`;
+            if (!existingPairs.has(pairKey)) {
+                existingPairs.add(pairKey);
+                friends.push({
+                    id: id++,
+                    user_id: teamMembers[i],
+                    friend_id: teamMembers[j],
+                    status: 'accepted',
+                    created_at: knex.raw(`NOW() - INTERVAL '${DATA_SPREAD_DAYS} days'`),
+                    updated_at: knex.raw(`NOW() - INTERVAL '${DATA_SPREAD_DAYS} days'`)
+                });
+            }
+        }
+    }
+    
+    // Insert theo batch
+    const batchSize = 500;
+    for (let i = 0; i < friends.length; i += batchSize) {
+        const batch = friends.slice(i, i + batchSize);
+        await knex('friends').insert(batch);
+    }
+    
+    await knex.raw('SELECT setval(\'friends_id_seq\', (SELECT MAX(id) FROM friends))');
 };
