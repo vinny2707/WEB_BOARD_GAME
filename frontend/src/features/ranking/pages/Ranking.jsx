@@ -188,7 +188,7 @@ export default function Ranking() {
   return (
     <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
       {/* Header */}
-      <div className="w-full bg-white/50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full !bg-transparent border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg" style={{ backgroundColor: 'transparent' }}>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl">
@@ -320,7 +320,7 @@ export default function Ranking() {
       )}
 
       {/* Rankings List */}
-      <div className="bg-white/50 border-gray-200 dark:bg-slate-800/50 dark:border-slate-700 rounded-2xl border shadow-lg overflow-hidden">
+      <div className="!bg-transparent border-gray-200 dark:border-slate-700 rounded-2xl border shadow-lg overflow-hidden" style={{ backgroundColor: 'transparent' }}>
         {/* Header */}
         <div className="p-4 sm:p-6 border-b dark:border-slate-700">
           <div className="flex items-center justify-between">
@@ -359,7 +359,8 @@ export default function Ranking() {
               {rankings.map((ranking) => (
                 <div
                   key={ranking.rank}
-                  className="group bg-white/95 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
+                  className="group !bg-transparent border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
+                  style={{ backgroundColor: 'transparent' }}
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}

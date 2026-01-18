@@ -101,7 +101,7 @@ export default function AchievementRanking() {
     if (rank === 1) return "bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30";
     if (rank === 2) return "bg-gradient-to-r from-slate-400/20 to-gray-400/20 border-slate-400/30";
     if (rank === 3) return "bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-amber-600/30";
-    return "bg-white dark:bg-slate-800/50";
+    return "!bg-transparent";
   };
 
   return (
@@ -163,22 +163,20 @@ export default function AchievementRanking() {
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setScope("global")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all cursor-pointer ${
-            scope === "global"
-              ? "bg-amber-500 text-white shadow-lg"
-              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all cursor-pointer ${scope === "global"
+            ? "bg-amber-500 text-white shadow-lg"
+            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            }`}
         >
           <Users className="w-4 h-4" />
           Global
         </button>
         <button
           onClick={() => setScope("friends")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all cursor-pointer ${
-            scope === "friends"
-              ? "bg-amber-500 text-white shadow-lg"
-              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all cursor-pointer ${scope === "friends"
+            ? "bg-amber-500 text-white shadow-lg"
+            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+            }`}
         >
           <User className="w-4 h-4" />
           Friends
@@ -186,7 +184,7 @@ export default function AchievementRanking() {
       </div>
 
       {/* Rankings List */}
-      <div className="bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-slate-800 shadow-lg overflow-hidden">
+      <div className="!bg-transparent rounded-2xl border border-gray-200 dark:border-slate-800 shadow-lg overflow-hidden" style={{ backgroundColor: 'transparent' }}>
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner className="w-8 h-8 text-amber-500" />
@@ -205,9 +203,9 @@ export default function AchievementRanking() {
             {rankings.map((entry) => (
               <div
                 key={entry.user.id}
-                className={`flex items-center gap-4 p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${
-                  entry.user.id === user?.id ? "bg-amber-50/50 dark:bg-amber-500/5" : ""
-                }`}
+                className={`flex items-center gap-4 p-4 !bg-transparent ${entry.user.id === user?.id ? "border-l-4 border-l-amber-500" : ""
+                  }`}
+                style={{ backgroundColor: 'transparent' }}
               >
                 {/* Rank */}
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${getRankBg(entry.rank)}`}>
