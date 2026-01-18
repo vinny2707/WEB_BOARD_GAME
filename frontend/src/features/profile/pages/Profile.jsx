@@ -36,7 +36,6 @@ import { Calendar } from "@/components/ui/calendar";
 import api from "@/api/axios";
 import { toast } from "sonner";
 import AvatarPicker from "../components/AvatarPicker";
-import { se } from "date-fns/locale";
 
 const Profile = () => {
   const { user, updateUser, isAuthenticated } = useUser();
@@ -239,7 +238,6 @@ const Profile = () => {
             </p>
             {user?.dob && (
               <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
-                📅{" "}
                 {new Date(user.dob).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "long",
