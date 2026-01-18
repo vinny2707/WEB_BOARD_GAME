@@ -36,6 +36,7 @@ const GameSessionHistory = ({
   limit = 5,
   gamePath,
   onInProgressChange,
+  onResume,
   gameType = "competitive",
 }) => {
   const navigate = useNavigate();
@@ -92,14 +93,26 @@ const GameSessionHistory = ({
 
   const handleResumeSession = async (session, e) => {
     e?.stopPropagation();
-    if (!gamePath || !session.id) return;
+    if (!session.id) return;
+    
+    // If no gamePath and no onResume, we can't do anything
+    if (!gamePath && !onResume) return;
 
     setResumingId(session.id);
     try {
       const response = await getSession(session.id);
       const fullSession = response?.data || session;
 
-      // Navigate to the play route (append /play if not already there)
+      // Use custom resume handler if provided
+      if (onResume) {
+        onResume(fullSession);
+        setResumingId(null);
+        return;
+      }
+
+      // Default: Navigate to the play route
+      if (!gamePath) return; // Should be covered above but safe guard
+      
       const playPath = gamePath.endsWith("/play")
         ? gamePath
         : `${gamePath}/play`;

@@ -19,6 +19,7 @@ import AchievementManagement from "../features/achievementManagement/pages/Achie
 import NotFound from "@/features/errors/pages/NotFound.jsx";
 import Statistics from "@/features/statistics/pages/Statistics.jsx";
 import GameConfig from "@/features/gameConfig/pages/GameConfig.jsx";
+import { BoardGame } from "../features/boardgame";
 import { Navigate } from "react-router-dom";
 import {
   TicTacToeGame,
@@ -77,6 +78,11 @@ const router = createBrowserRouter([
             // Games history page
             element: <GameHistory />,
             path: "games/history",
+          },
+          {
+            // LED Board Game
+            element: <BoardGame />,
+            path: "boardgame",
           },
           {
             element: <Ranking />,

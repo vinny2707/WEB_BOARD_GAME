@@ -17,6 +17,7 @@ import {
   Music,
   Crown,
   ShieldCheck,
+  Grid3X3,
 } from "lucide-react";
 import { useUser } from "../contexts/UserProvider.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -79,6 +80,12 @@ const Sidebar = () => {
       label: "Games",
       page: "games",
       active: currentPage === "games" || currentPage === "",
+    },
+    {
+      icon: Grid3X3,
+      label: "BoardGame",
+      page: "boardgame",
+      active: currentPage === "boardgame",
     },
     {
       icon: Trophy,
