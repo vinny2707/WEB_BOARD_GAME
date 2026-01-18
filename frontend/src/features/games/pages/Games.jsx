@@ -328,8 +328,8 @@ const GameCard = ({ game, onClick }) => {
   return (
     <div
       className={`relative flex flex-col bg-card rounded-2xl border overflow-hidden transition-all duration-300
-        ${isClickable 
-          ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10' 
+        ${isClickable
+          ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10'
           : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
       onClick={() => isClickable && onClick(path, game)}
     >
@@ -354,7 +354,7 @@ const GameCard = ({ game, onClick }) => {
       {/* Title Bar */}
       <div className={`text-center py-3 px-3 border-t transition-colors
         ${isEnabled ? 'bg-secondary/80 border-border' : 'bg-muted/50 border-muted'}`}>
-        <span 
+        <span
           className={`text-sm tracking-wide ${isEnabled ? 'text-foreground' : 'text-muted-foreground'}`}
           style={{ fontFamily: "'Bungee', cursive" }}
         >
