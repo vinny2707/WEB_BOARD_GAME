@@ -73,7 +73,7 @@ const getConversation = async (req, res, next) => {
             return error(res, 'Cannot view conversation with yourself', 400);
         }
 
-        // Check if other user exists
+        // Check if other user exists and get their info
         const otherUser = await User.findById(otherUserId);
         if (!otherUser) {
             return error(res, 'User not found', 404);
@@ -81,7 +81,20 @@ const getConversation = async (req, res, next) => {
 
         const result = await Message.getConversation(userId, otherUserId, { page, limit });
 
-        return success(res, result.data, 'Conversation retrieved successfully', 200, result.pagination);
+        // Include other user info in response for frontend to display
+        const response = {
+            other_user: {
+                id: otherUser.id,
+                username: otherUser.username,
+                full_name: otherUser.full_name,
+                email: otherUser.email,
+                avatar_url: otherUser.avatar_url || null
+            },
+            messages: result.data,
+            pagination: result.pagination
+        };
+
+        return success(res, response, 'Conversation retrieved successfully', 200);
     } catch (err) {
         next(err);
     }
