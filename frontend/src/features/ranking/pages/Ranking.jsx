@@ -444,7 +444,7 @@ export default function Ranking() {
       </div>
 
       {/* Pagination - Outside card */}
-      {rankings.length > 0 && pagination.totalPages > 1 && (
+      {rankings.length > 0 && (
         <div className="mt-6">
           <Pagination
             currentPage={pagination.page}
