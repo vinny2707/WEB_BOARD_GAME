@@ -53,8 +53,8 @@ const HotGameCard = ({ rank, game, delay = 0, className = "", onClick }) => {
       whileHover={{ scale: 1.02, y: -2 }}
       className="relative"
     >
-      <Card 
-        className={cn("relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow", className)}
+      <Card
+        className={cn("relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50", className)}
         onClick={onClick}
       >
         {getRankBadge()}
@@ -62,10 +62,28 @@ const HotGameCard = ({ rank, game, delay = 0, className = "", onClick }) => {
         <CardContent className="pt-6 pb-4">
           <div className="flex items-start gap-4">
             {/* Game Icon */}
-            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center overflow-hidden text-xl">
-              {game_icon ? <span >{game_icon}</span> : (
+            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+              {game_icon ? (
+                // Check if icon is a URL (image) or emoji text
+                game_icon.startsWith('http') || game_icon.startsWith('/') ? (
+                  <img
+                    src={game_icon}
+                    alt={game_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to Flame icon if image fails to load
+                      e.target.style.display = 'none';
+                      e.target.nextSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : (
+                  <span className="text-3xl">{game_icon}</span>
+                )
+              ) : (
                 <Flame className="w-7 h-7 text-primary" />
               )}
+              {/* Hidden fallback icon for image load errors */}
+              <Flame className="w-7 h-7 text-primary hidden" />
             </div>
 
             {/* Game Info */}

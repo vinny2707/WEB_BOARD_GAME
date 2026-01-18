@@ -313,16 +313,16 @@ const Statistics = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {overviewLoading
                     ? Array.from({ length: 7 }).map((_, i) => (
-                        <SkeletonCard key={i} />
-                      ))
+                      <SkeletonCard key={i} />
+                    ))
                     : overviewCards.map((card, index) => (
-                        <StatCard
-                          key={card.title}
-                          {...card}
-                          delay={index}
-                          className="w-full h-full"
-                        />
-                      ))}
+                      <StatCard
+                        key={card.title}
+                        {...card}
+                        delay={index}
+                        className="w-full h-full"
+                      />
+                    ))}
                 </div>
 
                 {/* Charts Row */}
@@ -420,16 +420,16 @@ const Statistics = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {userStatsLoading
                     ? Array.from({ length: 4 }).map((_, i) => (
-                        <SkeletonCard key={i} />
-                      ))
+                      <SkeletonCard key={i} />
+                    ))
                     : userOverviewCards.map((card, index) => (
-                        <StatCard
-                          key={card.title}
-                          {...card}
-                          delay={index}
-                          className="w-full h-full"
-                        />
-                      ))}
+                      <StatCard
+                        key={card.title}
+                        {...card}
+                        delay={index}
+                        className="w-full h-full"
+                      />
+                    ))}
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

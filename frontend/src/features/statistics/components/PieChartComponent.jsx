@@ -15,6 +15,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   "var(--chart-1)",
@@ -28,7 +29,7 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0];
     return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+      <div className="bg-card/90 backdrop-blur-md border border-border/50 rounded-lg shadow-lg p-3">
         <p className="font-medium text-foreground">{data.name}</p>
         <p className="text-sm" style={{ color: data.payload.fill }}>
           Value: {data.value.toLocaleString()}
@@ -86,7 +87,7 @@ const PieChartComponent = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className={className}>
+      <Card className={cn("border-border/50", className)}>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
