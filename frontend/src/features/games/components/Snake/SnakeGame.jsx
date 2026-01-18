@@ -61,8 +61,8 @@ const SnakeGame = () => {
         return saved ? parseInt(saved, 10) : 0;
     });
     const [speed, setSpeed] = useState(DIFFICULTY_SETTINGS[initialDifficulty].speed);
-    const [difficulty, setDifficulty] = useState(initialDifficulty);
-    const [showSettings, setShowSettings] = useState(false);
+    const [difficulty] = useState(initialDifficulty);
+    // const [showSettings, setShowSettings] = useState(false); // Unused
 
     // Animation state - smooth positions
     const [smoothSnake, setSmoothSnake] = useState([]);
@@ -143,6 +143,7 @@ const SnakeGame = () => {
             x: seg.x * CELL_SIZE + CELL_SIZE / 2,
             y: seg.y * CELL_SIZE + CELL_SIZE / 2
         })));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -286,7 +287,7 @@ const SnakeGame = () => {
         }
 
         setSnake(newSnake);
-    }, [generateFood, checkCollision, wrapPosition, highScore, boardSize, wallMode, tutorialMoving]);
+    }, [generateFood, checkCollision, wrapPosition, highScore, boardSize, wallMode, tutorialMoving, completeGame, isAuthenticated, playSound]);
 
     // Animation loop (60fps)
     const animate = useCallback((timestamp) => {
@@ -311,10 +312,30 @@ const SnakeGame = () => {
             if (prev.length !== targetSnake.length) {
                 return targetSnake;
             }
-            return prev.map((pos, i) => ({
-                x: pos.x + (targetSnake[i].x - pos.x) * ANIMATION_SPEED,
-                y: pos.y + (targetSnake[i].y - pos.y) * ANIMATION_SPEED
-            }));
+            return prev.map((pos, i) => {
+                const target = targetSnake[i];
+                // Normalize current position to [0, canvasSize) to prevent drift
+                let px = pos.x % canvasSize;
+                if (px < 0) px += canvasSize;
+                let py = pos.y % canvasSize;
+                if (py < 0) py += canvasSize;
+
+                // Calculate shortest distance on torus
+                let dx = target.x - px;
+                let dy = target.y - py;
+
+                if (Math.abs(dx) > canvasSize / 2) {
+                    dx = dx > 0 ? dx - canvasSize : dx + canvasSize;
+                }
+                if (Math.abs(dy) > canvasSize / 2) {
+                    dy = dy > 0 ? dy - canvasSize : dy + canvasSize;
+                }
+
+                return {
+                    x: px + dx * ANIMATION_SPEED,
+                    y: py + dy * ANIMATION_SPEED
+                };
+            });
         });
 
         // Food bounce animation
@@ -400,9 +421,20 @@ const SnakeGame = () => {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         smoothSnake.forEach((pos, i) => {
             const radius = i === 0 ? CELL_SIZE * 0.5 : CELL_SIZE * 0.4;
-            ctx.beginPath();
-            ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
-            ctx.fill();
+
+            // Function to draw circle at pos
+            const drawShadow = (x, y) => {
+                ctx.beginPath();
+                ctx.arc((x + canvasSize) % canvasSize + 2, (y + canvasSize) % canvasSize + 2, radius, 0, Math.PI * 2);
+                ctx.fill();
+            };
+
+            drawShadow(pos.x, pos.y);
+            // Draw duplicate if near edge for smooth wrap
+            if (pos.x < CELL_SIZE) drawShadow(pos.x + canvasSize, pos.y);
+            if (pos.x > canvasSize - CELL_SIZE) drawShadow(pos.x - canvasSize, pos.y);
+            if (pos.y < CELL_SIZE) drawShadow(pos.x, pos.y + canvasSize);
+            if (pos.y > canvasSize - CELL_SIZE) drawShadow(pos.x, pos.y - canvasSize);
         });
 
         // Draw snake body (gradient from head to tail)
@@ -419,56 +451,91 @@ const SnakeGame = () => {
 
             // Body segment with gradient
             const segGradient = ctx.createRadialGradient(
-                pos.x - radius * 0.3, pos.y - radius * 0.3, 0,
-                pos.x, pos.y, radius
+                -radius * 0.3, -radius * 0.3, 0,
+                0, 0, radius
             );
             segGradient.addColorStop(0, `rgb(${r + 40}, ${g + 30}, ${b + 30})`);
             segGradient.addColorStop(1, `rgb(${r}, ${g}, ${b})`);
 
             ctx.fillStyle = segGradient;
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-            ctx.fill();
+
+            // Helper to draw segment at position (handling wrap)
+            const drawSegment = (x, y) => {
+                const drawX = (x + canvasSize) % canvasSize; // Normalize to canvas
+                const drawY = (y + canvasSize) % canvasSize;
+
+                ctx.save();
+                ctx.translate(drawX, drawY);
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            };
+
+            drawSegment(pos.x, pos.y);
+            // Draw duplicates for wrapping
+            if (pos.x < CELL_SIZE) drawSegment(pos.x + canvasSize, pos.y);
+            if (pos.x > canvasSize - CELL_SIZE) drawSegment(pos.x - canvasSize, pos.y);
+            if (pos.y < CELL_SIZE) drawSegment(pos.x, pos.y + canvasSize);
+            if (pos.y > canvasSize - CELL_SIZE) drawSegment(pos.x, pos.y - canvasSize);
         });
 
+        // Draw snake head details (eyes and mouth)
         // Draw snake head details (eyes and mouth)
         if (smoothSnake.length > 0) {
             const head = smoothSnake[0];
             const headRadius = CELL_SIZE * 0.5;
             const dir = directionRef.current;
 
-            // Eye positions based on direction
-            let eye1X, eye1Y, eye2X, eye2Y;
-            const eyeOffset = headRadius * 0.4;
-            const eyeForward = headRadius * 0.2;
+            const drawHead = (x, y) => {
+                const drawX = (x + canvasSize) % canvasSize;
+                const drawY = (y + canvasSize) % canvasSize;
 
-            if (dir === DIRECTIONS.RIGHT) {
-                eye1X = head.x + eyeForward; eye1Y = head.y - eyeOffset;
-                eye2X = head.x + eyeForward; eye2Y = head.y + eyeOffset;
-            } else if (dir === DIRECTIONS.LEFT) {
-                eye1X = head.x - eyeForward; eye1Y = head.y - eyeOffset;
-                eye2X = head.x - eyeForward; eye2Y = head.y + eyeOffset;
-            } else if (dir === DIRECTIONS.UP) {
-                eye1X = head.x - eyeOffset; eye1Y = head.y - eyeForward;
-                eye2X = head.x + eyeOffset; eye2Y = head.y - eyeForward;
-            } else {
-                eye1X = head.x - eyeOffset; eye1Y = head.y + eyeForward;
-                eye2X = head.x + eyeOffset; eye2Y = head.y + eyeForward;
-            }
+                ctx.save();
+                ctx.translate(drawX, drawY);
 
-            // Eyes (white)
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(eye1X, eye1Y, headRadius * 0.25, 0, Math.PI * 2);
-            ctx.arc(eye2X, eye2Y, headRadius * 0.25, 0, Math.PI * 2);
-            ctx.fill();
+                // Eye positions relative to center (0,0)
+                const eyeOffset = headRadius * 0.4;
+                const eyeForward = headRadius * 0.2;
+                let eye1X, eye1Y, eye2X, eye2Y;
 
-            // Pupils (black)
-            ctx.fillStyle = '#1a1a1a';
-            ctx.beginPath();
-            ctx.arc(eye1X + dir.x * 2, eye1Y + dir.y * 2, headRadius * 0.12, 0, Math.PI * 2);
-            ctx.arc(eye2X + dir.x * 2, eye2Y + dir.y * 2, headRadius * 0.12, 0, Math.PI * 2);
-            ctx.fill();
+                if (dir === DIRECTIONS.RIGHT) {
+                    eye1X = eyeForward; eye1Y = -eyeOffset;
+                    eye2X = eyeForward; eye2Y = eyeOffset;
+                } else if (dir === DIRECTIONS.LEFT) {
+                    eye1X = -eyeForward; eye1Y = -eyeOffset;
+                    eye2X = -eyeForward; eye2Y = eyeOffset;
+                } else if (dir === DIRECTIONS.UP) {
+                    eye1X = -eyeOffset; eye1Y = -eyeForward;
+                    eye2X = eyeOffset; eye2Y = -eyeForward;
+                } else {
+                    eye1X = -eyeOffset; eye1Y = eyeForward;
+                    eye2X = eyeOffset; eye2Y = eyeForward;
+                }
+
+                // Eyes (white)
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(eye1X, eye1Y, headRadius * 0.25, 0, Math.PI * 2);
+                ctx.arc(eye2X, eye2Y, headRadius * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pupils (black)
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.arc(eye1X + dir.x * 2, eye1Y + dir.y * 2, headRadius * 0.12, 0, Math.PI * 2);
+                ctx.arc(eye2X + dir.x * 2, eye2Y + dir.y * 2, headRadius * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            };
+
+            drawHead(head.x, head.y);
+            // Draw duplicates for wrapping head
+            if (head.x < CELL_SIZE) drawHead(head.x + canvasSize, head.y);
+            if (head.x > canvasSize - CELL_SIZE) drawHead(head.x - canvasSize, head.y);
+            if (head.y < CELL_SIZE) drawHead(head.x, head.y + canvasSize);
+            if (head.y > canvasSize - CELL_SIZE) drawHead(head.x, head.y - canvasSize);
         }
 
         // Game over blur overlay
@@ -483,7 +550,10 @@ const SnakeGame = () => {
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (gameStatus !== 'playing' && gameStatus !== 'tutorial') {
-                if (e.key === ' ' && gameStatus === 'idle') startGame();
+                if (e.key === ' ' && gameStatus === 'idle') {
+                    e.preventDefault();
+                    startGame();
+                }
                 return;
             }
 
@@ -491,11 +561,14 @@ const SnakeGame = () => {
             let pressedDir = null;
 
             switch (e.key) {
-                case 'ArrowUp': case 'w': case 'W': pressedDir = 'UP'; break;
-                case 'ArrowDown': case 's': case 'S': pressedDir = 'DOWN'; break;
-                case 'ArrowLeft': case 'a': case 'A': pressedDir = 'LEFT'; break;
-                case 'ArrowRight': case 'd': case 'D': pressedDir = 'RIGHT'; break;
-                case ' ': if (gameStatus === 'playing') togglePause(); return;
+                case 'ArrowUp': case 'w': case 'W': e.preventDefault(); pressedDir = 'UP'; break;
+                case 'ArrowDown': case 's': case 'S': e.preventDefault(); pressedDir = 'DOWN'; break;
+                case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); pressedDir = 'LEFT'; break;
+                case 'ArrowRight': case 'd': case 'D': e.preventDefault(); pressedDir = 'RIGHT'; break;
+                case ' ':
+                    e.preventDefault();
+                    if (gameStatus === 'playing') togglePause();
+                    return;
                 default: return;
             }
 
@@ -521,6 +594,7 @@ const SnakeGame = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [gameStatus, tutorialStep, tutorialMoving]);
 
     // Tutorial food advancement - place food AFTER snake has stopped
@@ -708,11 +782,11 @@ const SnakeGame = () => {
         else if (gameStatus === 'paused') setGameStatus('playing');
     };
 
-    const handleDifficultyChange = (newDiff) => {
-        setDifficulty(newDiff);
-        setShowSettings(false);
-        if (gameStatus === 'idle') setSpeed(DIFFICULTY_SETTINGS[newDiff].speed);
-    };
+    // const handleDifficultyChange = (newDiff) => {
+    //     setDifficulty(newDiff);
+    //     // setShowSettings(false);
+    //     if (gameStatus === 'idle') setSpeed(DIFFICULTY_SETTINGS[newDiff].speed);
+    // };
 
     // Mobile controls
     const handleMobileControl = (dir) => {
