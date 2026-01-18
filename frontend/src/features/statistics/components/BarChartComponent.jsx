@@ -17,6 +17,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 
 const COLORS = [
   "var(--chart-1)",
@@ -29,7 +30,7 @@ const COLORS = [
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-card border border-border rounded-lg shadow-lg p-3">
+      <div className="bg-card/90 backdrop-blur-md border border-border/50 rounded-lg shadow-lg p-3">
         <p className="font-medium text-foreground">{label}</p>
         {payload.map((entry, index) => (
           <p
@@ -68,7 +69,7 @@ const BarChartComponent = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className={className}>
+      <Card className={cn("border-border/50", className)}>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
