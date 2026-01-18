@@ -631,7 +631,7 @@ const Friends = () => {
       </div>
 
       {/* Pagination - Outside card */}
-      {!searchQuery && getFilteredData().length > 0 && renderPagination()}
+      {!searchQuery && renderPagination()}
     </div>
   );
 };
