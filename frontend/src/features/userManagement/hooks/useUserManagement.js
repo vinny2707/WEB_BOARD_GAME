@@ -31,12 +31,12 @@ export const useUserManagement = () => {
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
 
   // Fetch users
-  const fetchUsers = async (page = 1, search = "", status = "") => {
+  const fetchUsers = async (page = 1, search = "", status = "", currentLimit = limit) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page,
-        limit,
+        limit: currentLimit,
         ...(search && { search }),
         ...(status && { status }),
       });
@@ -80,7 +80,7 @@ export const useUserManagement = () => {
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, statusFilter);
+    fetchUsers(1, searchTerm, statusFilter, newLimit);
   };
 
   // Handle delete

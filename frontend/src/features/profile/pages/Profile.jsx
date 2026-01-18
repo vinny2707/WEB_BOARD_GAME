@@ -81,9 +81,9 @@ const Profile = () => {
   const fetchAchievements = async (page = 1, status = 'all') => {
     try {
       setLoading(true);
-      const params = { 
-        page, 
-        limit: achievementLimit, 
+      const params = {
+        page,
+        limit: achievementLimit,
         status,
         sortBy: achievementSort,
         sortOrder: achievementSortOrder,
@@ -508,11 +508,10 @@ const Profile = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                    activeTab === tab.id
+                  className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${activeTab === tab.id
                       ? "bg-emerald-500 text-white"
                       : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700"
-                  }`}
+                    }`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
@@ -566,11 +565,11 @@ const Profile = () => {
               {getFilteredAchievements().map((achievement) => (
                 <div
                   key={achievement.id}
-                  className={`relative overflow-hidden rounded-xl border-2 p-4 transition-all ${
-                    achievement.is_unlocked
-                      ? "bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 dark:from-emerald-500/20 dark:to-cyan-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/20"
-                      : "bg-slate-100/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-700"
-                  }`}
+                  className={`relative overflow-hidden rounded-xl border-2 p-4 transition-all !bg-transparent ${achievement.is_unlocked
+                      ? "border-emerald-500/50 shadow-lg shadow-emerald-500/20"
+                      : "border-slate-300 dark:border-slate-700"
+                    }`}
+                  style={{ backgroundColor: 'transparent' }}
                 >
                   {/* Locked Overlay */}
                   {!achievement.is_unlocked &&
@@ -583,11 +582,10 @@ const Profile = () => {
                   <div className="flex items-start gap-4">
                     {/* Icon */}
                     <div
-                      className={`text-4xl p-3 rounded-xl ${
-                        achievement.is_unlocked
+                      className={`text-4xl p-3 rounded-xl ${achievement.is_unlocked
                           ? "bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-lg"
                           : "bg-slate-300 dark:bg-slate-700"
-                      }`}
+                        }`}
                     >
                       {achievement.icon || "🏆"}
                     </div>

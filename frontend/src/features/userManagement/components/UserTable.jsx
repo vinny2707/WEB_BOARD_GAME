@@ -26,28 +26,27 @@ const UserTable = ({
   if (users.length === 0) {
     return (
       <div
-        className={`hidden md:block rounded-xl border overflow-hidden ${
-          isDarkMode
-            ? "border-slate-700 bg-slate-800/50"
-            : "border-gray-200 bg-gray-50/50"
-        }`}
+        className={`hidden md:block rounded-xl border overflow-hidden !bg-transparent ${isDarkMode
+            ? "border-slate-700"
+            : "border-gray-200"
+          }`}
+        style={{ backgroundColor: 'transparent' }}
       >
         <table className="w-full">
           <thead>
             <tr
-              className={`border-b ${
-                isDarkMode
-                  ? "border-slate-700 bg-slate-800/80"
-                  : "border-gray-200 bg-gray-100/80"
-              }`}
+              className={`border-b !bg-transparent ${isDarkMode
+                  ? "border-slate-700"
+                  : "border-gray-200"
+                }`}
+              style={{ backgroundColor: 'transparent' }}
             >
               {["No.", "Name", "Email", "Role", "Status", "Actions"].map(
                 (header) => (
                   <th
                     key={header}
-                    className={`px-6 py-4 text-left text-sm font-semibold ${
-                      isDarkMode ? "text-slate-300" : "text-gray-700"
-                    }`}
+                    className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-gray-700"
+                      }`}
                   >
                     {header}
                   </th>
@@ -59,9 +58,8 @@ const UserTable = ({
             <tr>
               <td
                 colSpan="6"
-                className={`px-6 py-8 text-center ${
-                  isDarkMode ? "text-slate-400" : "text-gray-500"
-                }`}
+                className={`px-6 py-8 text-center ${isDarkMode ? "text-slate-400" : "text-gray-500"
+                  }`}
               >
                 No users found
               </td>
@@ -74,28 +72,27 @@ const UserTable = ({
 
   return (
     <div
-      className={`hidden md:block rounded-xl border overflow-hidden ${
-        isDarkMode
-          ? "border-slate-700 bg-slate-800/50"
-          : "border-gray-200 bg-gray-50/50"
-      }`}
+      className={`hidden md:block rounded-xl border overflow-hidden !bg-transparent ${isDarkMode
+          ? "border-slate-700"
+          : "border-gray-200"
+        }`}
+      style={{ backgroundColor: 'transparent' }}
     >
       <table className="w-full">
         <thead>
           <tr
-            className={`border-b ${
-              isDarkMode
-                ? "border-slate-700 bg-slate-800/80"
-                : "border-gray-200 bg-gray-100/80"
-            }`}
+            className={`border-b !bg-transparent ${isDarkMode
+                ? "border-slate-700"
+                : "border-gray-200"
+              }`}
+            style={{ backgroundColor: 'transparent' }}
           >
             {["No.", "Name", "Email", "Role", "Status", "Actions"].map(
               (header) => (
                 <th
                   key={header}
-                  className={`px-6 py-4 text-left text-sm font-semibold ${
-                    isDarkMode ? "text-slate-300" : "text-gray-700"
-                  }`}
+                  className={`px-6 py-4 text-left text-sm font-semibold ${isDarkMode ? "text-slate-300" : "text-gray-700"
+                    }`}
                 >
                   {header}
                 </th>
@@ -108,16 +105,15 @@ const UserTable = ({
             <tr
               key={user.id}
               onClick={() => onViewDetails(user)}
-              className={`border-b transition-colors cursor-pointer ${
-                isDarkMode
-                  ? "border-slate-700 hover:bg-slate-700/70"
-                  : "border-gray-200 hover:bg-gray-100"
-              }`}
+              className={`border-b transition-colors cursor-pointer !bg-transparent ${isDarkMode
+                  ? "border-slate-700 hover:bg-slate-700/30"
+                  : "border-gray-200 hover:bg-gray-50/50"
+                }`}
+              style={{ backgroundColor: 'transparent' }}
             >
               <td
-                className={`px-6 py-4 text-sm ${
-                  isDarkMode ? "text-slate-300" : "text-gray-700"
-                }`}
+                className={`px-6 py-4 text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"
+                  }`}
               >
                 {(currentPage - 1) * limit + index + 1}
               </td>
@@ -135,18 +131,16 @@ const UserTable = ({
                     )}
                   </div>
                   <span
-                    className={`text-sm font-medium ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}
+                    className={`text-sm font-medium ${isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
                   >
                     {user.username}
                   </span>
                 </div>
               </td>
               <td
-                className={`px-6 py-4 text-sm ${
-                  isDarkMode ? "text-slate-300" : "text-gray-700"
-                }`}
+                className={`px-6 py-4 text-sm ${isDarkMode ? "text-slate-300" : "text-gray-700"
+                  }`}
               >
                 {user.email}
               </td>
@@ -200,11 +194,10 @@ const UserTable = ({
               <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => onDelete(user)}
-                  className={`p-2 rounded-lg transition-all cursor-pointer ${
-                    isDarkMode
+                  className={`p-2 rounded-lg transition-all cursor-pointer ${isDarkMode
                       ? "hover:bg-red-500/20 text-red-400 hover:text-red-300"
                       : "hover:bg-red-100 text-red-600 hover:text-red-500"
-                  }`}
+                    }`}
                   title="Delete user"
                 >
                   <Trash2 className="w-4 h-4" />

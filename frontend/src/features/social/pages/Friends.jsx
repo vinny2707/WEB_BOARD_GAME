@@ -41,10 +41,10 @@ const Friends = () => {
   const [limit, setLimit] = useState(10);
 
   // Fetch friends list
-  const fetchFriends = async (page = 1) => {
+  const fetchFriends = async (page = 1, currentLimit = limit) => {
     try {
       const response = await api.get("/api/friends", {
-        params: { page, limit },
+        params: { page, limit: currentLimit },
       });
       setFriends(response.data.data || []);
       setPagination((prev) => ({
@@ -62,10 +62,10 @@ const Friends = () => {
   };
 
   // Fetch pending requests
-  const fetchPendingRequests = async (page = 1) => {
+  const fetchPendingRequests = async (page = 1, currentLimit = limit) => {
     try {
       const response = await api.get("/api/friends/requests/pending", {
-        params: { page, limit },
+        params: { page, limit: currentLimit },
       });
       setPendingRequests(response.data.data || []);
       setPagination((prev) => ({
@@ -83,10 +83,10 @@ const Friends = () => {
   };
 
   // Fetch sent requests
-  const fetchSentRequests = async (page = 1) => {
+  const fetchSentRequests = async (page = 1, currentLimit = limit) => {
     try {
       const response = await api.get("/api/friends/requests/sent", {
-        params: { page, limit },
+        params: { page, limit: currentLimit },
       });
       setSentRequests(response.data.data || []);
       setPagination((prev) => ({
@@ -104,10 +104,10 @@ const Friends = () => {
   };
 
   // Fetch blocked users
-  const fetchBlockedUsers = async (page = 1) => {
+  const fetchBlockedUsers = async (page = 1, currentLimit = limit) => {
     try {
       const response = await api.get("/api/friends", {
-        params: { status: "blocked", page, limit },
+        params: { status: "blocked", page, limit: currentLimit },
       });
       setBlockedUsers(response.data.data || []);
       setPagination((prev) => ({
@@ -315,16 +315,16 @@ const Friends = () => {
     // Refresh current tab with new limit (reset to page 1)
     switch (activeTab) {
       case "friends":
-        fetchFriends(1);
+        fetchFriends(1, newLimit);
         break;
       case "pending":
-        fetchPendingRequests(1);
+        fetchPendingRequests(1, newLimit);
         break;
       case "sent":
-        fetchSentRequests(1);
+        fetchSentRequests(1, newLimit);
         break;
       case "blocked":
-        fetchBlockedUsers(1);
+        fetchBlockedUsers(1, newLimit);
         break;
     }
   };

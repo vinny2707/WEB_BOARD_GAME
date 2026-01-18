@@ -88,13 +88,13 @@ export default function Ranking() {
   }
 
   // Fetch rankings
-  const fetchRankings = async (page = 1) => {
+  const fetchRankings = async (page = 1, currentLimit = limit) => {
     if (!selectedGame) return;
 
     setLoading(true);
     try {
       const response = await api.get(`/api/rankings/game/${selectedGame}`, {
-        params: { scope, page, limit },
+        params: { scope, page, limit: currentLimit },
       });
       setRankings(response.data.data || []);
       setPagination({
@@ -133,7 +133,7 @@ export default function Ranking() {
   // Handle limit change
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
-    fetchRankings(1); // Reset to page 1 when changing limit
+    fetchRankings(1, newLimit); // Reset to page 1 when changing limit
   };
 
   // Get trophy/medal icon based on rank

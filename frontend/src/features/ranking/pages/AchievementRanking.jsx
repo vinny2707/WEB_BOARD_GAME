@@ -57,11 +57,11 @@ export default function AchievementRanking() {
     );
   }
 
-  const fetchRankings = async (page = 1) => {
+  const fetchRankings = async (page = 1, currentLimit = limit) => {
     setLoading(true);
     try {
       const response = await api.get("/api/rankings/achievements", {
-        params: { scope, page, limit },
+        params: { scope, page, limit: currentLimit },
       });
       setRankings(response.data.data || []);
       setPagination({
@@ -270,7 +270,7 @@ export default function AchievementRanking() {
             limitOptions={[10, 20, 50, 100]}
             onLimitChange={(newLimit) => {
               setLimit(newLimit);
-              fetchRankings(1);
+              fetchRankings(1, newLimit);
             }}
           />
         </div>
