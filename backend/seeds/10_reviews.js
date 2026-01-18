@@ -6,9 +6,9 @@
 
 const DATA_SPREAD_DAYS = 120;
 
-exports.seed = async function(knex) {
+exports.seed = async function (knex) {
     await knex('reviews').del();
-    
+
     const reviewTemplates = {
         positive: [
             'Game tuyệt vời, chơi hoài không chán!',
@@ -50,27 +50,27 @@ exports.seed = async function(knex) {
             'Game quá đơn giản.',
         ]
     };
-    
+
     const reviews = [];
     let id = 1;
     const usedPairs = new Set(); // Đảm bảo mỗi user chỉ review mỗi game 1 lần
-    
+
     // Tạo khoảng 20-40 reviews cho mỗi game (giảm cho 100 users)
     for (let gameId = 1; gameId <= 7; gameId++) {
         const reviewCount = 20 + Math.floor(Math.random() * 25); // 20-45 reviews per game
-        
+
         for (let i = 0; i < reviewCount; i++) {
-            // Random user từ 1-100
-            const userId = Math.floor(Math.random() * 100) + 1;
+            // Random user từ 1-120
+            const userId = Math.floor(Math.random() * 120) + 1;
             const pairKey = `${userId}-${gameId}`;
-            
+
             if (usedPairs.has(pairKey)) continue;
             usedPairs.add(pairKey);
-            
+
             // Phân bố rating: 60% positive (4-5), 25% neutral (3), 15% negative (1-2)
             const rand = Math.random();
             let rating, comment;
-            
+
             if (rand < 0.35) {
                 rating = 5;
                 comment = reviewTemplates.positive[Math.floor(Math.random() * reviewTemplates.positive.length)];
@@ -87,15 +87,15 @@ exports.seed = async function(knex) {
                 rating = 1;
                 comment = reviewTemplates.negative[Math.floor(Math.random() * reviewTemplates.negative.length)];
             }
-            
+
             // 20% reviews không có comment
             if (Math.random() < 0.2) {
                 comment = null;
             }
-            
+
             // Trải dữ liệu trong 4 tháng
             const daysAgo = Math.floor(Math.random() * DATA_SPREAD_DAYS) + 1;
-            
+
             reviews.push({
                 id: id++,
                 game_id: gameId,
@@ -107,29 +107,29 @@ exports.seed = async function(knex) {
             });
         }
     }
-    
+
     // Đảm bảo team members có reviews
     const teamReviews = [
         // Admin (user 1)
         { user_id: 1, game_id: 1, rating: 5, comment: 'Game tuyệt vời từ team phát triển!' },
         { user_id: 1, game_id: 4, rating: 5, comment: 'Rắn săn mồi - cổ điển không bao giờ lỗi mốt!' },
-        
+
         // Trần Quốc Vy (user 2)
         { user_id: 2, game_id: 1, rating: 5, comment: 'Caro 5 - game chiến thuật kinh điển!' },
         { user_id: 2, game_id: 2, rating: 4, comment: 'Caro 4 nhanh hơn, phù hợp chơi nhanh.' },
         { user_id: 2, game_id: 5, rating: 5, comment: 'Candy Crush phiên bản tự làm, rất đã!' },
-        
-        // Nguyễn Duy Khang (user 3)
+
+        // Nguyễn Khắc Vượng (user 3)
         { user_id: 3, game_id: 3, rating: 4, comment: 'Tic-tac-toe đơn giản nhưng hay.' },
         { user_id: 3, game_id: 6, rating: 5, comment: 'Memory cards giúp rèn luyện trí nhớ!' },
         { user_id: 3, game_id: 7, rating: 5, comment: 'Drawing board sáng tạo, thích vẽ!' },
-        
-        // Phạm Bình Minh (user 4)
+
+        // Cao Quốc Tỷ (user 4)
         { user_id: 4, game_id: 1, rating: 5, comment: 'Hệ thống ELO tính rất chuẩn!' },
         { user_id: 4, game_id: 4, rating: 4, comment: 'Snake game hoài niệm tuổi thơ.' },
         { user_id: 4, game_id: 5, rating: 5, comment: 'Match 3 gây nghiện kinh khủng!' },
     ];
-    
+
     for (const tr of teamReviews) {
         const pairKey = `${tr.user_id}-${tr.game_id}`;
         if (!usedPairs.has(pairKey)) {
@@ -145,13 +145,13 @@ exports.seed = async function(knex) {
             });
         }
     }
-    
+
     // Insert theo batch
     const batchSize = 200;
     for (let i = 0; i < reviews.length; i += batchSize) {
         const batch = reviews.slice(i, i + batchSize);
         await knex('reviews').insert(batch);
     }
-    
+
     await knex.raw('SELECT setval(\'reviews_id_seq\', (SELECT MAX(id) FROM reviews))');
 };

@@ -392,25 +392,25 @@ const Friends = () => {
       id: "friends",
       label: "Friends",
       icon: Users,
-      count: friends.length,
+      count: pagination.friends.total,
     },
     {
       id: "pending",
       label: "Requests",
       icon: UserPlus,
-      count: pendingRequests.length,
+      count: pagination.pending.total,
     },
     {
       id: "sent",
       label: "Sent",
       icon: Send,
-      count: sentRequests.length,
+      count: pagination.sent.total,
     },
     {
       id: "blocked",
       label: "Blocked",
       icon: Shield,
-      count: blockedUsers.length,
+      count: pagination.blocked.total,
     },
   ];
 

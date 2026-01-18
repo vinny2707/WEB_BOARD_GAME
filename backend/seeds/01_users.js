@@ -60,13 +60,13 @@ function generateUsername(fullName, dob, usedUsernames) {
         .replace(/Đ/g, 'D')
         .toLowerCase()
         .replace(/\s+/g, '');
-    
+
     // Thử username đầy đủ trước
     if (!usedUsernames.has(normalized)) {
         usedUsernames.add(normalized);
         return normalized;
     }
-    
+
     // Nếu trùng, thử thêm năm sinh
     const year = dob.split('-')[0];
     const withYear = `${normalized}${year}`;
@@ -74,10 +74,10 @@ function generateUsername(fullName, dob, usedUsernames) {
         usedUsernames.add(withYear);
         return withYear;
     }
-    
+
     // Nếu vẫn trùng, thử các biến thể
     const nameParts = fullName.toLowerCase().split(' ');
-    
+
     // Thử: tên + họ (vd: anhnguyen)
     if (nameParts.length >= 2) {
         const firstLast = nameParts[nameParts.length - 1] + nameParts[0]
@@ -91,7 +91,7 @@ function generateUsername(fullName, dob, usedUsernames) {
             return firstLast;
         }
     }
-    
+
     // Thử: chữ cái đầu họ + tên đệm đầy đủ + tên (vd: nvanan)
     if (nameParts.length >= 3) {
         const firstInitial = nameParts[0].charAt(0)
@@ -110,7 +110,7 @@ function generateUsername(fullName, dob, usedUsernames) {
             return shortForm;
         }
     }
-    
+
     // Cuối cùng, thêm số ngẫu nhiên nhỏ
     let counter = 1;
     let username = `${normalized}${counter}`;
@@ -132,7 +132,7 @@ function generateDob(index) {
     return `${year}-${month}-${day}`;
 }
 
-exports.seed = async function(knex) {
+exports.seed = async function (knex) {
     // 00_images.js đã xử lý truncate
     await knex('users').del();
 
@@ -151,6 +151,7 @@ exports.seed = async function(knex) {
         role: 'admin',
         status: 'active',
         avatar_id: 14,
+        last_login: knex.fn.now(),
         created_at: knex.fn.now(),
         updated_at: knex.fn.now()
     });
@@ -166,6 +167,7 @@ exports.seed = async function(knex) {
         role: 'admin',
         status: 'active',
         avatar_id: 15,
+        last_login: knex.fn.now(),
         created_at: knex.fn.now(),
         updated_at: knex.fn.now()
     });
@@ -180,6 +182,7 @@ exports.seed = async function(knex) {
         role: 'admin',
         status: 'active',
         avatar_id: 13,
+        last_login: knex.fn.now(),
         created_at: knex.fn.now(),
         updated_at: knex.fn.now()
     });
@@ -194,16 +197,17 @@ exports.seed = async function(knex) {
         role: 'user',
         status: 'active',
         avatar_id: 16,
+        last_login: knex.fn.now(),
         created_at: knex.fn.now(),
         updated_at: knex.fn.now()
     });
 
-    // Tạo 96 users còn lại (id 5-100)
-    for (let i = 5; i <= 100; i++) {
+    // Tạo 116 users còn lại (id 5-120)
+    for (let i = 5; i <= 120; i++) {
         const fullName = generateName(i);
         const dob = generateDob(i);
         const username = generateUsername(fullName, dob, usedUsernames);
-        
+
         // Một số user có status khác
         let status = 'active';
         if (i % 50 === 0) status = 'banned';       // 2 users bị banned
@@ -222,6 +226,9 @@ exports.seed = async function(knex) {
             role: 'user',
             status: status,
             avatar_id: (i % 52) + 1, // Avatar 1-52
+            last_login: status === 'active'
+                ? knex.raw(`NOW() - INTERVAL '${Math.floor(Math.random() * 7)} days'`)
+                : knex.raw(`NOW() - INTERVAL '${Math.floor(Math.random() * 30) + 30} days'`),
             created_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days'`),
             updated_at: knex.raw(`NOW() - INTERVAL '${daysAgo} days'`)
         });

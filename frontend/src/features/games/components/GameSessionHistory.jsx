@@ -482,11 +482,10 @@ const GameSessionHistory = ({
             return (
               <div
                 key={index}
-                className={`flex items-center justify-center rounded-sm ${
-                  isMatched
+                className={`flex items-center justify-center rounded-sm ${isMatched
                     ? "bg-green-100 dark:bg-green-900/30 border border-green-400/50"
                     : "bg-indigo-500/80"
-                }`}
+                  }`}
                 style={{ width: cellPx, height: cellPx }}
               >
                 {isMatched ? (
@@ -575,9 +574,42 @@ const GameSessionHistory = ({
     );
   };
 
+  // Render Drawing Board (Vector Strokes)
+  const renderDrawingBoard = (gameState) => {
+    if (!gameState?.strokes) return null;
+
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-[200px] h-[150px] bg-white border border-border rounded-lg overflow-hidden relative">
+          <svg viewBox="0 0 800 600" className="w-full h-full">
+            {gameState.strokes.map((stroke, i) => (
+              <polyline
+                key={i}
+                points={stroke.points.map(p => `${p.x},${p.y}`).join(' ')}
+                fill="none"
+                stroke={stroke.color || '#000'}
+                strokeWidth={stroke.width || 2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </svg>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          🎨 {gameState.strokes.length} nét vẽ
+        </div>
+      </div>
+    );
+  };
+
   // Render game state based on game type
   const renderGameState = (session) => {
     if (!session?.game_state) return null;
+
+    // Drawing Board - Vector Strokes
+    if (session.game_state.strokes) {
+      return renderDrawingBoard(session.game_state);
+    }
 
     // Dot Art / Draw Board - check for grid (2D array of colors)
     if (
@@ -682,11 +714,10 @@ const GameSessionHistory = ({
               <div
                 key={session.id}
                 onClick={() => handleViewSession(session)}
-                className={`flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer ${
-                  session.status === "in_progress"
+                className={`flex items-center justify-between p-3 rounded-lg transition-all cursor-pointer ${session.status === "in_progress"
                     ? "bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/15"
                     : "bg-secondary/50 hover:bg-secondary"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <span className="text-lg">
@@ -896,7 +927,7 @@ const GameSessionHistory = ({
                                 {selectedSession.settings.difficulty === "easy"
                                   ? "Dễ"
                                   : selectedSession.settings.difficulty ===
-                                      "medium"
+                                    "medium"
                                     ? "Trung bình"
                                     : "Khó"}
                               </span>
