@@ -133,6 +133,25 @@ export default function Messages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedConversation, loadingMore, hasMoreMessages, currentPage]);
 
+  // Fetch friendship status
+  const fetchFriendshipStatus = async (userId) => {
+    try {
+      const response = await api.get(`/api/friends/status/${userId}`);
+      setFriendshipStatus(response.data.data);
+    } catch (error) {
+      console.error("Error fetching friendship status:", error);
+      setFriendshipStatus(null);
+    }
+  };
+
+  // Handle select conversation
+  const handleSelectConversation = useCallback((conversation) => {
+    setSelectedConversation(conversation);
+    fetchMessages(conversation.user.id);
+    fetchFriendshipStatus(conversation.user.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Initial load
   useEffect(() => {
     const fetchData = async () => {
@@ -220,24 +239,7 @@ export default function Messages() {
     };
   }, []);
 
-  // Fetch friendship status
-  const fetchFriendshipStatus = async (userId) => {
-    try {
-      const response = await api.get(`/api/friends/status/${userId}`);
-      setFriendshipStatus(response.data.data);
-    } catch (error) {
-      console.error("Error fetching friendship status:", error);
-      setFriendshipStatus(null);
-    }
-  };
 
-  // Handle select conversation
-  const handleSelectConversation = useCallback((conversation) => {
-    setSelectedConversation(conversation);
-    fetchMessages(conversation.user.id);
-    fetchFriendshipStatus(conversation.user.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Handle send message
   const handleSendMessage = async (e) => {
