@@ -138,12 +138,12 @@ const Friends = () => {
 
   // Initial data load - only run when user is authenticated
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
     const fetchData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       await Promise.all([
         fetchFriends(),
@@ -417,7 +417,7 @@ const Friends = () => {
   }
 
   return (
-    <div className="w-full flex-1 p-4 sm:p-6 flex flex-col gap-6">
+    <div className="w-full flex-1 p-4 sm:p-6 pt-8 sm:pt-10 flex flex-col gap-6">
       {/* Header */}
       <div className="w-full bg-white/50 dark:bg-slate-800/50  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -476,21 +476,19 @@ const Friends = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-blue-500 text-white"
-                  : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700"
-              }`}
+              className={`flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+                ? "bg-blue-500 text-white"
+                : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-700"
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
               {tab.count > 0 && (
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    activeTab === tab.id
-                      ? "bg-white/20"
-                      : "bg-slate-300 dark:bg-slate-700"
-                  }`}
+                  className={`px-2 py-0.5 rounded-full text-xs font-bold ${activeTab === tab.id
+                    ? "bg-white/20"
+                    : "bg-slate-300 dark:bg-slate-700"
+                    }`}
                 >
                   {tab.count}
                 </span>
@@ -501,7 +499,7 @@ const Friends = () => {
       </div>
 
       {/* Content */}
-      <div className="w-full bg-white/70 dark:bg-slate-800/70  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
+      <div className="w-full min-h-[600px] bg-white/70 dark:bg-slate-800/70  border-gray-200 dark:border-slate-700 rounded-2xl p-4 sm:p-6 border shadow-lg">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>

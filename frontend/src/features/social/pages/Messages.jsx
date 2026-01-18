@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   MessageSquare,
   Send,
@@ -47,6 +47,9 @@ export default function Messages() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [friendshipStatus, setFriendshipStatus] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const hasHandledNavigation = useRef(false);
@@ -74,25 +77,61 @@ export default function Messages() {
   };
 
   // Fetch conversation messages
-  const fetchMessages = async (userId) => {
+  const fetchMessages = async (userId, page = 1) => {
     try {
       const response = await api.get(`/api/messages/conversation/${userId}`, {
-        params: { limit: 50 },
+        params: { limit: 20, page },
       });
+
+      // Handle new response format: { other_user, messages, pagination }
+      const messagesData = response.data.data?.messages || response.data.data || [];
+      const pagination = response.data.data?.pagination || response.data.pagination;
+
       // Sort messages from oldest to newest (top to bottom)
-      const sortedMessages = (response.data.data || []).sort(
+      const sortedMessages = messagesData.sort(
         (a, b) => new Date(a.sent_at) - new Date(b.sent_at)
       );
-      setMessages(sortedMessages);
-      // Mark messages as read
-      await api.put(`/api/messages/conversation/${userId}/read`);
-      fetchUnreadCount();
-      fetchConversations();
+
+      if (page === 1) {
+        setMessages(sortedMessages);
+        setCurrentPage(1);
+      } else {
+        // Prepend older messages
+        setMessages((prev) => [...sortedMessages, ...prev]);
+      }
+
+      // Check if there are more messages
+      setHasMoreMessages(pagination?.page < pagination?.totalPages);
+
+      // Mark messages as read (only on first load)
+      if (page === 1) {
+        await api.put(`/api/messages/conversation/${userId}/read`);
+        fetchUnreadCount();
+        fetchConversations();
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast.error("Failed to load messages");
     }
   };
+
+  // Load more messages (for infinite scroll)
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedConversation || loadingMore || !hasMoreMessages) return;
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+
+    // Add minimum delay to show spinner (500ms)
+    await Promise.all([
+      fetchMessages(selectedConversation.user.id, nextPage),
+      new Promise(resolve => setTimeout(resolve, 500))
+    ]);
+
+    setCurrentPage(nextPage);
+    setLoadingMore(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedConversation, loadingMore, hasMoreMessages, currentPage]);
 
   // Initial load
   useEffect(() => {
@@ -108,8 +147,7 @@ export default function Messages() {
   useEffect(() => {
     if (
       location.state?.selectedUserId &&
-      !hasHandledNavigation.current &&
-      conversations.length > 0
+      !hasHandledNavigation.current
     ) {
       const userId = location.state.selectedUserId;
       const friendData = location.state.friendData;
@@ -140,15 +178,40 @@ export default function Messages() {
       // Clear the navigation state
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, conversations, navigate]);
+  }, [location.state, conversations, navigate, handleSelectConversation, location.pathname]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change (only for new messages, not when loading more)
   useEffect(() => {
-    if (messagesContainerRef.current) {
+    if (messagesContainerRef.current && !loadingMore) {
       messagesContainerRef.current.scrollTop =
         messagesContainerRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, loadingMore]);
+
+  // Scroll detection for infinite scroll
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      // Check if scrolled to top (with 50px threshold)
+      if (container.scrollTop < 50 && hasMoreMessages && !loadingMore) {
+        const previousScrollHeight = container.scrollHeight;
+        loadMoreMessages().then(() => {
+          // Maintain scroll position after loading
+          setTimeout(() => {
+            if (container) {
+              const newScrollHeight = container.scrollHeight;
+              container.scrollTop = newScrollHeight - previousScrollHeight;
+            }
+          }, 100);
+        });
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [hasMoreMessages, loadingMore, selectedConversation, loadMoreMessages]);
 
   // Reset navigation handler when leaving the page
   useEffect(() => {
@@ -169,11 +232,12 @@ export default function Messages() {
   };
 
   // Handle select conversation
-  const handleSelectConversation = (conversation) => {
+  const handleSelectConversation = useCallback((conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.user.id);
     fetchFriendshipStatus(conversation.user.id);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle send message
   const handleSendMessage = async (e) => {
@@ -268,9 +332,8 @@ export default function Messages() {
     <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-full">
       {/* Conversations List */}
       <div
-        className={`${
-          selectedConversation ? "hidden lg:flex" : "flex"
-        } flex-col w-full lg:w-96 border-r dark:border-slate-800 bg-slate-50 dark:!bg-slate-900/50`}
+        className={`${selectedConversation ? "hidden lg:flex" : "flex"
+          } flex-col w-full lg:w-96 border-r dark:border-slate-800 bg-slate-50 dark:!bg-slate-900/50`}
       >
         {/* Header */}
         <div className="p-4 sm:p-6 border-b dark:border-slate-800 bg-white/95 dark:bg-slate-900/95">
@@ -314,7 +377,7 @@ export default function Messages() {
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 max-h-[500px] overflow-y-auto">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
@@ -335,11 +398,10 @@ export default function Messages() {
                 <div
                   key={conversation.user.id}
                   onClick={() => handleSelectConversation(conversation)}
-                  className={`p-4 cursor-pointer transition-colors hover:bg-white/95 dark:hover:bg-slate-800 ${
-                    selectedConversation?.user.id === conversation.user.id
-                      ? "bg-white/95 dark:bg-slate-800 border-l-4 border-l-emerald-500"
-                      : ""
-                  }`}
+                  className={`p-4 cursor-pointer transition-colors hover:bg-white/95 dark:hover:bg-slate-800 ${selectedConversation?.user.id === conversation.user.id
+                    ? "bg-white/95 dark:bg-slate-800 border-l-4 border-l-emerald-500"
+                    : ""
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
@@ -378,11 +440,10 @@ export default function Messages() {
                         </span>
                       </div>
                       <p
-                        className={`text-sm truncate ${
-                          conversation.unread_count > 0
-                            ? "text-gray-900 dark:text-white font-medium"
-                            : "text-gray-500 dark:text-gray-400"
-                        }`}
+                        className={`text-sm truncate ${conversation.unread_count > 0
+                          ? "text-gray-900 dark:text-white font-medium"
+                          : "text-gray-500 dark:text-gray-400"
+                          }`}
                       >
                         {conversation.last_message?.is_from_me ? "You: " : ""}
                         {conversation.last_message?.content ||
@@ -442,7 +503,7 @@ export default function Messages() {
             {/* Messages */}
             <div
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/30"
+              className="h-[500px] max-h-[500px] overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/30"
             >
               {messages.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-center py-12">
@@ -454,13 +515,20 @@ export default function Messages() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4 h-[70vh]">
+                <div className="space-y-4">
+                  {/* Loading indicator for older messages */}
+                  {loadingMore && (
+                    <div className="flex flex-col items-center justify-center py-4 gap-2">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-t-2 border-emerald-500"></div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Loading older messages...</p>
+                    </div>
+                  )}
+
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${
-                        message.is_from_me ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex ${message.is_from_me ? "justify-end" : "justify-start"
+                        }`}
                     >
                       <div className="max-w-[70%]">
                         <div className="flex items-center gap-2">
@@ -484,21 +552,19 @@ export default function Messages() {
                           )}
 
                           <p
-                            className={`break-words flex-1 rounded-2xl px-4 py-2 ${
-                              message.is_from_me
-                                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-                                : "bg-white/95 dark:bg-slate-800 text-gray-900 dark:text-white"
-                            }`}
+                            className={`break-words flex-1 rounded-2xl px-4 py-2 ${message.is_from_me
+                              ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
+                              : "bg-white/95 dark:bg-slate-800 text-gray-900 dark:text-white"
+                              }`}
                           >
                             {message.content}
                           </p>
                         </div>
                         <p
-                          className={`text-xs mt-1 ${
-                            message.is_from_me
-                              ? "text-white/70 text-end"
-                              : "text-gray-500 dark:text-gray-400 text-start"
-                          }`}
+                          className={`text-xs mt-1 ${message.is_from_me
+                            ? "text-white/70 text-end"
+                            : "text-gray-500 dark:text-gray-400 text-start"
+                            }`}
                         >
                           {formatTime(message.sent_at)}
                         </p>

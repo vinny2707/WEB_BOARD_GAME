@@ -43,11 +43,10 @@ const AppFooter = () => {
     <footer className="relative overflow-hidden">
       {/* Gradient Background */}
       <div
-        className={`absolute inset-0 ${
-          isDarkMode
+        className={`absolute inset-0 ${isDarkMode
             ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
             : "bg-gradient-to-br from-gray-50 via-white to-gray-100"
-        }`}
+          }`}
       />
 
       {/* Decorative Elements */}
@@ -79,9 +78,8 @@ const AppFooter = () => {
               </div>
 
               <p
-                className={`text-sm leading-relaxed max-w-sm ${
-                  isDarkMode ? "text-slate-400" : "text-gray-600"
-                }`}
+                className={`text-sm leading-relaxed max-w-sm ${isDarkMode ? "text-slate-400" : "text-gray-600"
+                  }`}
               >
                 The ultimate platform for classic board games. Challenge friends, climb the leaderboards, and relive the golden era of gaming.
               </p>
@@ -112,9 +110,8 @@ const AppFooter = () => {
             {/* Games Links */}
             <div>
               <h4
-                className={`font-bold text-sm uppercase tracking-wider mb-4 ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}
+                className={`font-bold text-sm uppercase tracking-wider mb-4 ${isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Games
               </h4>
@@ -123,11 +120,10 @@ const AppFooter = () => {
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className={`text-sm transition-all hover:translate-x-1 inline-block ${
-                        isDarkMode
+                      className={`text-sm transition-all hover:translate-x-1 inline-block ${isDarkMode
                           ? "text-slate-400 hover:text-emerald-400"
                           : "text-gray-600 hover:text-emerald-600"
-                      }`}
+                        }`}
                     >
                       {link.name}
                     </Link>
@@ -139,9 +135,8 @@ const AppFooter = () => {
             {/* Community Links */}
             <div>
               <h4
-                className={`font-bold text-sm uppercase tracking-wider mb-4 ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}
+                className={`font-bold text-sm uppercase tracking-wider mb-4 ${isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Community
               </h4>
@@ -150,11 +145,10 @@ const AppFooter = () => {
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className={`text-sm transition-all hover:translate-x-1 inline-block ${
-                        isDarkMode
+                      className={`text-sm transition-all hover:translate-x-1 inline-block ${isDarkMode
                           ? "text-slate-400 hover:text-cyan-400"
                           : "text-gray-600 hover:text-cyan-600"
-                      }`}
+                        }`}
                     >
                       {link.name}
                     </Link>
@@ -166,9 +160,8 @@ const AppFooter = () => {
             {/* Support Links */}
             <div>
               <h4
-                className={`font-bold text-sm uppercase tracking-wider mb-4 ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}
+                className={`font-bold text-sm uppercase tracking-wider mb-4 ${isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
               >
                 Support
               </h4>
@@ -177,11 +170,10 @@ const AppFooter = () => {
                   <li key={link.name}>
                     <Link
                       to={link.path}
-                      className={`text-sm transition-all hover:translate-x-1 inline-block ${
-                        isDarkMode
+                      className={`text-sm transition-all hover:translate-x-1 inline-block ${isDarkMode
                           ? "text-slate-400 hover:text-purple-400"
                           : "text-gray-600 hover:text-purple-600"
-                      }`}
+                        }`}
                     >
                       {link.name}
                     </Link>
@@ -193,16 +185,14 @@ const AppFooter = () => {
 
           {/* Team Section */}
           <div
-            className={`rounded-2xl p-6 mb-8 ${
-              isDarkMode
+            className={`rounded-2xl p-6 mb-8 ${isDarkMode
                 ? "bg-gradient-to-r from-slate-800/50 to-slate-700/50 border border-slate-700/50"
                 : "bg-gradient-to-r from-gray-100 to-white border border-gray-200"
-            }`}
+              }`}
           >
             <h4
-              className={`font-bold text-sm uppercase tracking-wider mb-4 text-center ${
-                isDarkMode ? "text-white" : "text-gray-900"
-              }`}
+              className={`font-bold text-sm uppercase tracking-wider mb-4 text-center ${isDarkMode ? "text-white" : "text-gray-900"
+                }`}
             >
               Development Team
             </h4>
@@ -210,11 +200,10 @@ const AppFooter = () => {
               {teamMembers.map((member) => (
                 <div
                   key={member.id}
-                  className={`group flex items-center gap-3 px-4 py-2 rounded-xl transition-all ${
-                    isDarkMode
+                  className={`group flex items-center gap-3 px-4 py-2 rounded-xl transition-all ${isDarkMode
                       ? "bg-slate-700/50 hover:bg-slate-600/50"
                       : "bg-white shadow-sm hover:shadow-md"
-                  }`}
+                    }`}
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center overflow-hidden">
                     {member.avatarUrl ? (
@@ -231,16 +220,14 @@ const AppFooter = () => {
                   </div>
                   <div>
                     <p
-                      className={`text-sm font-semibold ${
-                        isDarkMode ? "text-white" : "text-gray-900"
-                      }`}
+                      className={`text-sm font-semibold ${isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
                     >
                       {member.name}
                     </p>
                     <p
-                      className={`text-xs font-mono ${
-                        isDarkMode ? "text-slate-400" : "text-gray-500"
-                      }`}
+                      className={`text-xs font-mono ${isDarkMode ? "text-slate-400" : "text-gray-500"
+                        }`}
                     >
                       {member.id}
                     </p>
@@ -252,19 +239,17 @@ const AppFooter = () => {
 
           {/* Divider */}
           <div
-            className={`h-px ${
-              isDarkMode
+            className={`h-px ${isDarkMode
                 ? "bg-gradient-to-r from-transparent via-slate-700 to-transparent"
                 : "bg-gradient-to-r from-transparent via-gray-200 to-transparent"
-            }`}
+              }`}
           />
 
           {/* Copyright */}
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p
-              className={`text-sm ${
-                isDarkMode ? "text-slate-500" : "text-gray-500"
-              }`}
+              className={`text-sm ${isDarkMode ? "text-slate-500" : "text-gray-500"
+                }`}
             >
               © {currentYear} RetroGames. All rights reserved.
             </p>
