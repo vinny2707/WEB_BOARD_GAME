@@ -331,7 +331,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-[750px]">
+    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-[680px]">
       {/* Conversations List */}
       <div
         className={`${selectedConversation ? "hidden lg:flex" : "flex"
@@ -409,21 +409,21 @@ export default function Messages() {
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
                     <div className="relative flex-shrink-0 group">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold transition-transform duration-200 group-hover:scale-125 group-hover:shadow-lg">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold shadow-sm group-hover:shadow-md transition-shadow overflow-hidden">
                         {conversation.user?.avatar_url ? (
                           <img
                             src={conversation.user.avatar_url}
                             alt={conversation.user.username}
-                            className="w-full h-full rounded-full object-cover"
+                            className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-160"
                           />
                         ) : (
-                          <span>
+                          <span className="transition-transform duration-300 group-hover:scale-160">
                             {getInitials(conversation.user?.full_name)}
                           </span>
                         )}
                       </div>
                       {conversation.unread_count > 0 && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold">
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-bold pointer-events-none">
                           {conversation.unread_count > 9
                             ? "9+"
                             : conversation.unread_count}
@@ -477,15 +477,15 @@ export default function Messages() {
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold transition-transform duration-200 hover:scale-125 hover:shadow-lg cursor-pointer">
+                  <div className="relative group w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold shadow-lg cursor-pointer overflow-hidden">
                     {selectedConversation.user?.avatar_url ? (
                       <img
                         src={selectedConversation.user.avatar_url}
                         alt={selectedConversation.user.username}
-                        className="w-full h-full rounded-full object-cover"
+                        className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-160"
                       />
                     ) : (
-                      <span>
+                      <span className="transition-transform duration-300 group-hover:scale-160">
                         {getInitials(selectedConversation.user?.full_name)}
                       </span>
                     )}
