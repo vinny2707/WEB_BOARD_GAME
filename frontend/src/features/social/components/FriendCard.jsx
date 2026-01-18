@@ -24,6 +24,7 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
   const navigate = useNavigate();
 
   const handleMessageClick = () => {
+    console.log("Message button clicked for friend:", friend);
     navigate("/messages", {
       state: {
         selectedUserId: friend.id,
@@ -65,11 +66,10 @@ const FriendCard = ({ friend, onUnfriend, onBlock }) => {
 
           {friend.status && (
             <span
-              className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                friend.status === "active"
-                  ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                  : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
-              }`}
+              className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${friend.status === "active"
+                ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                : "bg-slate-500/20 text-slate-600 dark:text-slate-400"
+                }`}
             >
               {friend.status}
             </span>
