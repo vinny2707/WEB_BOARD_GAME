@@ -6,13 +6,12 @@ import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
 import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
+import { getGames } from '../../../../api/gamesApi';
 import {
     fetchGameSettings,
     hasApiSetting,
     getSettingOptions,
     getSettingLabel,
-    getOptionLabel,
-    getOptionColor,
     extractSettingValues
 } from '../../utils/settingsConfig';
 
@@ -36,14 +35,25 @@ const Match3Lobby = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const playClick = useClickSound();
-    const [highScore, setHighScore] = useState(() => {
+    const [highScore] = useState(() => {
         const saved = localStorage.getItem('match3HighScore');
         return saved ? parseInt(saved, 10) : 0;
     });
 
     // Get game data from navigation state (passed from Games page)
-    const gameData = location.state?.game;
-    const gameId = gameData?.id;
+    const locationStateGameId = location.state?.game?.id;
+    const [gameId, setGameId] = useState(locationStateGameId);
+
+    // Fetch game ID if missing (e.g. direct navigation or back button)
+    useEffect(() => {
+        if (!gameId) {
+            getGames({ search: 'Ghép Hàng 3', limit: 1 }).then(res => {
+                if (res.data?.games?.length > 0) {
+                    setGameId(res.data.games[0].id);
+                }
+            }).catch(err => console.error("Failed to fetch game ID for Lobby", err));
+        }
+    }, [gameId]);
 
     // Settings modal state
     const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -386,9 +396,9 @@ const Match3Lobby = () => {
                                         {apiSettings && Object.keys(apiSettings).map(settingKey => {
                                             const options = getSettingOptions(apiSettings, settingKey);
                                             const label = getSettingLabel(apiSettings, settingKey);
-                                            
+
                                             if (options.length === 0) return null;
-                                            
+
                                             // Color mapping for Tailwind (static classes)
                                             const colorMap = {
                                                 green: { selected: 'bg-green-500 text-white', unselected: 'text-green-500' },
@@ -398,7 +408,7 @@ const Match3Lobby = () => {
                                                 purple: { selected: 'bg-purple-500 text-white', unselected: 'text-purple-500' },
                                                 orange: { selected: 'bg-orange-500 text-white', unselected: 'text-orange-500' },
                                             };
-                                            
+
                                             return (
                                                 <div key={settingKey} className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
@@ -408,12 +418,12 @@ const Match3Lobby = () => {
                                                         {options.map(option => {
                                                             const isSelected = gameSettings[settingKey] === option.value;
                                                             const colorStyles = option.color && colorMap[option.color];
-                                                            
+
                                                             let buttonClass = 'bg-secondary text-foreground hover:bg-accent';
                                                             if (isSelected) {
                                                                 buttonClass = colorStyles?.selected || 'bg-pink-500 text-white';
                                                             }
-                                                            
+
                                                             return (
                                                                 <button
                                                                     key={option.value}

@@ -24,11 +24,11 @@ const GameRankings = ({
   const [myRanking, setMyRanking] = useState(null); // Current user's rank from /me endpoint
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [countdown, setCountdown] = useState({
+  /* const [countdown, setCountdown] = useState({
     hours: 2,
     minutes: 15,
     seconds: 45,
-  });
+  }); */
 
   // Theme color mapping
   const themeColors = {
@@ -80,6 +80,8 @@ const GameRankings = ({
   const fetchRankings = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    if (!gameId) return;
+
     try {
       // Fetch global rankings
       const response = await getGameRankings(gameId, {
@@ -112,11 +114,15 @@ const GameRankings = ({
   }, [gameId, limit]);
 
   useEffect(() => {
-    fetchRankings();
-  }, [fetchRankings]);
+    if (gameId) {
+      fetchRankings();
+    } else {
+      setIsLoading(true); // Keep loading state if gameId is pending
+    }
+  }, [fetchRankings, gameId]);
 
   // Countdown timer
-  useEffect(() => {
+  /* useEffect(() => {
     if (!showCountdown) return;
 
     const timer = setInterval(() => {
@@ -140,7 +146,7 @@ const GameRankings = ({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [showCountdown]);
+  }, [showCountdown]); */
 
   const getRankIcon = (rank) => {
     if (rank === 1) return <Crown className="text-orange-400" size={16} />;
@@ -212,13 +218,12 @@ const GameRankings = ({
                 <div
                   key={player.rank}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-                                        ${
-                                          isMe
-                                            ? `${colors.highlight} border`
-                                            : player.rank <= 3
-                                              ? "bg-yellow-500/15 hover:bg-accent"
-                                              : "hover:bg-accent"
-                                        }`}
+                                        ${isMe
+                      ? `${colors.highlight} border`
+                      : player.rank <= 3
+                        ? "bg-yellow-500/15 hover:bg-accent"
+                        : "hover:bg-accent"
+                    }`}
                 >
                   <div className="w-7 text-center">
                     {getRankIcon(player.rank)}
@@ -248,8 +253,8 @@ const GameRankings = ({
                     {isMe
                       ? getCurrentUserName()
                       : player.user?.username ||
-                        player.user?.full_name ||
-                        "Unknown"}
+                      player.user?.full_name ||
+                      "Unknown"}
                     {isMe && (
                       <span className="ml-1 text-xs opacity-75">(Bạn)</span>
                     )}
