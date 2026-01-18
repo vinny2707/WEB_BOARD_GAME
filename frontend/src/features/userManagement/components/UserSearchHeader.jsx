@@ -8,8 +8,10 @@ const UserSearchHeader = ({
   isDarkMode,
   searchTerm,
   statusFilter,
+  roleFilter,
   onSearch,
   onStatusFilter,
+  onRoleFilter,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
@@ -21,31 +23,49 @@ const UserSearchHeader = ({
           placeholder="Search users..."
           value={searchTerm}
           onChange={onSearch}
-          className={`w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base rounded-lg border transition-colors ${
-            isDarkMode
-              ? "bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
-              : "bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500"
-          } focus:outline-none`}
+          className={`w-full pl-9 sm:pl-10 pr-4 py-2 text-sm sm:text-base rounded-lg border transition-colors ${isDarkMode
+            ? "bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
+            : "bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500"
+            } focus:outline-none`}
         />
+      </div>
+
+      {/* Role Filter Buttons */}
+      <div className="flex gap-2 pb-1 sm:pb-0 scrollbar-hide">
+        {["", "admin", "user"].map((role) => (
+          <button
+            key={role || "all-roles"}
+            onClick={() => onRoleFilter(role)}
+            className={`px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer text-sm whitespace-nowrap ${roleFilter === role
+              ? isDarkMode
+                ? "bg-purple-500/20 text-purple-400 border border-purple-500/30"
+                : "bg-purple-500/20 text-purple-600 border border-purple-500/30"
+              : isDarkMode
+                ? "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+              }`}
+          >
+            {role ? role.charAt(0).toUpperCase() + role.slice(1) : "All Roles"}
+          </button>
+        ))}
       </div>
 
       {/* Status Filter Buttons */}
       <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
         {["", "active", "inactive", "banned"].map((status) => (
           <button
-            key={status || "all"}
+            key={status || "all-status"}
             onClick={() => onStatusFilter(status)}
-            className={`px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer text-sm whitespace-nowrap ${
-              statusFilter === status
-                ? isDarkMode
-                  ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                  : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
-                : isDarkMode
+            className={`px-3 sm:px-4 py-2 rounded-lg transition-all cursor-pointer text-sm whitespace-nowrap ${statusFilter === status
+              ? isDarkMode
+                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                : "bg-blue-500/20 text-blue-600 border border-blue-500/30"
+              : isDarkMode
                 ? "bg-slate-700 text-slate-400 hover:bg-slate-600"
                 : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-            }`}
+              }`}
           >
-            {status ? status.charAt(0).toUpperCase() + status.slice(1) : "All"}
+            {status ? status.charAt(0).toUpperCase() + status.slice(1) : "All Status"}
           </button>
         ))}
       </div>

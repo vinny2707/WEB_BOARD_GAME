@@ -29,6 +29,7 @@ const UserManagement = () => {
     totalUsers,
     searchTerm,
     statusFilter,
+    roleFilter,
     showDetailDialog,
     selectedUser,
     showDeleteDialog,
@@ -49,6 +50,7 @@ const UserManagement = () => {
     fetchUsers,
     handleSearch,
     handleStatusFilter,
+    handleRoleFilter,
     handleLimitChange,
     handleDelete,
     confirmDelete,
@@ -69,9 +71,11 @@ const UserManagement = () => {
         <UserSearchHeader
           isDarkMode={isDarkMode}
           searchTerm={searchTerm}
-          statusFilter={statusFilter}
           onSearch={handleSearch}
+          statusFilter={statusFilter}
+          roleFilter={roleFilter}
           onStatusFilter={handleStatusFilter}
+          onRoleFilter={handleRoleFilter}
         />
       </div>
 
