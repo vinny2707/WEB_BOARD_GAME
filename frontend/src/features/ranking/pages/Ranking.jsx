@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/contexts/UserProvider";
 
 export default function Ranking() {
+  const { isAuthenticated } = useUser();
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [scope, setScope] = useState("global");
@@ -35,7 +36,34 @@ export default function Ranking() {
     total: 0,
   });
   const itemsPerPage = 10;
-  const { isAuthenticated } = useUser();
+
+  // Fetch games list
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchGames = async () => {
+      try {
+        const response = await api.get("/api/games");
+        const gamesList = response.data.data.games || [];
+        setGames(gamesList);
+        if (gamesList.length > 0) {
+          setSelectedGame(gamesList[0].id);
+        }
+      } catch (error) {
+        console.error("Error fetching games:", error);
+        toast.error("Failed to load games");
+      }
+    };
+    fetchGames();
+  }, [isAuthenticated]);
+
+  // Fetch rankings when game or scope changes
+  useEffect(() => {
+    if (!isAuthenticated || !selectedGame) return;
+
+    fetchRankings(1);
+    fetchMyRanking();
+  }, [selectedGame, scope, isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -58,32 +86,6 @@ export default function Ranking() {
       </div>
     );
   }
-  
-  // Fetch games list
-  useEffect(() => {
-    const fetchGames = async () => {
-      try {
-        const response = await api.get("/api/games");
-        const gamesList = response.data.data.games || [];
-        setGames(gamesList);
-        if (gamesList.length > 0) {
-          setSelectedGame(gamesList[0].id);
-        }
-      } catch (error) {
-        console.error("Error fetching games:", error);
-        toast.error("Failed to load games");
-      }
-    };
-    fetchGames();
-  }, []);
-
-  // Fetch rankings when game or scope changes
-  useEffect(() => {
-    if (selectedGame) {
-      fetchRankings(1);
-      fetchMyRanking();
-    }
-  }, [selectedGame, scope]);
 
   // Fetch rankings
   const fetchRankings = async (page = 1) => {
@@ -207,7 +209,7 @@ export default function Ranking() {
                 value={selectedGame?.toString()}
                 onValueChange={(val) => setSelectedGame(parseInt(val))}
               >
-                <SelectTrigger className="w-full bg-white dark:bg-slate-800 dark:border-slate-600">
+                <SelectTrigger className="w-full bg-white/95 dark:bg-slate-800 dark:border-slate-600">
                   <SelectValue placeholder="Choose a game" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
@@ -230,7 +232,7 @@ export default function Ranking() {
                 Ranking Scope
               </label>
               <Select value={scope} onValueChange={setScope}>
-                <SelectTrigger className="w-full bg-white dark:bg-slate-800 dark:border-slate-600">
+                <SelectTrigger className="w-full bg-white/95 dark:bg-slate-800 dark:border-slate-600">
                   <SelectValue placeholder="Choose scope" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
@@ -258,7 +260,9 @@ export default function Ranking() {
         <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-2xl font-semibold opacity-90 mb-1">Your Ranking</p>
+              <p className="text-2xl font-semibold opacity-90 mb-1">
+                Your Ranking
+              </p>
               <div className="flex items-center gap-3">
                 <span className="text-4xl font-bold">#{myRanking.rank}</span>
                 <div className="text-sm">
@@ -349,7 +353,7 @@ export default function Ranking() {
               {rankings.map((ranking) => (
                 <div
                   key={ranking.rank}
-                  className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
+                  className="group bg-white/95 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl p-4 hover:shadow-lg transition-all"
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
@@ -440,7 +444,7 @@ export default function Ranking() {
       </div>
 
       {/* Pagination - Outside card */}
-      {rankings.length > 0 && pagination.totalPages > 1 && (
+      {rankings.length > 0 && (
         <div className="mt-6">
           <Pagination
             currentPage={pagination.page}

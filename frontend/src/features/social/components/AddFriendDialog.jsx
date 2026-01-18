@@ -232,7 +232,7 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Search by username or email..."
-                className="w-full pl-10 pr-4 py-2 bg-white dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-2 bg-white/95 dark:!bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition-colors"
               />
             </div>
             <Button

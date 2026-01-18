@@ -165,7 +165,7 @@ const LandingPage = () => {
               </button>
               <button
                 onClick={() => navigate("/games")}
-                className="px-8 py-4 cursor-pointer rounded-xl bg-white dark:bg-slate-800 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-200 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300"
+                className="px-8 py-4 cursor-pointer rounded-xl bg-white/95 dark:bg-slate-800 text-gray-900 dark:text-white font-semibold text-lg border-2 border-gray-200 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-300"
               >
                 View Games
               </button>
@@ -191,7 +191,7 @@ const LandingPage = () => {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="group p-6 rounded-2xl bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-xl dark:hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1"
+                className="group p-6 rounded-2xl bg-white/95 dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-xl dark:hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1"
               >
                 <div
                   className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}
@@ -236,7 +236,7 @@ const LandingPage = () => {
               {games.map((game) => (
                 <div
                   key={game.id}
-                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-2xl dark:hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 cursor-pointer"
+                  className="group relative rounded-2xl overflow-hidden bg-white/95 dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-2xl dark:hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-2 cursor-pointer"
                   onClick={handleGetStarted}
                 >
                   {/* Game Icon/Image */}
@@ -299,7 +299,7 @@ const LandingPage = () => {
           </p>
           <button
             onClick={handleGetStarted}
-            className="inline-flex cursor-pointer items-center gap-2 px-8 py-4 rounded-xl bg-white dark:bg-slate-800 text-emerald-600 dark:text-cyan-400 font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-transparent dark:border-slate-700"
+            className="inline-flex cursor-pointer items-center gap-2 px-8 py-4 rounded-xl bg-white/95 dark:bg-slate-800 text-emerald-600 dark:text-cyan-400 font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 border border-transparent dark:border-slate-700"
           >
             <Zap className="w-5 h-5" />
             Get Started Free
@@ -308,7 +308,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-white/95 dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Brand */}

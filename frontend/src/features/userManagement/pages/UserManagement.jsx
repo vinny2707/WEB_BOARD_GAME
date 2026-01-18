@@ -15,10 +15,6 @@ import UserDetailDialog from "../components/UserDetailDialog";
 import UserStatusDialog from "../components/UserStatusDialog";
 import UserRoleDialog from "../components/UserRoleDialog";
 
-/**
- * User Management Page - Admin Panel
- * Refactored from 1130 lines to ~100 lines using component composition
- */
 const UserManagement = () => {
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
