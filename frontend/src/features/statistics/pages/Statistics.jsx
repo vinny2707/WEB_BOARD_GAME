@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { format, subDays } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import {
   BarChart3,
@@ -16,6 +16,7 @@ import {
   useOverviewStats,
   useHotGames,
   useUserStatistics,
+  useReviewStats,
 } from "@/hooks/useStatistics";
 import {
   StatCard,
@@ -62,30 +63,38 @@ const Statistics = () => {
     refetch: refetchUserStats,
   } = useUserStatistics(dateRange);
 
+  const {
+    data: reviewStats,
+    loading: reviewStatsLoading,
+    error: reviewStatsError,
+    refetch: refetchReviewStats,
+  } = useReviewStats();
+
   // Refresh all data
   const handleRefresh = () => {
     refetchOverview();
     refetchHotGames();
     refetchUserStats();
+    refetchReviewStats();
   };
 
   // Prepare chart data
   const registrationTrendData = useMemo(() => {
     if (!userStats?.registration_trend) return [];
     return userStats.registration_trend.map((item) => ({
-      date: format(new Date(item.date), "MMM d"),
-      users: item.count || item.users || 0,
+      date: format(parseISO(item.date), "MMM d"),
+      users: item.new_users || 0,
     }));
   }, [userStats]);
 
-  const sessionsTrendData = useMemo(() => {
-    if (!overviewData?.sessions_trend) return [];
-    return overviewData.sessions_trend.map((item) => ({
-      date: format(new Date(item.date), "MMM d"),
-      sessions: item.sessions || item.count || 0,
-      completed: item.completed || 0,
-    }));
-  }, [overviewData]);
+  const reviewStatsData = useMemo(() => {
+    if (!reviewStats) return [];
+    return [
+      { name: "Total Reviews", value: reviewStats.total_reviews || 0 },
+      { name: "Games Reviewed", value: reviewStats.total_games_reviewed || 0 },
+      { name: "Users Reviewed", value: reviewStats.total_users_reviewed || 0 },
+    ];
+  }, [reviewStats]);
 
   const gameDistributionData = useMemo(() => {
     if (!hotGames || hotGames.length === 0) return [];
@@ -150,8 +159,16 @@ const Statistics = () => {
         description: `${games.most_popular?.sessions || 0} sessions`,
         icon: "trophy",
       },
+      {
+        title: "Average Rating",
+        value: reviewStats?.average_rating
+          ? `⭐ ${parseFloat(reviewStats.average_rating).toFixed(1)}`
+          : "N/A",
+        description: `${reviewStats?.total_reviews || 0} reviews`,
+        icon: "star",
+      },
     ];
-  }, [overviewData]);
+  }, [overviewData, reviewStats]);
 
   const userOverviewCards = useMemo(() => {
     const overview = userStats?.overview || {};
@@ -180,8 +197,13 @@ const Statistics = () => {
     ];
   }, [userStats]);
 
-  const isLoading = overviewLoading || hotGamesLoading || userStatsLoading;
-  const hasError = overviewError || hotGamesError || userStatsError;
+  const isLoading =
+    overviewLoading ||
+    hotGamesLoading ||
+    userStatsLoading ||
+    reviewStatsLoading;
+  const hasError =
+    overviewError || hotGamesError || userStatsError || reviewStatsError;
 
   return (
     <div className="min-h-screen bg-background">
@@ -248,11 +270,17 @@ const Statistics = () => {
                   <Activity className="w-4 h-4" />
                   <span className="hidden sm:inline">Overview</span>
                 </TabsTrigger>
-                <TabsTrigger value="games" className="flex items-center gap-2 cursor-pointer">
+                <TabsTrigger
+                  value="games"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <Gamepad2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Games</span>
                 </TabsTrigger>
-                <TabsTrigger value="users" className="flex items-center gap-2 cursor-pointer">
+                <TabsTrigger
+                  value="users"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <Users className="w-4 h-4" />
                   <span className="hidden sm:inline">Users</span>
                 </TabsTrigger>
@@ -263,11 +291,16 @@ const Statistics = () => {
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {overviewLoading
-                    ? Array.from({ length: 6 }).map((_, i) => (
+                    ? Array.from({ length: 7 }).map((_, i) => (
                         <SkeletonCard key={i} />
                       ))
                     : overviewCards.map((card, index) => (
-                        <StatCard key={card.title} {...card} delay={index} className="w-full h-full" />
+                        <StatCard
+                          key={card.title}
+                          {...card}
+                          delay={index}
+                          className="w-full h-full"
+                        />
                       ))}
                 </div>
 
@@ -280,14 +313,12 @@ const Statistics = () => {
                     </>
                   ) : (
                     <>
-                      <AreaChartComponent
-                        title="Sessions Trend"
-                        description="Daily sessions over the selected period"
-                        data={sessionsTrendData}
-                        dataKey="sessions"
-                        secondaryDataKey="completed"
-                        color="var(--chart-1)"
-                        secondaryColor="var(--chart-2)"
+                      <BarChartComponent
+                        title="Review Statistics"
+                        description="Overall review metrics"
+                        data={reviewStatsData}
+                        dataKey="value"
+                        useMultipleColors
                         height={300}
                       />
                       <PieChartComponent
@@ -370,7 +401,12 @@ const Statistics = () => {
                         <SkeletonCard key={i} />
                       ))
                     : userOverviewCards.map((card, index) => (
-                        <StatCard key={card.title} {...card} delay={index} className="w-full h-full"/>
+                        <StatCard
+                          key={card.title}
+                          {...card}
+                          delay={index}
+                          className="w-full h-full"
+                        />
                       ))}
                 </div>
 
@@ -400,19 +436,6 @@ const Statistics = () => {
                     />
                   )}
                 </div>
-
-                {/* Activity by Day */}
-                {!userStatsLoading && userStats?.activity_by_day && (
-                  <BarChartComponent
-                    title="Activity by Day of Week"
-                    description="User activity distribution across days"
-                    data={userStats.activity_by_day}
-                    dataKey="sessions"
-                    xAxisKey="day"
-                    useMultipleColors
-                    height={280}
-                  />
-                )}
               </TabsContent>
             </Tabs>
           )}

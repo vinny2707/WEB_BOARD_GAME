@@ -5,6 +5,7 @@ import {
   getGameStatistics,
   getUserStatistics,
 } from "@/api/statisticsApi";
+import { getOverallReviewStats } from "@/api/reviewsStatsApi";
 
 /**
  * Custom hook for fetching dashboard overview statistics
@@ -131,9 +132,40 @@ export const useUserStatistics = (dateRange = {}) => {
   return { data, loading, error, refetch: fetchData };
 };
 
+/**
+ * Custom hook for fetching review statistics
+ */
+export const useReviewStats = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getOverallReviewStats();
+      setData(response.data);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Failed to fetch review statistics",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+};
+
 export default {
   useOverviewStats,
   useHotGames,
   useGameStatistics,
   useUserStatistics,
+  useReviewStats,
 };
