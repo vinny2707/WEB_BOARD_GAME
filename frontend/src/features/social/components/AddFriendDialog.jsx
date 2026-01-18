@@ -223,7 +223,7 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
 
         <div className="space-y-4">
           {/* Search Input */}
-          <div className="flex items-stretch gap-2">
+          <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
@@ -238,7 +238,7 @@ const AddFriendDialog = ({ onSendRequest, onAccept, onReject }) => {
             <Button
               onClick={handleSearch}
               disabled={searching}
-              className="cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold dark:text-white"
+              className="cursor-pointer bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold dark:text-white py-2"
             >
               {searching ? "Searching..." : "Search"}
             </Button>
