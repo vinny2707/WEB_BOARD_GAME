@@ -42,29 +42,46 @@ function Pagination({
   // Generate page numbers with ellipsis
   const getPageNumbers = () => {
     const pages = []
-    const maxVisible = 5
+    const siblingCount = 1 // Number of pages valid left/right of current page
 
-    if (totalPages <= maxVisible + 2) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i)
-    } else {
-      pages.push(1)
-
-      if (currentPage > 3) {
-        pages.push("...")
+    // Case 1: Total pages less than limit -> show all
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
       }
+      return pages
+    }
 
-      const start = Math.max(2, currentPage - 1)
-      const end = Math.min(totalPages - 1, currentPage + 1)
+    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1)
+    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages)
 
-      for (let i = start; i <= end; i++) {
-        if (!pages.includes(i)) pages.push(i)
-      }
+    const shouldShowLeftDots = leftSiblingIndex > 2
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 1
 
-      if (currentPage < totalPages - 2) {
-        pages.push("...")
-      }
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+      // Case 2: Only right dots visible (e.g. 1 2 3 4 5 ... 10)
+      let leftItemCount = 3 + 2 * siblingCount
+      let leftRange = []
+      for (let i = 1; i <= leftItemCount; i++) leftRange.push(i)
 
-      if (!pages.includes(totalPages)) pages.push(totalPages)
+      return [...leftRange, "...", totalPages]
+    }
+
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+      // Case 3: Only left dots visible (e.g. 1 ... 6 7 8 9 10)
+      let rightItemCount = 3 + 2 * siblingCount
+      let rightRange = []
+      for (let i = totalPages - rightItemCount + 1; i <= totalPages; i++) rightRange.push(i)
+
+      return [1, "...", ...rightRange]
+    }
+
+    if (shouldShowLeftDots && shouldShowRightDots) {
+      // Case 4: Both dots visible (e.g. 1 ... 4 5 6 ... 10)
+      let middleRange = []
+      for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) middleRange.push(i)
+
+      return [1, "...", ...middleRange, "...", totalPages]
     }
 
     return pages

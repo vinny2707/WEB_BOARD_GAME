@@ -16,6 +16,7 @@ export const useUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -31,14 +32,15 @@ export const useUserManagement = () => {
   const [pendingRoleChange, setPendingRoleChange] = useState(null);
 
   // Fetch users
-  const fetchUsers = async (page = 1, search = "", status = "") => {
+  const fetchUsers = async (page = 1, search = "", status = "", role = "", currentLimit = limit) => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page,
-        limit,
+        limit: currentLimit,
         ...(search && { search }),
         ...(status && { status }),
+        ...(role && { role }),
       });
 
       const response = await api.get(`/api/users/admin?${params}`);
@@ -59,8 +61,8 @@ export const useUserManagement = () => {
 
   // Initial fetch
   useEffect(() => {
-    fetchUsers(1, debouncedSearchTerm, statusFilter);
-  }, [debouncedSearchTerm, statusFilter]);
+    fetchUsers(1, debouncedSearchTerm, statusFilter, roleFilter);
+  }, [debouncedSearchTerm, statusFilter, roleFilter]);
 
   // Handle search
   const handleSearch = (e) => {
@@ -73,14 +75,21 @@ export const useUserManagement = () => {
   const handleStatusFilter = (status) => {
     setStatusFilter(status);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, status);
+    fetchUsers(1, searchTerm, status, roleFilter);
+  };
+
+  // Handle role filter
+  const handleRoleFilter = (role) => {
+    setRoleFilter(role);
+    setCurrentPage(1);
+    fetchUsers(1, searchTerm, statusFilter, role);
   };
 
   // Handle limit change
   const handleLimitChange = (newLimit) => {
     setLimit(newLimit);
     setCurrentPage(1);
-    fetchUsers(1, searchTerm, statusFilter);
+    fetchUsers(1, searchTerm, statusFilter, roleFilter, newLimit);
   };
 
   // Handle delete
@@ -97,7 +106,7 @@ export const useUserManagement = () => {
       setShowDeleteDialog(false);
       setUserToDelete(null);
       toast.success("User deleted successfully");
-      fetchUsers(currentPage, searchTerm, statusFilter);
+      fetchUsers(currentPage, searchTerm, statusFilter, roleFilter);
     } catch (err) {
       console.error("Error deleting user:", err);
       toast.error(err.response?.data?.message || "Failed to delete user");
@@ -118,7 +127,7 @@ export const useUserManagement = () => {
         status: pendingStatusChange.newStatus,
       });
       toast.success("User status updated successfully");
-      fetchUsers(currentPage, searchTerm, statusFilter);
+      fetchUsers(currentPage, searchTerm, statusFilter, roleFilter);
     } catch (err) {
       console.error("Error updating status:", err);
       toast.error(err.response?.data?.message || "Failed to update status");
@@ -142,7 +151,7 @@ export const useUserManagement = () => {
         role: pendingRoleChange.newRole,
       });
       toast.success("User role updated successfully");
-      fetchUsers(currentPage, searchTerm, statusFilter);
+      fetchUsers(currentPage, searchTerm, statusFilter, roleFilter);
     } catch (err) {
       console.error("Error updating role:", err);
       toast.error(err.response?.data?.message || "Failed to update role");
@@ -174,6 +183,7 @@ export const useUserManagement = () => {
     totalUsers,
     searchTerm,
     statusFilter,
+    roleFilter,
     showDetailDialog,
     selectedUser,
     showDeleteDialog,
@@ -194,6 +204,7 @@ export const useUserManagement = () => {
     fetchUsers,
     handleSearch,
     handleStatusFilter,
+    handleRoleFilter,
     handleLimitChange,
     handleDelete,
     confirmDelete,
