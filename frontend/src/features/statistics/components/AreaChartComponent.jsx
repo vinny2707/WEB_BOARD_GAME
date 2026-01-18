@@ -57,7 +57,7 @@ const AreaChartComponent = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className={cn("border-border/50", className)}>
+      <Card className={cn("bg-transparent border-border/50", className)}>
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}

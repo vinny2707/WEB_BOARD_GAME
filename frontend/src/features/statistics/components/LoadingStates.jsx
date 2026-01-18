@@ -79,7 +79,7 @@ const EmptyState = ({
 
 // Skeleton loading components
 const SkeletonCard = () => (
-  <div className="rounded-xl border border-border/50 p-6 animate-pulse">
+  <div className="rounded-xl border border-border/50 bg-transparent p-6 animate-pulse">
     <div className="flex items-center justify-between mb-4">
       <div className="h-4 w-24 bg-muted rounded" />
       <div className="h-8 w-8 bg-muted rounded-lg" />
@@ -90,7 +90,7 @@ const SkeletonCard = () => (
 );
 
 const SkeletonChart = ({ height = 300 }) => (
-  <div className="rounded-xl border border-border/50 p-6 animate-pulse">
+  <div className="rounded-xl border border-border/50 bg-transparent p-6 animate-pulse">
     <div className="h-5 w-32 bg-muted rounded mb-2" />
     <div className="h-4 w-48 bg-muted rounded mb-6" />
     <div className="bg-muted rounded" style={{ height }} />
@@ -98,7 +98,7 @@ const SkeletonChart = ({ height = 300 }) => (
 );
 
 const SkeletonList = ({ items = 5 }) => (
-  <div className="rounded-xl border border-border/50 p-6 animate-pulse">
+  <div className="rounded-xl border border-border/50 bg-transparent p-6 animate-pulse">
     <div className="h-5 w-32 bg-muted rounded mb-6" />
     <div className="space-y-3">
       {Array.from({ length: items }).map((_, i) => (

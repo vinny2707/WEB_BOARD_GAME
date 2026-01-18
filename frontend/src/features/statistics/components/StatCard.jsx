@@ -62,7 +62,7 @@ const StatCard = ({
       }}
       whileHover={{ scale: 1.02 }}
     >
-      <Card className={cn("relative overflow-hidden gap-2 border-border/50", className)}>
+      <Card className={cn("relative overflow-hidden gap-2 bg-transparent border-border/50", className)}>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             {title}

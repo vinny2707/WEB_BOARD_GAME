@@ -54,7 +54,7 @@ const HotGameCard = ({ rank, game, delay = 0, className = "", onClick }) => {
       className="relative"
     >
       <Card
-        className={cn("relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow border-border/50", className)}
+        className={cn("relative overflow-hidden cursor-pointer hover:shadow-lg transition-shadow bg-transparent border-border/50", className)}
         onClick={onClick}
       >
         {getRankBadge()}

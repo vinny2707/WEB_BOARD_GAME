@@ -34,7 +34,7 @@ const TopPlayersTable = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className={cn("border-border/50", className)}>
+      <Card className={cn("bg-transparent border-border/50", className)}>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-primary" />
