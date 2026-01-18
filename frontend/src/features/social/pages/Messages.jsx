@@ -331,7 +331,7 @@ export default function Messages() {
   }
 
   return (
-    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-full">
+    <div className="w-full flex-1 flex flex-col lg:flex-row gap-0 dark:bg-slate-900/50 h-[750px]">
       {/* Conversations List */}
       <div
         className={`${selectedConversation ? "hidden lg:flex" : "flex"
@@ -379,7 +379,8 @@ export default function Messages() {
         </div>
 
         {/* Conversations */}
-        <div className="flex-1 max-h-[500px] overflow-y-auto">
+        {/* Conversations */}
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
@@ -407,8 +408,8 @@ export default function Messages() {
                 >
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                    <div className="relative flex-shrink-0 group">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold transition-transform duration-200 group-hover:scale-125 group-hover:shadow-lg">
                         {conversation.user?.avatar_url ? (
                           <img
                             src={conversation.user.avatar_url}
@@ -476,7 +477,7 @@ export default function Messages() {
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-semibold transition-transform duration-200 hover:scale-125 hover:shadow-lg cursor-pointer">
                     {selectedConversation.user?.avatar_url ? (
                       <img
                         src={selectedConversation.user.avatar_url}
@@ -505,7 +506,7 @@ export default function Messages() {
             {/* Messages */}
             <div
               ref={messagesContainerRef}
-              className="h-[500px] max-h-[500px] overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/30"
+              className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/30"
             >
               {messages.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-center py-12">
@@ -619,7 +620,7 @@ export default function Messages() {
             )}
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50">
             <div className="text-center">
               <MessageSquare className="w-20 h-20 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -630,11 +631,12 @@ export default function Messages() {
               </p>
             </div>
           </div>
-        )}
-      </div>
+        )
+        }
+      </div >
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      < AlertDialog
         open={!!deleteMessageId}
         onOpenChange={() => setDeleteMessageId(null)}
       >
@@ -660,7 +662,7 @@ export default function Messages() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      </AlertDialog >
+    </div >
   );
 }
