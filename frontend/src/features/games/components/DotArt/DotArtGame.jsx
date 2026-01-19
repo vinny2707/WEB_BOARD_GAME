@@ -103,6 +103,7 @@ const DotArtGame = () => {
   const location = useLocation();
   const playClick = useClickSound();
   const gridRef = useRef(null);
+  const sessionStartedRef = useRef(false); // Guard to prevent double session creation
 
   // Settings from lobby and resume session
   const settings = location.state?.settings || { gridSize: "medium" };
@@ -121,6 +122,7 @@ const DotArtGame = () => {
     updateGameState,
     setResumeSessionId,
     isAuthenticated,
+    sessionId,
   } = useGameSession(7, { autoSave: true, saveInterval: 30 });
 
   // State
@@ -159,9 +161,13 @@ const DotArtGame = () => {
 
   // Start or resume session
   useEffect(() => {
+    // Guard: prevent double session creation (React Strict Mode / re-renders)
+    if (sessionStartedRef.current) return;
+    
     if (resumeSession) {
       // Resume existing session - set session ID for tracking
       console.log("Resume session data:", resumeSession);
+      sessionStartedRef.current = true;
       setResumeSessionId(
         resumeSession.id,
         resumeSession.started_at,
@@ -169,11 +175,14 @@ const DotArtGame = () => {
       );
       // Note: grid, selectedColor, showGrid are already initialized from resumeSession in useState
     } else if (isAuthenticated) {
-      // Start new session
+      // Start new session only if NOT resuming
+      console.log("Starting NEW session");
+      sessionStartedRef.current = true;
       startSession(settings, {
         grid,
         selectedColor: "#000000",
         showGrid: true,
+        gridSize: effectiveGridSize,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,9 +194,9 @@ const DotArtGame = () => {
       grid,
       selectedColor,
       showGrid,
-      gridSize: settings.gridSize,
+      gridSize: effectiveGridSize,
     });
-  }, [grid, selectedColor, showGrid, settings.gridSize, updateGameState]);
+  }, [grid, selectedColor, showGrid, effectiveGridSize, updateGameState]);
 
   // Save to history
   const saveToHistory = useCallback(
@@ -507,7 +516,7 @@ const DotArtGame = () => {
         grid,
         selectedColor,
         showGrid,
-        gridSize: settings.gridSize,
+        gridSize: effectiveGridSize,
       });
       toast.success("Đã lưu tiến trình!");
     } catch {
