@@ -103,7 +103,7 @@ export const useGameSession = (gameId, options = {}) => {
         // Use sessionIdRef to ensure we have the latest value (state might not be updated yet due to batching)
         const currentSessionId = sessionIdRef.current || sessionId;
         if (!isAuthenticated() || !gameId || !currentSessionId) {
-            console.warn('Cannot complete game: missing auth, gameId, or sessionId', { gameId, currentSessionId });
+            console.warn('❌ Cannot complete game: missing auth, gameId, or sessionId', { gameId, currentSessionId, isAuth: isAuthenticated() });
             return;
         }
 
@@ -116,16 +116,25 @@ export const useGameSession = (gameId, options = {}) => {
             ? Math.floor((Date.now() - new Date(startTimeRef.current).getTime()) / 1000)
             : result.time_elapsed || 0;
 
-        // Fire-and-forget: don't await, don't set loading state
-        // This allows user to navigate away immediately
-        completeGame(currentSessionId, {
+        const payload = {
             result: result.result, // 'win', 'loss', 'draw'
             score: result.score || 0,
             moves_count: result.moves_count || movesCountRef.current,
             time_elapsed: timeElapsed,
             game_state: result.gameState || gameStateRef.current,
-        }).then((response) => {
+        };
+
+        console.log('🚀 Calling completeGame API...', {
+            sessionId: currentSessionId,
+            payload
+        });
+
+        // Fire-and-forget: don't await, don't set loading state
+        // This allows user to navigate away immediately
+        completeGame(currentSessionId, payload).then((response) => {
+            console.log('📥 completeGame API response:', response);
             if (response.success) {
+                console.log('✅ Game completed successfully!');
                 sessionIdRef.current = null;
                 setSessionId(null);
 
@@ -164,9 +173,16 @@ export const useGameSession = (gameId, options = {}) => {
                         }, index * 1200);
                     });
                 }
+            } else {
+                console.error('❌ completeGame API returned success=false:', response);
             }
         }).catch((err) => {
-            console.error('Failed to complete game:', err);
+            console.error('❌ Failed to complete game (API error):', err);
+            console.error('Error details:', {
+                message: err.message,
+                stack: err.stack,
+                response: err.response
+            });
             // Silently fail - user has already moved on
         });
 
