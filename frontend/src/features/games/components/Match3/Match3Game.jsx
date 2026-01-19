@@ -3,6 +3,26 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Home, RotateCcw, Trophy, Zap, BookOpen, X, ChevronRight, Save, Lightbulb } from "lucide-react";
 import useGameSession from '../../hooks/useGameSession';
 
+/**
+ * 🎮 MATCH-3 GAME - HƯỚNG DẪN CHƠI
+ * 
+ * CÁCH CHƠI:
+ * 1. Click vào viên kẹo để CHỌN (viền sáng vàng)
+ * 2. Click hoặc KÉO vào viên kẹo BÊN CẠNH để ĐỔI CHỖ
+ * 3. Tạo hàng 3+ viên kẹo cùng màu (ngang/dọc) để ghi điểm
+ * 4. Nhấn phím H để xem GỢI Ý
+ * 
+ * MỤC TIÊU:
+ * - Đạt điểm đích trước khi hết lượt
+ * - Mỗi lượt chỉ tính khi swap TẠO MATCH
+ * - Swap không tạo match → KHÔNG TRỪ lượt
+ * 
+ * ĐIỂM:
+ * - Match 3 = 10 điểm × combo
+ * - Match 4+ = nhiều điểm hơn
+ * - Combo liên tiếp = nhân điểm
+ */
+
 // Local modules
 import { 
   CELL_SIZE, DEFAULT_BOARD_SIZE, SWAP_DURATION, GRAVITY, BOUNCE_FACTOR, FALL_SPEED_LIMIT,
@@ -24,14 +44,6 @@ const Match3Game = () => {
   const swapAnimRef = useRef(null);
   const fallingRef = useRef(false);
 
-  // Audio refs
-  const swapSoundRef = useRef(null);
-  const matchSoundRef = useRef(null);
-  const comboSoundRef = useRef(null);
-  const failSoundRef = useRef(null);
-  const gameStartSoundRef = useRef(null);
-  const victorySoundRef = useRef(null);
-  const keyboardSoundRef = useRef(null);
   // Drag-and-drop refs
   const dragStartRef = useRef(null);
   const isDraggingRef = useRef(false);
@@ -106,37 +118,6 @@ const Match3Game = () => {
       img.onload = resolve;
       img.onerror = resolve;
     }))).then(() => { imagesLoadedRef.current = true; });
-
-    swapSoundRef.current = new Audio('/sounds/swap.wav');
-    matchSoundRef.current = new Audio('/sounds/match.wav');
-    comboSoundRef.current = new Audio('/sounds/combo.wav');
-    failSoundRef.current = new Audio('/sounds/fail-game.wav');
-    gameStartSoundRef.current = new Audio('/sounds/GameStart.mp3');
-    victorySoundRef.current = new Audio('/sounds/Victory.mp3');
-    keyboardSoundRef.current = new Audio('/sounds/keyboard.wav');
-
-    // Preload sounds
-    swapSoundRef.current.load();
-    matchSoundRef.current.load();
-    comboSoundRef.current.load();
-    failSoundRef.current.load();
-    gameStartSoundRef.current.load();
-    victorySoundRef.current.load();
-    keyboardSoundRef.current.load();
-  }, []);
-
-  const playSoundRef = useCallback((soundRef) => {
-    if (soundRef.current) {
-      soundRef.current.currentTime = 0;
-      soundRef.current.play().catch(() => { });
-    }
-  }, []);
-
-  const stopSound = useCallback((soundRef) => {
-    if (soundRef.current) {
-      soundRef.current.pause();
-      soundRef.current.currentTime = 0;
-    }
   }, []);
 
   // Typewriter effect for tutorial
@@ -150,9 +131,6 @@ const Match3Game = () => {
     setDisplayedTitle("");
     setDisplayedText("");
 
-    // Play keyboard typing sound
-    playSound(keyboardSoundRef);
-
     let titleIdx = 0, msgIdx = 0, phase = 'title';
     typingRef.current = setInterval(() => {
       if (phase === 'title') {
@@ -165,42 +143,14 @@ const Match3Game = () => {
         } else {
           clearInterval(typingRef.current);
           setIsTyping(false);
-          stopSound(keyboardSoundRef);
         }
       }
     }, 40);
 
     return () => {
       clearInterval(typingRef.current);
-      stopSound(keyboardSoundRef);
     };
-  }, [tutorialStep, gameStatus, playSound, stopSound]);
-
-  // Find matches
-  const findMatches = useCallback((currentBoard) => {
-    const matches = new Set();
-    for (let row = 0; row < boardSize; row++) {
-      for (let col = 0; col < boardSize - 2; col++) {
-        const idx = row * boardSize + col;
-        const type = currentBoard[idx]?.type;
-        if (type !== null && type !== undefined && currentBoard[idx + 1]?.type === type && currentBoard[idx + 2]?.type === type) {
-          matches.add(idx); matches.add(idx + 1); matches.add(idx + 2);
-          if (col < boardSize - 3 && currentBoard[idx + 3]?.type === type) matches.add(idx + 3);
-        }
-      }
-    }
-    for (let col = 0; col < boardSize; col++) {
-      for (let row = 0; row < boardSize - 2; row++) {
-        const idx = row * boardSize + col;
-        const type = currentBoard[idx]?.type;
-        if (type !== null && type !== undefined && currentBoard[idx + boardSize]?.type === type && currentBoard[idx + boardSize * 2]?.type === type) {
-          matches.add(idx); matches.add(idx + boardSize); matches.add(idx + boardSize * 2);
-          if (row < boardSize - 3 && currentBoard[idx + boardSize * 3]?.type === type) matches.add(idx + boardSize * 3);
-        }
-      }
-    }
-    return matches;
-  }, [boardSize]);
+  }, [tutorialStep, gameStatus]);
 
   // Add particles for explosion effect
   const addParticles = useCallback((indices, currentBoard) => {
@@ -405,10 +355,8 @@ const Match3Game = () => {
             
             setTimeout(() => processMatches(), 200);
           } else {
-            // Invalid move - still count as a move (only in playing mode)
-            if (gameStatus === "playing") {
-              setMoves(prev => prev - 1);
-            }
+            // Invalid move - swap back (don't count as a move)
+            playSound('fail');
             setHintCells(null);
             swapAnimRef.current = {
               idx1: idx, idx2: savedSelectedCell,
@@ -561,10 +509,8 @@ const Match3Game = () => {
           
           setTimeout(() => processMatches(), 150);
         } else {
-          // Invalid move - still count as a move (only in playing mode)
-          if (gameStatus === "playing") {
-            setMoves(prev => prev - 1);
-          }
+          // Invalid move - swap back (don't count as a move)
+          playSound('fail');
           setHintCells(null);
           swapAnimRef.current = {
             idx1: targetIdx, idx2: savedStartIdx,
@@ -680,7 +626,12 @@ const Match3Game = () => {
   // Check win/lose
   useEffect(() => {
     if (gameStatus === "playing" && !isAnimating && !fallingRef.current) {
-      if (score >= targetScore) {
+      const targetNum = typeof targetScore === 'number'
+        ? targetScore
+        : (Number(String(targetScore).replace(/[^0-9]/g, '')) || 5000);
+
+      // Win only if score >= target and still have moves remaining
+      if (score >= targetNum && moves > 0) {
         setGameStatus("win");
         playSound('victory');
         if (isAuthenticated) {
@@ -784,10 +735,28 @@ const Match3Game = () => {
     setGameStatus("tutorial");
   };
 
+  // Keyboard handler for hint (H key)
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (gameStatus !== 'playing') return;
+      if (e.key === 'h' || e.key === 'H') {
+        const hint = findHint(boardRef.current, boardSize);
+        if (hint) {
+          playSound('swap');
+          setHintCells(hint);
+          if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+          hintTimeoutRef.current = setTimeout(() => setHintCells(null), 3000);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [gameStatus, boardSize, playSound]);
+
   const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
   const nextTutorialStep = () => {
     if (TUTORIAL_STEPS[tutorialStep]?.action === "finish") {
-      stopSound(keyboardSoundRef);
       startGame();
     } else setTutorialStep(prev => prev + 1);
   };
@@ -845,7 +814,7 @@ const Match3Game = () => {
                 if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
                 hintTimeoutRef.current = setTimeout(() => setHintCells(null), 3000);
               }
-            }} title="Gợi ý">
+            }} title="Gợi ý (Nhấn H)">
               <Lightbulb size={20} />
             </button>
             <button className="w-10 h-10 flex items-center justify-center bg-pink-500/20 rounded-lg text-pink-500 hover:bg-pink-500/30 transition-all" onClick={handleSaveGame} title="Lưu game">
@@ -985,11 +954,17 @@ const Match3Game = () => {
         )}
       </div>
 
-      <div className="flex justify-center p-2 bg-card border-t border-border">
+      <div className="flex justify-center items-center gap-6 p-2 bg-card border-t border-border">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Trophy size={14} className="text-yellow-500" />
           Điểm cao nhất: <span className="font-bold text-yellow-500">{highScore.toLocaleString()}</span>
         </div>
+        {gameStatus === 'playing' && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Lightbulb size={14} className="text-yellow-500" />
+            Nhấn <kbd className="px-1.5 py-0.5 bg-secondary rounded border border-border font-mono">H</kbd> để xem gợi ý
+          </div>
+        )}
       </div>
     </div>
   );

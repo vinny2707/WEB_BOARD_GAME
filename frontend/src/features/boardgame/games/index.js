@@ -7,6 +7,7 @@ import TicTacToeGame from './tictactoe/TicTacToeGame';
 import SnakeGame from './snake/SnakeGame';
 import Caro4Game from './caro4/Caro4Game';
 import Caro5Game from './caro5/Caro5Game';
+import Match3Game from './match3/Match3Game';
 
 // Register all games here
 export const GAMES = {
@@ -14,9 +15,9 @@ export const GAMES = {
   snake: SnakeGame,
   caro4: Caro4Game,
   caro5: Caro5Game,
+  match3: Match3Game,
   // Future games:
   // memory: MemoryGame,
-  // match3: Match3Game,
   // drawing: DrawingGame,
 };
 
