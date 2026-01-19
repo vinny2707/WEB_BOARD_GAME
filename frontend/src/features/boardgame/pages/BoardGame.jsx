@@ -108,6 +108,7 @@ const BoardGame = () => {
 
   // Game state (managed by game module)
   const [gameState, setGameState] = useState(null);
+  const [showHint, setShowHint] = useState(false);
   const gameModule = activeGameKey ? getGame(activeGameKey) : null;
 
   // Game session hook (for API integration)
@@ -626,7 +627,16 @@ const BoardGame = () => {
   }, [mode, activeGameKey, gameState, saveProgress, completeGameSession, backToSelect, navigate]);
 
   const handleHint = useCallback(() => {
-    if (mode === MODES.PLAYING && gameModule && gameState) {
+    console.log('🔍 handleHint called', { mode, activeGameKey, showHint });
+    if (mode === MODES.PLAYING && activeGameKey === 'snake') {
+      // For Snake, toggle hint display
+      console.log('🎯 Toggling hint for Snake');
+      setShowHint(prev => {
+        console.log('📝 showHint changing from', prev, 'to', !prev);
+        return !prev;
+      });
+    } else if (mode === MODES.PLAYING && gameModule && gameState) {
+      // For other games, show AI hint move
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X') {
         const hintMove = gameModule.getAIMove(gameState);
         if (hintMove !== -1) {
@@ -634,7 +644,7 @@ const BoardGame = () => {
         }
       }
     }
-  }, [mode, gameModule, gameState]);
+  }, [mode, activeGameKey, gameModule, gameState, showHint]);
 
   // Keyboard handler
   useEffect(() => {
@@ -663,13 +673,18 @@ const BoardGame = () => {
         case "Escape":
           handleBack();
           break;
+        case "h":
+        case "H":
+          e.preventDefault();
+          handleHint();
+          break;
         default:
           break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleLeft, handleRight, handleUp, handleDown, handleEnter, handleBack]);
+  }, [handleLeft, handleRight, handleUp, handleDown, handleEnter, handleBack, handleHint]);
 
   // ============== DISPLAY ==============
 
@@ -689,11 +704,16 @@ const BoardGame = () => {
     }
 
     if (mode === MODES.PLAYING && gameModule && gameState) {
+      // Show hint overlay for Snake if showHint is true
+      if (activeGameKey === 'snake' && showHint && gameModule?.renderHint) {
+        return gameModule.renderHint();
+      }
+
       return gameModule.renderToMatrix(gameState);
     }
 
     return createEmptyMatrix();
-  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey]);
+  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint]);
 
   // ============== RENDER ==============
 
@@ -772,6 +792,55 @@ const BoardGame = () => {
           </div>
         )}
       </div>
+
+      {/* Hint Dialog for Snake */}
+      {showHint && activeGameKey === 'snake' && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowHint(false)}>
+          <div className="bg-slate-800 rounded-xl p-6 max-w-md border-2 border-cyan-500 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">🐍 SNAKE GAME</h2>
+
+            <div className="space-y-3 text-slate-200">
+              <div className="flex items-center gap-3">
+                <span className="text-cyan-400 font-bold">↑ ↓ ← →</span>
+                <span>Control snake direction</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-green-400 font-bold">🔴</span>
+                <span>Eat food to grow and score</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-yellow-400 font-bold">⚠️</span>
+                <span>Avoid hitting yourself</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="text-blue-400 font-bold">🔄</span>
+                <span>Snake wraps through walls</span>
+              </div>
+
+              <div className="border-t border-slate-600 pt-3 mt-3 space-y-2">
+                <div className="flex items-center gap-3 text-sm">
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-cyan-300">H</kbd>
+                  <span>Toggle this hint</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <kbd className="px-2 py-1 bg-slate-700 rounded text-cyan-300">ESC</kbd>
+                  <span>Return to menu</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHint(false)}
+              className="mt-4 w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded transition-colors"
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

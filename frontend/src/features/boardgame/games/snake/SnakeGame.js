@@ -324,6 +324,35 @@ export const renderSettingsToMatrix = (size) => {
     return matrix;
 };
 
+/**
+ * Render hint/instructions overlay
+ */
+export const renderHint = () => {
+    const matrix = createEmptyMatrix();
+
+    // Draw hint text
+    const hints = [
+        "SNAKE GAME",
+        "",
+        "ARROWS: MOVE",
+        "H: HINT",
+        "ESC: MENU",
+        "",
+        "EAT FOOD",
+        "AVOID SELF"
+    ];
+
+    let startRow = Math.floor((MATRIX_ROWS - hints.length * 2) / 2);
+
+    hints.forEach((text, index) => {
+        if (text) {
+            drawCenteredText(matrix, text, startRow + index * 2, "yellow");
+        }
+    });
+
+    return matrix;
+};
+
 // ============== EXPORT GAME MODULE ==============
 
 export default {
@@ -338,6 +367,7 @@ export default {
     getCellFromNav,
     renderToMatrix,
     renderSettingsToMatrix,
+    renderHint,
     getCellFromMatrix,
 
     sizeOptions: [
