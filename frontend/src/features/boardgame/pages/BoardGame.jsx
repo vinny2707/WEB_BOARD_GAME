@@ -656,7 +656,7 @@ const BoardGame = () => {
     } else {
       setHoverCell(-1);
     }
-  }, [mode, gameModule, gameState, isDragging, activeGameKey, dragStartCell, executeMove]);
+  }, [mode, gameModule, gameState, activeGameKey, executeMove]);
 
   // Handlers for mouse down/up to track drag painting
   const handleMouseDown = useCallback(() => {
