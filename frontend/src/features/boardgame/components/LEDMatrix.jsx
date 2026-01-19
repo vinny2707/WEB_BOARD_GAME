@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback, useRef } from "react";
 import {
   MATRIX_ROWS,
   MATRIX_COLS,
@@ -11,6 +11,7 @@ const CELL_GAP = 2;
 
 /**
  * LED Matrix Board - Optimized rendering with round LEDs
+ * Supports drag painting for drawing games
  */
 const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHover, onMouseDown, onMouseUp }) => {
   // Pre-compute colors for the entire pattern
@@ -26,6 +27,31 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHove
   const boardWidth = MATRIX_COLS * (CELL_SIZE + CELL_GAP);
   const boardHeight = MATRIX_ROWS * (CELL_SIZE + CELL_GAP);
 
+  // Track last hovered cell for mouseUp position
+  const lastCellRef = useRef({ row: -1, col: -1 });
+
+  const [isMouseDown, setIsMouseDown] = useState(false);
+
+  // Handle mouse down on cell
+  const handleCellMouseDown = useCallback((row, col) => {
+    setIsMouseDown(true);
+    if (onMouseDown) onMouseDown(row, col);
+  }, [onMouseDown]);
+
+  // Handle mouse up on cell
+  const handleCellMouseUp = useCallback((row, col) => {
+    setIsMouseDown(false);
+    if (onMouseUp) onMouseUp(row, col);
+  }, [onMouseUp]);
+
+  // Handle mouse enter on cell (for drag painting)
+  const handleCellMouseEnter = useCallback((rowIdx, colIdx) => {
+    lastCellRef.current = { row: rowIdx, col: colIdx };
+    if (onCellHover) {
+      onCellHover(rowIdx, colIdx, isMouseDown);
+    }
+  }, [onCellHover, isMouseDown]);
+
   return (
     <div
       className={`p-4 rounded-2xl bg-slate-900 border-2 border-slate-700 ${className}`}
@@ -33,8 +59,12 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHove
         boxShadow: "inset 0 0 30px rgba(0,0,0,0.5)",
         minWidth: boardWidth + 32,
         minHeight: boardHeight + 32,
+        userSelect: "none", // Prevent text selection
       }}
-      onMouseLeave={() => onCellHover && onCellHover(-1, -1)}
+      onMouseLeave={() => {
+        setIsMouseDown(false);
+        onCellHover && onCellHover(-1, -1, false);
+      }}
     >
       <div
         style={{
@@ -53,9 +83,9 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHove
               <div
                 key={`${rowIdx}-${colIdx}`}
                 onClick={() => onCellClick && onCellClick(rowIdx, colIdx)}
-                onMouseEnter={() => onCellHover && onCellHover(rowIdx, colIdx)}
-                onMouseDown={() => onMouseDown && onMouseDown(rowIdx, colIdx)}
-                onMouseUp={() => onMouseUp && onMouseUp(rowIdx, colIdx)}
+                onMouseEnter={() => handleCellMouseEnter(rowIdx, colIdx)}
+                onMouseDown={() => handleCellMouseDown(rowIdx, colIdx)}
+                onMouseUp={() => handleCellMouseUp(rowIdx, colIdx)}
                 className={onCellClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
                 style={{
                   width: CELL_SIZE,

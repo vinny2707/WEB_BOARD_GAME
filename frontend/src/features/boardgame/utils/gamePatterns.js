@@ -311,7 +311,7 @@ export const GAME_PATTERNS = {
     name: "DOT ART",
     type: "dotart",
     backendType: "draw_board",
-    apiId: 7,
+    apiId: 13,
     pattern: (() => {
       const p = createEmptyMatrix();
       const oR = centerV(16);

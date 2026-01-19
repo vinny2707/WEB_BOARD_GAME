@@ -8,6 +8,7 @@ import SnakeGame from './snake/SnakeGame';
 import Caro4Game from './caro4/Caro4Game';
 import Caro5Game from './caro5/Caro5Game';
 import Match3Game from './match3/Match3Game';
+import DrawBoardGame from './drawboard/DrawBoardGame';
 
 // Register all games here
 export const GAMES = {
@@ -16,9 +17,9 @@ export const GAMES = {
   caro4: Caro4Game,
   caro5: Caro5Game,
   match3: Match3Game,
+  dotart: DrawBoardGame,
   // Future games:
   // memory: MemoryGame,
-  // drawing: DrawingGame,
 };
 
 // Get game by key

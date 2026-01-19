@@ -8,6 +8,7 @@ import LEDMatrix from "../components/LEDMatrix";
 import ControlPanel from "../components/ControlPanel";
 import GameInfoSidebar from "../components/GameInfoSidebar";
 import SnakeHintDialog from "../components/SnakeHintDialog";
+import DrawToolbar from "../components/DrawToolbar";
 
 // Game info components are now in GameInfoSidebar
 
@@ -339,6 +340,7 @@ const BoardGame = () => {
       // API returns 'caro_4' but game key is 'caro4'
       if (gameType === 'caro_4') gameType = 'caro4';
       if (gameType === 'caro_5') gameType = 'caro5';
+      if (gameType === 'draw_board') gameType = 'dotart';
       setActiveGameKey(gameType);
 
       // Ensure apiGameId is set for the session hook
@@ -349,22 +351,53 @@ const BoardGame = () => {
       // Load game state
       const rawState = session.game_state || {};
       const settings = session.settings || {};
-      const size = rawState.size || rawState.boardSize || settings.boardSize || 3;
-      const turnTime = rawState.turnTime || settings.timePerTurn || 30;
+      
+      // Handle DotArt game specially - use fromApiState for proper conversion
+      if (gameType === 'dotart') {
+        const dotartModule = getGame('dotart');
+        if (dotartModule?.fromApiState) {
+          const convertedState = dotartModule.fromApiState(rawState, settings);
+          setGameState(convertedState);
+        } else {
+          // Fallback if module not available
+          const grid = rawState.grid || [];
+          const canvasRows = grid.length || 24;
+          const canvasCols = grid[0]?.length || canvasRows;
+          setGameState({
+            grid: grid,
+            canvasRows: canvasRows,
+            canvasCols: canvasCols,
+            size: canvasRows,
+            selectedColor: rawState.selectedColor || 'red',
+            selectedColorIndex: 0,
+            tool: 'brush',
+            showGrid: rawState.showGrid ?? true,
+            shapeStart: null,
+            shapePreview: null,
+            isDrawingShape: false,
+            status: 'playing',
+            selectedCell: 0,
+          });
+        }
+      } else {
+        // Handle turn-based games
+        const size = rawState.size || rawState.boardSize || settings.boardSize || 3;
+        const turnTime = rawState.turnTime || settings.timePerTurn || 30;
 
-      setGameState({
-        ...rawState,
-        size: size,
-        boardSize: size, // Keep both for safety
-        turnTime: turnTime,
-        currentPlayer: 'X', // User's turn by default as requested
-        status: 'playing',   // Force status to playing to ensure controls work
-        winLine: rawState.winLine || [],
-        winner: rawState.winner || null,
-        selectedCell: (rawState.selectedCell !== undefined && rawState.selectedCell !== null)
-          ? rawState.selectedCell
-          : Math.floor((size * size) / 2)
-      });
+        setGameState({
+          ...rawState,
+          size: size,
+          boardSize: size, // Keep both for safety
+          turnTime: turnTime,
+          currentPlayer: 'X', // User's turn by default as requested
+          status: 'playing',   // Force status to playing to ensure controls work
+          winLine: rawState.winLine || [],
+          winner: rawState.winner || null,
+          selectedCell: (rawState.selectedCell !== undefined && rawState.selectedCell !== null)
+            ? rawState.selectedCell
+            : Math.floor((size * size) / 2)
+        });
+      }
 
       // Update session ID for tracking
       setResumeSessionId(session.id, session.started_at, session.moves_count);
@@ -532,61 +565,41 @@ const BoardGame = () => {
     if (activeGameKey === 'match3') return;
     
     if (mode === MODES.PLAYING && gameModule && gameState) {
+      let cellIndex = -1;
+      if (gameModule.getCellFromMatrix) {
+        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+      }
+
+      if (cellIndex === -1) return;
+
+      // Drawing games (dotart) - use startDraw for drag-based drawing
+      if (gameModule.isDrawingGame && gameModule.startDraw) {
+        const newState = gameModule.startDraw(gameState, cellIndex);
+        setGameState(newState);
+        return;
+      }
+
+      // Turn-based games
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
+        // Move selection to clicked cell
+        setGameState(prev => ({ ...prev, selectedCell: cellIndex }));
 
-        let cellIndex = -1;
-        if (gameModule.getCellFromMatrix) {
-          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
-        }
-
-        if (cellIndex !== -1) {
-          // Move selection to clicked cell
-          setGameState(prev => ({ ...prev, selectedCell: cellIndex }));
-
-          // If valid move, execute immediately
-          if (gameModule.isValidMove(gameState, cellIndex)) {
-            executeMove(cellIndex);
-          }
+        // If valid move, execute immediately
+        if (gameModule.isValidMove(gameState, cellIndex)) {
+          executeMove(cellIndex);
         }
       }
     }
   }, [mode, gameModule, gameState, executeMove, activeGameKey]);
 
-  // ============== DRAG & DROP SUPPORT (MATCH-3) - DISABLED ==============
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStartCell, setDragStartCell] = useState(-1);
+  // Track if mouse is being dragged for paint (drawing games)
+  const isDrawingRef = useRef(false);
 
-  const handleMatrixMouseDown = useCallback((row, col) => {
-    // DISABLED: Match3 only uses arrow keys + Enter
-    return;
-    
-    if (mode !== MODES.PLAYING || activeGameKey !== 'match3') return;
-
-    if (gameModule?.getCellFromMatrix) {
-      const cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
-      if (cellIndex !== -1) {
-        setIsDragging(true);
-        setDragStartCell(cellIndex);
-        // Also set cursor/selection for visual feedback
-        setCursorPos(cellIndex);
-        setGameState(prev => ({ ...prev, selectedCell: cellIndex }));
-      }
-    }
-  }, [mode, activeGameKey, gameModule, gameState]);
-
-  const handleMatrixMouseUp = useCallback(() => {
-    // DISABLED: Match3 only uses arrow keys + Enter
-    return;
-    
-    setIsDragging(false);
-    setDragStartCell(-1);
-  }, []);
-
-  // Update hover to handle drag-swap - DISABLED FOR MATCH3
-  const handleMatrixHover = useCallback((row, col) => {
-    // Disable hover/drag for Match3 - only use arrow keys + Enter
+  // Handle hover on matrix (mouse hover support + drag paint for drawing games)
+  const handleMatrixHover = useCallback((row, col, isMouseDown = false) => {
+    // Disable hover for Match3
     if (activeGameKey === 'match3') return;
-    
+
     if (mode === MODES.PLAYING && gameModule && gameState) {
       let cellIndex = -1;
 
@@ -622,6 +635,21 @@ const BoardGame = () => {
         setHoverCell(-1);
         return;
       }
+
+      // Drawing games: paint while dragging
+      if (gameModule.isDrawingGame && (isMouseDown || isDrawingRef.current)) {
+        let cellIndex = -1;
+        if (gameModule.getCellFromMatrix) {
+          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+        }
+        if (cellIndex !== -1 && gameModule.continueDraw) {
+          const newState = gameModule.continueDraw(gameState, cellIndex);
+          setGameState(newState);
+        }
+        return;
+      }
+
+      // Turn-based games: show hover effect
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
         setHoverCell(cellIndex !== -1 && (gameState.board ? !gameState.board[cellIndex] : false) ? cellIndex : -1);
       }
@@ -629,6 +657,29 @@ const BoardGame = () => {
       setHoverCell(-1);
     }
   }, [mode, gameModule, gameState, isDragging, activeGameKey, dragStartCell, executeMove]);
+
+  // Handlers for mouse down/up to track drag painting
+  const handleMouseDown = useCallback(() => {
+    if (gameModule?.isDrawingGame) {
+      isDrawingRef.current = true;
+    }
+  }, [gameModule]);
+
+  const handleMouseUp = useCallback((row, col) => {
+    isDrawingRef.current = false;
+    
+    // For dotart: call endDraw to complete shape
+    if (gameModule?.isDrawingGame && gameModule.endDraw && gameState) {
+      let cellIndex = -1;
+      if (gameModule.getCellFromMatrix && row !== undefined && col !== undefined) {
+        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+      }
+      if (cellIndex !== -1) {
+        const newState = gameModule.endDraw(gameState, cellIndex);
+        setGameState(newState);
+      }
+    }
+  }, [gameModule, gameState]);
 
   // Player move (Enter key)
   const handlePlayerMove = useCallback(() => {
@@ -956,6 +1007,11 @@ const BoardGame = () => {
 
         return pattern;
       }
+      // For DotArt, use its custom settings renderer with navigation
+      if (activeGameKey === 'dotart' && gameModule?.renderSettingsToMatrix) {
+        const selectedSize = sizeOptions[selectedSizeIndex]?.value || 24;
+        return gameModule.renderSettingsToMatrix(selectedSize, sizeOptions, selectedSizeIndex);
+      }
       // For other games, use default settings pattern
       return generateSettingsPattern(currentGamePattern?.type, sizeOptions, selectedSizeIndex);
     }
@@ -1036,8 +1092,8 @@ const BoardGame = () => {
               pattern={displayPattern}
               onCellClick={mode === MODES.PLAYING && activeGameKey !== 'match3' ? handleMatrixClick : null}
               onCellHover={activeGameKey !== 'match3' ? handleMatrixHover : null}
-              onMouseDown={null}
-              onMouseUp={null}
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
             />
           </div>
         </div>
@@ -1068,6 +1124,30 @@ const BoardGame = () => {
             onHint={handleHint}
           />
         </div>
+
+        {/* DrawBoard Toolbar (for dotart game only) */}
+        {mode === MODES.PLAYING && activeGameKey === 'dotart' && gameState && gameModule && (
+          <DrawToolbar
+            selectedColor={gameState.selectedColor}
+            selectedColorIndex={gameState.selectedColorIndex}
+            tool={gameState.tool}
+            onColorChange={(color, index) => {
+              setGameState(gameModule.setColor(gameState, color, index));
+            }}
+            onToolChange={(tool) => {
+              setGameState(gameModule.setTool(gameState, tool));
+            }}
+            onClear={() => {
+              setGameState(gameModule.clearCanvas(gameState));
+            }}
+            onSave={() => {
+              // Use toApiState to convert to API format before saving
+              const apiState = gameModule.toApiState ? gameModule.toApiState(gameState) : gameState;
+              saveProgress(apiState);
+              toast.success('Artwork saved!');
+            }}
+          />
+        )}
 
         {/* Bottom panel: Rankings | History | Reviews */}
         {apiGameId && mode === MODES.SETTINGS && (
