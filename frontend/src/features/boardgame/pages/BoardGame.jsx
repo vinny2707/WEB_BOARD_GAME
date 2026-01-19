@@ -6,11 +6,10 @@ import { toast } from 'sonner';
 // Components
 import LEDMatrix from "../components/LEDMatrix";
 import ControlPanel from "../components/ControlPanel";
+import GameInfoSidebar from "../components/GameInfoSidebar";
+import SnakeHintDialog from "../components/SnakeHintDialog";
 
-// Game info components
-import GameRankings from "@/features/games/components/GameRankings";
-import GameSessionHistory from "@/features/games/components/GameSessionHistory";
-import GameReviews from "@/features/games/components/GameReviews";
+// Game info components are now in GameInfoSidebar
 
 // Utils
 import { MODES, createEmptyMatrix, MATRIX_ROWS, MATRIX_COLS } from "../utils/constants";
@@ -21,7 +20,7 @@ import { drawCenteredText } from "../utils/ledUtils";
 import { getGame } from "../games";
 
 // API
-import { getGameById } from "@/api/gamesApi";
+import { getGameById, getGames } from "@/api/gamesApi";
 
 // Game Session Hook
 import { useGameSession } from "@/features/games/hooks/useGameSession";
@@ -105,10 +104,14 @@ const BoardGame = () => {
   const [sizeOptions, setSizeOptions] = useState([]);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [apiGameId, setApiGameId] = useState(null);
+  
+  // Game ID map from backend (backendType -> { id, enabled })
+  const [gameIdMap, setGameIdMap] = useState({});
 
   // Game state (managed by game module)
   const [gameState, setGameState] = useState(null);
-  const [showHint, setShowHint] = useState(false);
+  const [showHint, setShowHint] = useState(false); // For Snake hint dialog
+  const [hoverCell, setHoverCell] = useState(-1); // For mouse hover effect
   const gameModule = activeGameKey ? getGame(activeGameKey) : null;
 
   // Game session hook (for API integration)
@@ -144,6 +147,28 @@ const BoardGame = () => {
       ref.current.currentTime = 0;
       ref.current.play().catch(() => { });
     }
+  }, []);
+
+  // Fetch all games to build ID map on mount
+  useEffect(() => {
+    const fetchGames = async () => {
+      try {
+        const response = await getGames({ limit: 50 });
+        if (response.success && response.data?.games) {
+          const idMap = {};
+          response.data.games.forEach(game => {
+            if (game.type) {
+              idMap[game.type] = { id: game.id, enabled: game.enabled };
+            }
+          });
+          setGameIdMap(idMap);
+          console.log("Game ID Map:", idMap);
+        }
+      } catch (err) {
+        console.error("Failed to fetch games:", err);
+      }
+    };
+    fetchGames();
   }, []);
 
   // Keep gameStateRef in sync with gameState
@@ -249,7 +274,12 @@ const BoardGame = () => {
   // Load game settings from API
   const loadGameSettings = useCallback(async () => {
     setLoading(true);
-    const gameApiId = currentGamePattern?.apiId;
+    
+    // Get dynamic ID from gameIdMap, fallback to hardcoded apiId
+    const backendType = currentGamePattern?.backendType;
+    const dynamicId = gameIdMap[backendType]?.id;
+    const gameApiId = dynamicId || currentGamePattern?.apiId;
+    
     if (gameApiId) setApiGameId(gameApiId);
 
     // Get game module to use as fallback
@@ -281,22 +311,34 @@ const BoardGame = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentGamePattern, currentGamePatternKey]);
+  }, [currentGamePattern, currentGamePatternKey, gameIdMap]);
 
   // Enter settings mode
   const enterSettings = useCallback(async () => {
+    // Check if game is enabled
+    const backendType = currentGamePattern?.backendType;
+    const gameInfo = gameIdMap[backendType];
+    
+    if (gameInfo && gameInfo.enabled === false) {
+      toast.error(`Game "${currentGamePattern?.name}" đang tạm khóa!`);
+      return;
+    }
+    
     setActiveGameKey(currentGamePatternKey);
     await loadGameSettings();
     setMode(MODES.SETTINGS);
-  }, [currentGamePatternKey, loadGameSettings]);
+  }, [currentGamePatternKey, currentGamePattern, gameIdMap, loadGameSettings]);
 
   // Handle manual resume from history
   const handleResume = useCallback((session) => {
     if (session && session.game_state) {
       console.log("Resuming session:", session);
-
-      // key from session or current pattern
-      const gameType = session.game_type || currentGamePatternKey;
+      
+      // key from session or current pattern (normalize API format to game key)
+      let gameType = session.game_type || currentGamePatternKey;
+      // API returns 'caro_4' but game key is 'caro4'
+      if (gameType === 'caro_4') gameType = 'caro4';
+      if (gameType === 'caro_5') gameType = 'caro5';
       setActiveGameKey(gameType);
 
       // Ensure apiGameId is set for the session hook
@@ -335,14 +377,17 @@ const BoardGame = () => {
   }, [setResumeSessionId, currentGamePatternKey]);
 
   // Start game
-  const startGame = useCallback(() => {
+  const startGame = useCallback(async () => {
     console.log('startGame called', { gameModule, activeGameKey, sizeOptions, selectedSizeIndex });
 
     if (!gameModule) {
       console.error("No game module for:", activeGameKey);
       return;
     }
-
+    
+    // Session completion is already handled by executeMove when game ends
+    // No need to complete here - just reset the ref for the new game
+    
     const selectedSize = sizeOptions[selectedSizeIndex]?.value || 3;
     console.log('Creating initial state with size:', selectedSize);
 
@@ -352,21 +397,23 @@ const BoardGame = () => {
       turnTime: 30,
     });
 
+    // Reset session completed flag for new game
+    sessionCompletedRef.current = false;
+
+    // Start game session (API) - MUST await to get new session ID
+    if (isAuthenticated && apiGameId) {
+      console.log('Starting game session with API...', { apiGameId, selectedSize });
+      const newSessionId = await startSession({ size: selectedSize, difficulty: 'medium' }, initialState);
+      console.log('New session started with ID:', newSessionId);
+    } else {
+      console.log('Not authenticated or no apiGameId', { isAuthenticated, apiGameId });
+    }
+
+    // Set game state AFTER session is started (ensures sessionId is available)
     console.log('Initial state created:', initialState);
     setGameState(initialState);
     setMode(MODES.PLAYING);
     playSound(tickRef);
-
-    // Reset session completed flag for new game
-    sessionCompletedRef.current = false;
-
-    // Start game session (API)
-    if (isAuthenticated && apiGameId) {
-      console.log('Starting game session with API...', { apiGameId, selectedSize });
-      startSession({ size: selectedSize, difficulty: 'medium' }, initialState);
-    } else {
-      console.log('Not authenticated or no apiGameId', { isAuthenticated, apiGameId });
-    }
   }, [gameModule, activeGameKey, sizeOptions, selectedSizeIndex, isAuthenticated, apiGameId, startSession, playSound]);
 
   // Back to selection
@@ -387,6 +434,7 @@ const BoardGame = () => {
     if (newState.status === 'win') {
       setGameState(newState);
       playSound(newState.winner === 'X' ? winRef : loseRef);
+      sessionCompletedRef.current = true;
       completeGameSession({
         result: newState.winner === 'X' ? 'win' : 'loss',
         score: newState.winner === 'X' ? 100 : 0,
@@ -397,6 +445,7 @@ const BoardGame = () => {
 
     if (newState.status === 'draw') {
       setGameState(newState);
+      sessionCompletedRef.current = true;
       completeGameSession({ result: 'draw', score: 50, gameState: newState });
       return;
     }
@@ -414,12 +463,14 @@ const BoardGame = () => {
 
         if (afterAI.status === 'win') {
           playSound(afterAI.winner === 'X' ? winRef : loseRef);
+          sessionCompletedRef.current = true;
           completeGameSession({
             result: afterAI.winner === 'X' ? 'win' : 'loss',
             score: afterAI.winner === 'X' ? 100 : 0,
             gameState: afterAI,
           });
         } else if (afterAI.status === 'draw') {
+          sessionCompletedRef.current = true;
           completeGameSession({
             result: 'draw',
             score: 50,
@@ -460,6 +511,25 @@ const BoardGame = () => {
     }
   }, [mode, gameModule, gameState, executeMove]);
 
+  // Handle hover on matrix (mouse hover support)
+  const handleMatrixHover = useCallback((row, col) => {
+    if (mode === MODES.PLAYING && gameModule && gameState) {
+      if (row === -1 || col === -1) {
+        setHoverCell(-1);
+        return;
+      }
+      if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
+        let cellIndex = -1;
+        if (gameModule.getCellFromMatrix) {
+          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+        }
+        setHoverCell(cellIndex !== -1 && !gameState.board[cellIndex] ? cellIndex : -1);
+      }
+    } else {
+      setHoverCell(-1);
+    }
+  }, [mode, gameModule, gameState]);
+
   // Player move (Enter key)
   const handlePlayerMove = useCallback(() => {
     if (!gameModule || !gameState) return;
@@ -469,16 +539,12 @@ const BoardGame = () => {
     }
   }, [gameModule, gameState, executeMove]);
 
-  // Reset game
+  // Reset game (delegates to startGame for proper session handling)
   const resetGame = useCallback(() => {
     if (!gameModule) return;
-    const selectedSize = sizeOptions[selectedSizeIndex]?.value || 3;
-    setGameState(gameModule.createInitialState({
-      size: selectedSize,
-      difficulty: 'medium',
-      turnTime: 30,
-    }));
-  }, [gameModule, sizeOptions, selectedSizeIndex]);
+    // Use startGame which handles completing old session and starting new one
+    startGame();
+  }, [gameModule, startGame]);
 
   // ============== CONTROLS ==============
 
@@ -574,7 +640,12 @@ const BoardGame = () => {
       } else {
         // For other games, Enter restarts
         console.log('Restarting game...');
-        resetGame();
+        if (activeGameKey === 'snake') {
+          resetGame();
+        } else {
+          toast.info("Bắt đầu ván mới!");
+          startGame();
+        }
       }
     }
   }, [mode, activeGameKey, gameState, enterSettings, startGame, handlePlayerMove, resetGame]);
@@ -619,12 +690,18 @@ const BoardGame = () => {
       }
     }
 
-    if (mode === MODES.PLAYING || mode === MODES.SETTINGS) {
+    if (mode === MODES.PLAYING) {
+      // From playing, go back to settings (size selection)
+      setMode(MODES.SETTINGS);
+      setGameState(null);
+      setHoverCell(-1);
+    } else if (mode === MODES.SETTINGS) {
+      // From settings, go back to game selection
       backToSelect();
     } else {
       navigate("/games");
     }
-  }, [mode, activeGameKey, gameState, saveProgress, completeGameSession, backToSelect, navigate]);
+  }, [mode, activeGameKey, gameState, saveProgress, completeGameSession, backToSelect, navigate, isAuthenticated, apiGameId]);
 
   const handleHint = useCallback(() => {
     console.log('🔍 handleHint called', { mode, activeGameKey, showHint });
@@ -638,9 +715,24 @@ const BoardGame = () => {
     } else if (mode === MODES.PLAYING && gameModule && gameState) {
       // For other games, show AI hint move
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X') {
-        const hintMove = gameModule.getAIMove(gameState);
+        // Check hints remaining
+        const hintsRemaining = gameState.hintsRemaining ?? 3;
+        if (hintsRemaining <= 0) {
+          toast.error("Đã hết lượt gợi ý!");
+          return;
+        }
+        
+        // Use getHintMove (hard AI) if available, fallback to getAIMove
+        const hintFn = gameModule.getHintMove || gameModule.getAIMove;
+        const hintMove = hintFn(gameState);
+        
         if (hintMove !== -1) {
-          setGameState(prev => ({ ...prev, selectedCell: hintMove }));
+          setGameState(prev => ({
+            ...prev,
+            selectedCell: hintMove,
+            hintsRemaining: (prev.hintsRemaining ?? 3) - 1
+          }));
+          toast.info(`Gợi ý! Còn ${hintsRemaining - 1} lượt`);
         }
       }
     }
@@ -712,8 +804,18 @@ const BoardGame = () => {
       return gameModule.renderToMatrix(gameState);
     }
 
+    if (mode === MODES.PLAYING && gameModule && gameState) {
+      // Show hint overlay for Snake if showHint is true
+      if (activeGameKey === 'snake' && showHint && gameModule?.renderHint) {
+        return gameModule.renderHint();
+      }
+
+      // For other games, pass hover state if needed (standard render)
+      return gameModule.renderToMatrix({ ...gameState, hoverCell });
+    }
+
     return createEmptyMatrix();
-  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint]);
+  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint, hoverCell]);
 
   // ============== RENDER ==============
 
@@ -749,6 +851,7 @@ const BoardGame = () => {
             <LEDMatrix
               pattern={displayPattern}
               onCellClick={handleMatrixClick}
+              onCellHover={handleMatrixHover}
             />
           </div>
         </div>
@@ -766,80 +869,15 @@ const BoardGame = () => {
           />
         </div>
 
-        {/* Bottom panel: Rankings (left) | History (center) | Reviews (right) */}
+        {/* Bottom panel: Rankings | History | Reviews */}
         {apiGameId && mode === MODES.SETTINGS && (
-          <div className="mt-6 w-full max-w-6xl">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Rankings - Left */}
-              <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                <GameRankings gameId={apiGameId} limit={6} showCountdown={false} />
-              </div>
-
-              {/* History - Center */}
-              <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                <GameSessionHistory
-                  gameId={apiGameId}
-                  limit={5}
-                  onResume={handleResume}
-                />
-              </div>
-
-              {/* Reviews - Right */}
-              <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                <GameReviews gameId={apiGameId} />
-              </div>
-            </div>
-          </div>
+          <GameInfoSidebar gameId={apiGameId} onResume={handleResume} />
         )}
       </div>
 
       {/* Hint Dialog for Snake */}
       {showHint && activeGameKey === 'snake' && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowHint(false)}>
-          <div className="bg-slate-800 rounded-xl p-6 max-w-md border-2 border-cyan-500 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-2xl font-bold text-cyan-400 mb-4 text-center">🐍 SNAKE GAME</h2>
-
-            <div className="space-y-3 text-slate-200">
-              <div className="flex items-center gap-3">
-                <span className="text-cyan-400 font-bold">↑ ↓ ← →</span>
-                <span>Control snake direction</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-green-400 font-bold">🔴</span>
-                <span>Eat food to grow and score</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-yellow-400 font-bold">⚠️</span>
-                <span>Avoid hitting yourself</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-blue-400 font-bold">🔄</span>
-                <span>Snake wraps through walls</span>
-              </div>
-
-              <div className="border-t border-slate-600 pt-3 mt-3 space-y-2">
-                <div className="flex items-center gap-3 text-sm">
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-cyan-300">H</kbd>
-                  <span>Toggle this hint</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <kbd className="px-2 py-1 bg-slate-700 rounded text-cyan-300">ESC</kbd>
-                  <span>Return to menu</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setShowHint(false)}
-              className="mt-4 w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded transition-colors"
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
+        <SnakeHintDialog onClose={() => setShowHint(false)} />
       )}
     </div>
   );

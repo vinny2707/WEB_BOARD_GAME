@@ -12,7 +12,8 @@ export const GAME_PATTERNS = {
   tictactoe: {
     name: "TIC TAC TOE",
     type: "tictactoe",
-    apiId: 3,
+    backendType: "tictactoe", // Matches backend game.type
+    apiId: 3, // Fallback if API fetch fails
     pattern: (() => {
       const p = createEmptyMatrix();
       const size = 18;
@@ -49,6 +50,7 @@ export const GAME_PATTERNS = {
   snake: {
     name: "SNAKE",
     type: "snake",
+    backendType: "snake",
     apiId: 4,
     pattern: (() => {
       const p = createEmptyMatrix();
@@ -78,6 +80,7 @@ export const GAME_PATTERNS = {
   memory: {
     name: "MEMORY",
     type: "memory",
+    backendType: "memory",
     apiId: 6,
     pattern: (() => {
       const p = createEmptyMatrix();
@@ -134,6 +137,7 @@ export const GAME_PATTERNS = {
   caro4: {
     name: "CARO 4",
     type: "caro4",
+    backendType: "caro_4",
     apiId: 2,
     pattern: (() => {
       const p = createEmptyMatrix();
@@ -191,6 +195,7 @@ export const GAME_PATTERNS = {
   caro5: {
     name: "CARO 5",
     type: "caro5",
+    backendType: "caro_5",
     apiId: 1,
     pattern: (() => {
       const p = createEmptyMatrix();
@@ -249,6 +254,7 @@ export const GAME_PATTERNS = {
   match3: {
     name: "MATCH 3",
     type: "match3",
+    backendType: "match3",
     apiId: 5,
     pattern: (() => {
       const p = createEmptyMatrix();
@@ -304,6 +310,7 @@ export const GAME_PATTERNS = {
   dotart: {
     name: "DOT ART",
     type: "dotart",
+    backendType: "draw_board",
     apiId: 7,
     pattern: (() => {
       const p = createEmptyMatrix();

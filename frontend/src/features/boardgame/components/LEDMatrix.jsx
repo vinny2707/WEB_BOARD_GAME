@@ -12,7 +12,7 @@ const CELL_GAP = 2;
 /**
  * LED Matrix Board - Optimized rendering with round LEDs
  */
-const LEDMatrix = React.memo(({ pattern, className = "", onCellClick }) => {
+const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHover }) => {
   // Pre-compute colors for the entire pattern
   const cellColors = useMemo(() => {
     return pattern.map(row =>
@@ -34,6 +34,7 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick }) => {
         minWidth: boardWidth + 32,
         minHeight: boardHeight + 32,
       }}
+      onMouseLeave={() => onCellHover && onCellHover(-1, -1)}
     >
       <div
         style={{
@@ -52,6 +53,7 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick }) => {
               <div
                 key={`${rowIdx}-${colIdx}`}
                 onClick={() => onCellClick && onCellClick(rowIdx, colIdx)}
+                onMouseEnter={() => onCellHover && onCellHover(rowIdx, colIdx)}
                 className={onCellClick ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}
                 style={{
                   width: CELL_SIZE,
