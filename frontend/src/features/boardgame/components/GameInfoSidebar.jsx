@@ -14,12 +14,12 @@ const GameInfoSidebar = ({ gameId, onResume }) => {
     <div className="mt-6 w-full max-w-4xl">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Rankings - Left */}
-        <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <GameRankings gameId={gameId} limit={6} showCountdown={false} />
         </div>
 
         {/* History - Center */}
-        <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <GameSessionHistory
             gameId={gameId}
             limit={5}
@@ -28,7 +28,7 @@ const GameInfoSidebar = ({ gameId, onResume }) => {
         </div>
 
         {/* Reviews - Right */}
-        <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <GameReviews gameId={gameId} />
         </div>
       </div>

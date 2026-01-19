@@ -22,17 +22,17 @@ const DrawToolbar = ({
   onSave,
 }) => {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 p-3 bg-slate-800/80 rounded-xl border border-slate-700">
+    <div className="flex flex-wrap items-center justify-center gap-4 mt-4 p-3 bg-card rounded-xl border border-border">
       {/* Tools section */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 mr-1">Tools:</span>
+        <span className="text-xs text-muted-foreground mr-1">Tools:</span>
         
         <button
           onClick={() => onToolChange(TOOLS.BRUSH)}
           className={`p-2 rounded-lg transition-colors ${
             tool === TOOLS.BRUSH 
-              ? 'bg-cyan-500 text-white' 
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              ? 'bg-primary text-primary-foreground' 
+              : 'bg-secondary text-foreground hover:bg-accent'
           }`}
           title="Brush - click/drag để vẽ"
         >
@@ -43,8 +43,8 @@ const DrawToolbar = ({
           onClick={() => onToolChange(TOOLS.RECT)}
           className={`p-2 rounded-lg transition-colors ${
             tool === TOOLS.RECT 
-              ? 'bg-cyan-500 text-white' 
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              ? 'bg-primary text-primary-foreground' 
+              : 'bg-secondary text-foreground hover:bg-accent'
           }`}
           title="Rectangle - drag để vẽ hình chữ nhật"
         >
@@ -55,8 +55,8 @@ const DrawToolbar = ({
           onClick={() => onToolChange(TOOLS.OVAL)}
           className={`p-2 rounded-lg transition-colors ${
             tool === TOOLS.OVAL 
-              ? 'bg-cyan-500 text-white' 
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              ? 'bg-primary text-primary-foreground' 
+              : 'bg-secondary text-foreground hover:bg-accent'
           }`}
           title="Oval - drag để vẽ hình tròn"
         >
@@ -67,8 +67,8 @@ const DrawToolbar = ({
           onClick={() => onToolChange(TOOLS.ERASER)}
           className={`p-2 rounded-lg transition-colors ${
             tool === TOOLS.ERASER 
-              ? 'bg-cyan-500 text-white' 
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              ? 'bg-primary text-primary-foreground' 
+              : 'bg-secondary text-foreground hover:bg-accent'
           }`}
           title="Eraser - xóa"
         >
@@ -77,11 +77,11 @@ const DrawToolbar = ({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-slate-600" />
+      <div className="h-8 w-px bg-border" />
 
       {/* Colors section */}
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 mr-1">Color:</span>
+        <span className="text-xs text-muted-foreground mr-1">Color:</span>
         
         <div className="flex gap-1">
           {/* Note: In a real app we might import DRAW_COLORS from DrawBoardGame.js */}
@@ -101,7 +101,7 @@ const DrawToolbar = ({
               onClick={() => onColorChange(color.hex, index)} // Pass HEX code
               className={`w-7 h-7 rounded-full transition-transform ${
                 selectedColorIndex === index 
-                  ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-800 scale-110' 
+                  ? 'ring-2 ring-primary ring-offset-2 ring-offset-card scale-110' 
                   : 'hover:scale-110'
               }`}
               style={{ backgroundColor: color.hex }}
@@ -112,7 +112,7 @@ const DrawToolbar = ({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-slate-600" />
+      <div className="h-8 w-px bg-border" />
 
       {/* Action buttons */}
       <div className="flex items-center gap-2">

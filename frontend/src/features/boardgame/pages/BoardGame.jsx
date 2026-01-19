@@ -1366,11 +1366,11 @@ const BoardGame = () => {
   // ============== RENDER ==============
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Back button */}
       <button
         onClick={handleBack}
-        className="absolute top-4 left-4 p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white transition-colors z-10"
+        className="absolute top-4 left-4 p-2 rounded-lg bg-secondary hover:bg-accent text-muted-foreground hover:text-foreground transition-colors z-10"
       >
         <ArrowLeft className="w-5 h-5" />
       </button>
@@ -1379,7 +1379,7 @@ const BoardGame = () => {
       <div className="flex-1 flex flex-col items-center justify-center p-4 pt-12">
         {/* Game title */}
         <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold text-cyan-400 tracking-wider">
+          <h1 className="text-2xl font-bold text-primary tracking-wider">
             {mode === MODES.GAME_SELECT
               ? currentGamePattern?.name || "SELECT GAME"
               : gameModule?.name || currentGamePattern?.name || "GAME"}
@@ -1389,10 +1389,10 @@ const BoardGame = () => {
         {/* Match-3 HUD: Score + Moves (and Target) */}
         {mode === MODES.PLAYING && activeGameKey === "match3" && gameState && (
           <div className="mb-3 flex items-center gap-3">
-            <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-cyan-300">
+            <div className="px-3 py-1 rounded-lg bg-card border border-border text-primary">
               Score: {gameState.score}
             </div>
-            <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-amber-300">
+            <div className="px-3 py-1 rounded-lg bg-card border border-border text-amber-500 dark:text-amber-300">
               Moves: {gameState.movesLeft}
             </div>
             {(() => {
@@ -1403,7 +1403,7 @@ const BoardGame = () => {
                   : Number(String(val ?? "").replace(/[^0-9]/g, ""));
               return Number.isFinite(num) && num > 0;
             })() && (
-              <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-emerald-300">
+              <div className="px-3 py-1 rounded-lg bg-card border border-border text-emerald-600 dark:text-emerald-300">
                 Target:{" "}
                 {(() => {
                   const val = gameState.targetScore;
@@ -1420,8 +1420,8 @@ const BoardGame = () => {
 
         {/* LED Matrix Container */}
         <div className="relative">
-          <div className="absolute inset-0 bg-slate-800/30 rounded-2xl blur-xl" />
-          <div className="relative bg-slate-900/80 p-4 rounded-2xl border border-slate-700/50">
+          <div className="absolute inset-0 bg-muted/30 rounded-2xl blur-xl" />
+          <div className="relative bg-slate-900/80 dark:bg-slate-900/80 p-4 rounded-2xl border border-border">
             <LEDMatrix
               pattern={displayPattern}
               onCellClick={
@@ -1445,20 +1445,20 @@ const BoardGame = () => {
           gameState.status !== "playing" && (
             <div
               className="mt-4 px-4 py-3 rounded-xl border text-center select-none
-                          border-slate-700 bg-slate-900/70 text-slate-200"
+                          border-border bg-card text-foreground"
             >
               <div className="text-lg font-semibold mb-1">
                 {gameState.status === "win"
                   ? "🎉 Bạn đã THẮNG!"
                   : "💀 Bạn đã THUA!"}
               </div>
-              <div className="text-sm text-slate-300">
+              <div className="text-sm text-muted-foreground">
                 Điểm: {gameState.score}
                 {typeof gameState.targetScore === "number"
                   ? ` / Mục tiêu: ${gameState.targetScore}`
                   : ""}
               </div>
-              <div className="text-xs mt-2 text-cyan-300">
+              <div className="text-xs mt-2 text-primary">
                 Nhấn Enter để chơi ván mới
               </div>
             </div>

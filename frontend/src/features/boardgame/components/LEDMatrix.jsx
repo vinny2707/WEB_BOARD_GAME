@@ -54,7 +54,7 @@ const LEDMatrix = React.memo(({ pattern, className = "", onCellClick, onCellHove
 
   return (
     <div
-      className={`p-4 rounded-2xl bg-slate-900 border-2 border-slate-700 ${className}`}
+      className={`p-4 rounded-2xl bg-slate-900 dark:bg-slate-900 border-2 border-border ${className}`}
       style={{
         boxShadow: "inset 0 0 30px rgba(0,0,0,0.5)",
         minWidth: boardWidth + 32,
