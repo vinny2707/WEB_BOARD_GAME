@@ -310,12 +310,11 @@ const BoardGame = () => {
       if (gameApiId) {
         const detailRes = await getGameById(gameApiId);
         // Support both boardSize (TicTacToe, Caro) and gridSize (Memory)
-        const sizeSettings = detailRes.data?.settings?.boardSize || 
-                             detailRes.data?.settings?.gridSize;
+        const sizeSettings =
+          detailRes.data?.settings?.boardSize ||
+          detailRes.data?.settings?.gridSize;
         if (detailRes.success && sizeSettings) {
-          setSizeOptions(
-            sizeSettings.options || fallbackOptions,
-          );
+          setSizeOptions(sizeSettings.options || fallbackOptions);
           const defaultIdx =
             sizeSettings.options?.findIndex(
               (o) => o.value === sizeSettings.value,
