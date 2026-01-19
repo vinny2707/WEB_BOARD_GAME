@@ -120,8 +120,22 @@ const GameDetailsModal = ({ isOpen, onClose, gameData, loading, error }) => {
         <DialogHeader>
           <div className="flex items-center gap-4">
             {game?.icon && (
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-2xl">
-                {game.icon}
+              <div className="relative w-16 h-16 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center text-2xl overflow-hidden">
+                {typeof game.icon === 'string' && (game.icon.startsWith('http') || game.icon.startsWith('/')) ? (
+                  <>
+                    <img
+                      src={game.icon}
+                      alt={game?.name || 'Game Icon'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <span className="absolute inset-x-1 bottom-1 text-[10px] leading-3 text-muted-foreground bg-background/60 rounded px-0.5 truncate">
+                      {game.icon}
+                    </span>
+                  </>
+                ) : (
+                  <span className="truncate max-w-[60px] break-all">{game.icon}</span>
+                )}
               </div>
             )}
             <div className="flex-1">

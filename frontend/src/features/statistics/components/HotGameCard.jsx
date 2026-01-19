@@ -62,28 +62,30 @@ const HotGameCard = ({ rank, game, delay = 0, className = "", onClick }) => {
         <CardContent className="pt-6 pb-4">
           <div className="flex items-start gap-4">
             {/* Game Icon */}
-            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 backdrop-blur-sm flex items-center justify-center overflow-hidden">
+            <div className="relative flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 backdrop-blur-sm flex items-center justify-center overflow-hidden">
               {game_icon ? (
-                // Check if icon is a URL (image) or emoji text
-                game_icon.startsWith('http') || game_icon.startsWith('/') ? (
-                  <img
-                    src={game_icon}
-                    alt={game_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback to Flame icon if image fails to load
-                      e.target.style.display = 'none';
-                      e.target.nextSibling?.classList.remove('hidden');
-                    }}
-                  />
+                // If icon is a URL, show the image and the URL string inside the box
+                (game_icon.startsWith('http') || game_icon.startsWith('/')) ? (
+                  <>
+                    <img
+                      src={game_icon}
+                      alt={game_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Hide broken image; URL text remains visible
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <span className="absolute inset-x-1 bottom-1 text-[9px] leading-3 text-muted-foreground bg-background/60 rounded px-0.5 truncate">
+                      {game_icon}
+                    </span>
+                  </>
                 ) : (
                   <span className="text-3xl">{game_icon}</span>
                 )
               ) : (
                 <Flame className="w-7 h-7 text-primary" />
               )}
-              {/* Hidden fallback icon for image load errors */}
-              <Flame className="w-7 h-7 text-primary hidden" />
             </div>
 
             {/* Game Info */}
