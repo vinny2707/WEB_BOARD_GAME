@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disabled, cellIndex, boardSize = 3 }) => {
+const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, isSelected, disabled, cellIndex, boardSize = 3 }) => {
     // Determine border classes based on cell position
     const getBorderClasses = () => {
         const size = boardSize;
@@ -23,8 +23,9 @@ const TicTacToeCell = ({ value, onClick, isWinning, isHint, isHighlight, disable
         if (isWinning) classes += ' animate-pulse bg-yellow-500/20';
         if (isHint) classes += ' animate-pulse bg-amber-400/50 border-amber-500 shadow-[0_0_15px_rgba(251,191,36,0.6)]';
         if (isHighlight) classes += ' animate-pulse bg-orange-500 border-orange-600 border-4 shadow-[0_0_40px_rgba(234,88,12,1)]';
+        if (isSelected && !value && !disabled) classes += ' bg-emerald-500/30 border-emerald-500 border-2 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
         if (disabled || value) classes += ' cursor-default';
-        if (!value && !disabled && !isHighlight) classes += ' hover:bg-emerald-500/10 hover:border-emerald-500';
+        if (!value && !disabled && !isHighlight && !isSelected) classes += ' hover:bg-emerald-500/10 hover:border-emerald-500';
 
         return classes;
     };

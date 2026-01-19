@@ -9,6 +9,7 @@ const TicTacToeBoard = ({
   disabled,
   highlightCells = [],
   boardSize = 3,
+  selectedCell = -1, // For gamepad navigation
 }) => {
   // Dynamic grid classes based on board size
   const gridClass = boardSize === 5
@@ -34,6 +35,7 @@ const TicTacToeBoard = ({
             onClick={() => onCellClick(index)}
             isWinning={winningLine?.includes(index)}
             isHint={hintCell === index || highlightCells.includes(index)}
+            isSelected={selectedCell === index}
             disabled={disabled}
             cellIndex={index}
             boardSize={boardSize}

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getGames } from "../../../api/gamesApi";
 import { Loader2 } from "lucide-react";
 import useClickSound from "../hooks/useClickSound";
 import { Pagination } from "@/components/ui/pagination";
+import GamepadController from "../components/GamepadController";
+import { toast } from "sonner";
 
 // Game board preview components - map by game type
 const TicTacToePreview = () => (
@@ -229,7 +231,7 @@ const ROUTE_MAP = {
   draw_board: "/games/dotart",
 };
 
-const GameCard = ({ game, onClick }) => {
+const GameCard = ({ game, onClick, isSelected = false }) => {
   const PreviewComponent = PREVIEW_MAP[game.type]
   const path = ROUTE_MAP[game.type]
   // Coming Soon only shows when game is disabled (enabled === false)
@@ -328,6 +330,9 @@ const GameCard = ({ game, onClick }) => {
   return (
     <div
       className={`relative flex flex-col bg-card rounded-2xl border overflow-hidden transition-all duration-300
+        ${isSelected 
+          ? 'ring-4 ring-emerald-500 ring-offset-2 ring-offset-background -translate-y-2 shadow-xl shadow-emerald-500/20 scale-105' 
+          : ''}
         ${isClickable
           ? 'cursor-pointer border-border hover:-translate-y-2 hover:shadow-xl hover:shadow-primary/10'
           : 'border-dashed border-muted-foreground/30 grayscale-[30%]'}`}
@@ -378,6 +383,9 @@ const Games = () => {
   const [totalGames, setTotalGames] = useState(0);
   const [limit, setLimit] = useState(10);
 
+  // Gamepad navigation state
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
   const fetchGames = async (page = 1, itemsPerPage = limit) => {
     try {
       setLoading(true);
@@ -388,6 +396,8 @@ const Games = () => {
         setTotalPages(response.data.pagination?.totalPages || 1);
         setTotalGames(response.data.pagination?.total || 0);
         setCurrentPage(page);
+        // Reset selection when games change
+        setSelectedIndex(0);
       } else {
         setError("Failed to load games");
       }
@@ -422,6 +432,66 @@ const Games = () => {
       navigate(path, { state: { game } })
     }
   };
+
+  // Gamepad navigation handlers
+  const handleLeft = useCallback(() => {
+    if (games.length === 0) return;
+    playClick();
+    setSelectedIndex((prev) => {
+      if (prev <= 0) {
+        // Go to previous page if available
+        if (currentPage > 1) {
+          handlePageChange(currentPage - 1);
+          return limit - 1; // Select last item on previous page
+        }
+        return games.length - 1; // Wrap to last
+      }
+      return prev - 1;
+    });
+  }, [games.length, currentPage, limit, playClick]);
+
+  const handleRight = useCallback(() => {
+    if (games.length === 0) return;
+    playClick();
+    setSelectedIndex((prev) => {
+      if (prev >= games.length - 1) {
+        // Go to next page if available
+        if (currentPage < totalPages) {
+          handlePageChange(currentPage + 1);
+          return 0; // Select first item on next page
+        }
+        return 0; // Wrap to first
+      }
+      return prev + 1;
+    });
+  }, [games.length, currentPage, totalPages, playClick]);
+
+  const handleEnter = useCallback(() => {
+    if (games.length === 0 || selectedIndex >= games.length) return;
+    const selectedGame = games[selectedIndex];
+    const path = ROUTE_MAP[selectedGame.type];
+    const isEnabled = selectedGame.enabled === true;
+    
+    if (isEnabled && path) {
+      playClick();
+      navigate(path, { state: { game: selectedGame } });
+    } else {
+      toast.info("Game này chưa có sẵn");
+    }
+  }, [games, selectedIndex, navigate, playClick]);
+
+  const handleBack = useCallback(() => {
+    playClick();
+    navigate(-1);
+  }, [navigate, playClick]);
+
+  const handleHint = useCallback(() => {
+    playClick();
+    const selectedGame = games[selectedIndex];
+    if (selectedGame) {
+      toast.info(`${selectedGame.name} - Dùng ← → để chọn, Enter để vào game`);
+    }
+  }, [games, selectedIndex, playClick]);
 
   if (loading) {
     return (
@@ -459,15 +529,33 @@ const Games = () => {
       {/* Games Grid - 5 columns on large screens */}
       <div className="flex-1">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 max-w-6xl mx-auto">
-          {games.map((game) => (
-            <GameCard key={game.id} game={game} onClick={handleGameClick} />
+          {games.map((game, index) => (
+            <GameCard 
+              key={game.id} 
+              game={game} 
+              onClick={handleGameClick}
+              isSelected={index === selectedIndex}
+            />
           ))}
         </div>
       </div>
 
+      {/* Gamepad Controller */}
+      <div className="mt-6 flex justify-center">
+        <GamepadController
+          onLeft={handleLeft}
+          onRight={handleRight}
+          onBack={handleBack}
+          onEnter={handleEnter}
+          onHint={handleHint}
+          showHint={true}
+          disabled={loading || games.length === 0}
+        />
+      </div>
+
       {/* Pagination */}
       {totalGames > 0 && (
-        <div className="mt-6 pt-4 border-t border-border max-w-6xl mx-auto w-full">
+        <div className="mt-4 pt-4 border-t border-border max-w-6xl mx-auto w-full">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

@@ -716,6 +716,49 @@ const Match3Game = () => {
     }
   }, [resumeSession, boardSize, setResumeSessionId]);
 
+  // Keyboard handler for game state navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Handle idle state keyboard shortcuts
+      if (gameStatus === 'idle') {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          startGame();
+          return;
+        }
+        if (e.key === 'h' || e.key === 'H') {
+          e.preventDefault();
+          startTutorial();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          navigate('/games/match3');
+          return;
+        }
+        return;
+      }
+
+      // Handle gameover or win state
+      if (gameStatus === 'gameover' || gameStatus === 'win') {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          startGame();
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          navigate('/games/match3');
+          return;
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameStatus, navigate]);
+
   // Update game state for beforeunload save
   useEffect(() => {
     if (gameStatus === 'playing') {

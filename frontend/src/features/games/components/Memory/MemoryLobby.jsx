@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, Brain, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
 import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
+import GamepadController from '../GamepadController';
+import { toast } from 'sonner';
 import { getSession } from '../../../../api/sessionsApi';
 import {
     fetchGameSettings,
@@ -49,13 +51,36 @@ const MemoryLobby = () => {
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
     const [inProgressSession, setInProgressSession] = useState(null);
 
+    // Gamepad navigation state
+    const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+    const [selectedSettingIndex, setSelectedSettingIndex] = useState(0);
+    const [selectedQuickActionIndex, setSelectedQuickActionIndex] = useState(0);
+
+    // Menu items for gamepad navigation
+    const getMenuItems = useCallback(() => {
+        const items = [];
+        items.push(
+            { id: 'play', label: 'Chơi ngay', action: 'play' },
+            { id: 'play-settings', label: 'Cài đặt game', action: 'play-settings' }
+        );
+        if (inProgressSession) {
+            items.push({ id: 'resume', label: 'Tiếp tục chơi', action: 'resume' });
+        }
+        items.push(
+            { id: 'friends', label: 'Chơi với bạn bè', action: 'friends' },
+            { id: 'tournament', label: 'Tạo giải đấu', action: 'tournament' },
+            { id: 'online', label: 'Chơi online', action: 'online' }
+        );
+        return items;
+    }, [inProgressSession]);
+
     const gamePath = '/games/memory';
 
-    // Fetch game settings from API (Memory has gameId = 5)
+    // Fetch game settings from API (Memory has gameId = 6)
     useEffect(() => {
         const loadSettings = async () => {
             setIsLoadingSettings(true);
-            const { settings } = await fetchGameSettings(5);
+            const { settings } = await fetchGameSettings(6);
             if (settings) {
                 setApiSettings(settings);
                 const values = extractSettingValues(settings);
@@ -99,7 +124,7 @@ const MemoryLobby = () => {
 
     const handlePlayNow = () => {
         playClick();
-        navigate('/games/memory/play', { state: { settings: gameSettings } });
+        navigate('/games/memory/play', { state: { settings: gameSettings, gameId: 6 } });
     };
 
     const handleInProgressChange = (hasInProgress, session) => {
@@ -118,6 +143,7 @@ const MemoryLobby = () => {
                 state: {
                     settings: fullSession.settings || gameSettings,
                     resumeSession: fullSession,
+                    gameId: 6,
                 }
             });
         } catch (error) {
@@ -126,9 +152,152 @@ const MemoryLobby = () => {
                 state: {
                     settings: inProgressSession.settings || gameSettings,
                     resumeSession: inProgressSession,
+                    gameId: 6,
                 }
             });
         }
+    };
+
+    // Execute menu action helper
+    const executeMenuAction = useCallback((index) => {
+        const menuItems = getMenuItems();
+        const selected = menuItems[index];
+        if (selected) {
+            switch (selected.action) {
+                case 'resume':
+                    handleResumeGame();
+                    break;
+                case 'play':
+                    playClick();
+                    navigate('/games/memory/play', { state: { settings: gameSettings, gameId: 6 } });
+                    break;
+                case 'play-settings':
+                    openSettings();
+                    break;
+                case 'friends':
+                    toast.info('🚧 Tính năng chơi với bạn bè đang được phát triển!');
+                    break;
+                case 'tournament':
+                    toast.info('🚧 Tính năng tạo giải đấu đang được phát triển!');
+                    break;
+                case 'online':
+                    toast.info('🚧 Tính năng chơi online đang được phát triển!');
+                    break;
+            }
+        }
+    }, [getMenuItems, gameSettings, navigate, playClick]);
+
+    // Gamepad navigation handlers
+    const handleGamepadLeft = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx > 0) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx - 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.max(0, prev - 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex > 0 ? selectedMenuIndex - 1 : menuItems.length - 1;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadRight = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx < options.length - 1) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx + 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.min(1, prev + 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex < menuItems.length - 1 ? selectedMenuIndex + 1 : 0;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadEnter = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                if (selectedSettingIndex < settingKeys.length - 1) {
+                    setSelectedSettingIndex(prev => prev + 1);
+                } else {
+                    handleSaveSettings();
+                }
+            } else {
+                if (selectedQuickActionIndex === 0) {
+                    setIsCustomMode(true);
+                    setSelectedSettingIndex(0);
+                } else {
+                    handleSaveSettings();
+                }
+            }
+        } else {
+            executeMenuAction(selectedMenuIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedMenuIndex, selectedQuickActionIndex, executeMenuAction, playClick]);
+
+    const handleGamepadBack = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                setIsCustomMode(false);
+            } else {
+                setShowSettingsModal(false);
+            }
+        } else {
+            navigate('/games');
+        }
+    }, [showSettingsModal, isCustomMode, navigate, playClick]);
+
+    const handleGamepadHint = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                const currentSetting = settingKeys[selectedSettingIndex];
+                const label = currentSetting ? getSettingLabel(apiSettings, currentSetting) : 'Cài đặt';
+                toast.info(`${label}: ← → để đổi giá trị, Enter xuống dòng tiếp, Back quay lại`);
+            } else {
+                const actions = ['Tùy chỉnh cài đặt', 'Lưu cài đặt'];
+                toast.info(`${actions[selectedQuickActionIndex]}: ← → để chọn, Enter để thực hiện`);
+            }
+        } else {
+            const menuItems = getMenuItems();
+            const selected = menuItems[selectedMenuIndex];
+            toast.info(`${selected?.label || 'Menu'} - Dùng ← → để chọn, Enter để vào`);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedQuickActionIndex, selectedMenuIndex, getMenuItems, playClick]);
+
+    // Helper to check if menu item is selected by action type
+    const isMenuSelected = (action) => {
+        const menuItems = getMenuItems();
+        const currentItem = menuItems[selectedMenuIndex];
+        return currentItem?.action === action;
     };
 
 
@@ -158,7 +327,7 @@ const MemoryLobby = () => {
             <div className="flex-1 flex gap-6 p-6 overflow-y-auto max-lg:flex-col">
                 {/* Left Side - Leaderboard */}
                 <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
-                    <GameRankings gameId={5} themeColor="indigo" />
+                    <GameRankings gameId={6} themeColor="indigo" />
                 </div>
 
                 {/* Center - Play Modes */}
@@ -183,7 +352,7 @@ const MemoryLobby = () => {
                         {/* Play Now Button with Settings */}
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 border border-indigo-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-indigo-600 hover:to-purple-700"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 border border-indigo-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-indigo-600 hover:to-purple-700 ${isMenuSelected('play') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={handlePlayNow}
                             >
                                 <Gamepad2 size={20} />
@@ -195,7 +364,7 @@ const MemoryLobby = () => {
                                 </div>
                             </button>
                             <button
-                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                className={`w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${isMenuSelected('play-settings') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={openSettings}
                             >
                                 <Settings size={18} />
@@ -205,7 +374,7 @@ const MemoryLobby = () => {
                         {/* Resume Button */}
                         {inProgressSession && (
                             <button
-                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-emerald-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-emerald-700"
+                                className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-emerald-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-emerald-700 ${isMenuSelected('resume') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={handleResumeGame}
                             >
                                 <Play size={20} />
@@ -219,8 +388,8 @@ const MemoryLobby = () => {
                         )}
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500"
-                            onClick={() => alert('Tính năng chơi với bạn bè đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500 ${isMenuSelected('friends') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng chơi với bạn bè đang được phát triển!')}
                         >
                             <Users size={20} />
                             <span className="flex-1 text-left">Chơi với bạn bè</span>
@@ -228,16 +397,16 @@ const MemoryLobby = () => {
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500"
-                            onClick={() => alert('Tính năng tạo giải đấu đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500 ${isMenuSelected('tournament') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng tạo giải đấu đang được phát triển!')}
                         >
                             <Trophy size={20} />
                             <span className="flex-1 text-left">Tạo giải đấu</span>
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500"
-                            onClick={() => alert('Tính năng chơi online đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-indigo-500 ${isMenuSelected('online') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng chơi online đang được phát triển!')}
                         >
                             <Globe size={20} />
                             <div className="flex-1 flex flex-col text-left">
@@ -262,8 +431,8 @@ const MemoryLobby = () => {
 
                 {/* Right Side - Reviews & History */}
                 <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3 flex flex-col gap-4">
-                    <GameSessionHistory gameId={5} gamePath={gamePath} onInProgressChange={handleInProgressChange} />
-                    <GameReviews gameId={5} />
+                    <GameSessionHistory gameId={6} gamePath={gamePath} onInProgressChange={handleInProgressChange} />
+                    <GameReviews gameId={6} />
                 </div>
             </div>
 
@@ -354,7 +523,7 @@ const MemoryLobby = () => {
                                     {/* Quick Actions */}
                                     {apiSettings && Object.keys(apiSettings).length > 0 && (
                                         <button
-                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            className={`w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all ${selectedQuickActionIndex === 0 ? 'ring-2 ring-yellow-400' : ''}`}
                                             onClick={() => setIsCustomMode(true)}
                                         >
                                             Tùy chỉnh cài đặt
@@ -365,12 +534,13 @@ const MemoryLobby = () => {
                                 <>
                                     {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                        {apiSettings && Object.keys(apiSettings).map((settingKey, idx) => {
                                             const options = getSettingOptions(apiSettings, settingKey);
                                             const settingType = apiSettings[settingKey]?.type || 'select';
                                             
                                             if (options.length === 0) return null;
                                             
+                                            const isCurrentSetting = selectedSettingIndex === idx;
                                             const colorMap = {
                                                 green: { selected: 'bg-green-500 text-white' },
                                                 yellow: { selected: 'bg-yellow-500 text-white' },
@@ -379,7 +549,7 @@ const MemoryLobby = () => {
                                             };
                                             
                                             return (
-                                                <div key={settingKey} className="flex items-center justify-between">
+                                                <div key={settingKey} className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCurrentSetting ? 'bg-indigo-500/10 ring-2 ring-yellow-400' : ''}`}>
                                                     <div className="flex items-center gap-2 flex-shrink-0">
                                                         <span className="text-sm text-muted-foreground">
                                                             {getSettingLabel(apiSettings, settingKey)}
@@ -463,6 +633,15 @@ const MemoryLobby = () => {
                     </div>
                 </div>
             )}
+
+            {/* Gamepad Controller */}
+            <GamepadController
+                onLeft={handleGamepadLeft}
+                onRight={handleGamepadRight}
+                onBack={handleGamepadBack}
+                onEnter={handleGamepadEnter}
+                onHint={handleGamepadHint}
+            />
         </div>
     );
 };

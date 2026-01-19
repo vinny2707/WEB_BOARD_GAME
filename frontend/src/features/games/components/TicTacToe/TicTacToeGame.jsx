@@ -13,6 +13,8 @@ import {
 import TicTacToeBoard from "./TicTacToeBoard";
 import { findBestMove, getHint, checkWinner, isDraw, getWinningLine } from "./TicTacToeAI";
 import useGameSession from "../../hooks/useGameSession";
+import GamepadController from "../GamepadController";
+import { toast } from "sonner";
 
 // Tutorial steps for TicTacToe - Kịch bản logic
 // Board indices: 0=TopLeft, 1=TopCenter, 2=TopRight, 3=MidLeft, 4=Center, 5=MidRight, 6=BotLeft, 7=BotCenter, 8=BotRight
@@ -641,13 +643,155 @@ const TicTacToeGame = () => {
   }, [board, moveHistory, gameStatus, isAIThinking]);
 
   const handleHint = useCallback(() => {
-    if (gameStatus !== "playing" || isAIThinking) return;
+    if (gameStatus === "tutorial") {
+      // In tutorial mode, show tutorial tips
+      toast.info("📖 Nhấn vào ô được đánh dấu sáng để tiếp tục hướng dẫn!");
+      return;
+    }
+    if (gameStatus !== "playing" || isAIThinking) {
+      toast.info("💡 Gợi ý chỉ khả dụng khi đang chơi và đến lượt bạn!");
+      return;
+    }
     const hint = getHint(board, boardSize);
     if (hint !== -1) {
       setHintCell(hint);
+      toast.success("💡 Đây là nước đi gợi ý cho bạn!");
       setTimeout(() => setHintCell(null), 3000);
+    } else {
+      toast.info("Không có gợi ý nào khả dụng!");
     }
   }, [board, boardSize, gameStatus, isAIThinking]);
+
+  // Gamepad navigation state for board cells
+  const [selectedCellIndex, setSelectedCellIndex] = useState(Math.floor((boardSize * boardSize) / 2)); // Start at center
+
+  // Current tutorial step - moved up to be available for gamepad handlers
+  const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
+
+  // Gamepad handlers
+  const handleGamepadLeft = useCallback(() => {
+    if (gameStatus === "idle" || gameStatus === "win" || gameStatus === "draw") return;
+    
+    // Move cursor left on board
+    setSelectedCellIndex(prev => {
+      const col = prev % boardSize;
+      if (col > 0) return prev - 1;
+      return prev + boardSize - 1; // Wrap to end of row
+    });
+  }, [gameStatus, boardSize]);
+
+  const handleGamepadRight = useCallback(() => {
+    if (gameStatus === "idle" || gameStatus === "win" || gameStatus === "draw") return;
+    
+    // Move cursor right on board
+    setSelectedCellIndex(prev => {
+      const col = prev % boardSize;
+      if (col < boardSize - 1) return prev + 1;
+      return prev - boardSize + 1; // Wrap to start of row
+    });
+  }, [gameStatus, boardSize]);
+
+  const handleGamepadUp = useCallback(() => {
+    if (gameStatus === "idle" || gameStatus === "win" || gameStatus === "draw") return;
+    
+    // Move cursor up on board
+    setSelectedCellIndex(prev => {
+      const row = Math.floor(prev / boardSize);
+      if (row > 0) return prev - boardSize;
+      return prev + boardSize * (boardSize - 1); // Wrap to bottom
+    });
+  }, [gameStatus, boardSize]);
+
+  const handleGamepadDown = useCallback(() => {
+    if (gameStatus === "idle" || gameStatus === "win" || gameStatus === "draw") return;
+    
+    // Move cursor down on board
+    setSelectedCellIndex(prev => {
+      const row = Math.floor(prev / boardSize);
+      if (row < boardSize - 1) return prev + boardSize;
+      return prev - boardSize * (boardSize - 1); // Wrap to top
+    });
+  }, [gameStatus, boardSize]);
+
+  const handleGamepadEnter = useCallback(() => {
+    if (gameStatus === "idle") {
+      startGame();
+      return;
+    }
+    if (gameStatus === "win" || gameStatus === "draw") {
+      handleReset();
+      return;
+    }
+    if (gameStatus === "tutorial") {
+      if (currentTutorialStep?.action === "click_next" || currentTutorialStep?.action === "finish") {
+        nextTutorialStep();
+      } else if (currentTutorialStep?.action === "click_cell") {
+        // Click the allowed cell
+        const allowedMoves = currentTutorialStep?.allowedMoves || [];
+        if (allowedMoves.length > 0) {
+          handleCellClick(allowedMoves[0]);
+        }
+      }
+      return;
+    }
+    if (gameStatus === "playing" && isXNext && !isAIThinking) {
+      // Click the selected cell
+      handleCellClick(selectedCellIndex);
+    }
+  }, [gameStatus, isXNext, isAIThinking, selectedCellIndex, handleCellClick, startGame, handleReset, currentTutorialStep, nextTutorialStep]);
+
+  const handleGamepadBack = useCallback(() => {
+    if (gameStatus === "tutorial") {
+      exitTutorial();
+      return;
+    }
+    // Go back to lobby
+    navigate('/games/tic-tac-toe');
+  }, [gameStatus, navigate, exitTutorial]);
+
+  const handleGamepadHintButton = useCallback(() => {
+    if (gameStatus === "idle") {
+      // Show tutorial
+      startTutorial();
+      return;
+    }
+    // Show hint or game rules
+    handleHint();
+  }, [gameStatus, handleHint, startTutorial]);
+
+  // Keyboard navigation for board (arrow keys)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (gameStatus === "idle" || gameStatus === "win" || gameStatus === "draw") return;
+      
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          handleGamepadUp();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          handleGamepadDown();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          handleGamepadLeft();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          handleGamepadRight();
+          break;
+        case 'h':
+        case 'H':
+          e.preventDefault();
+          handleGamepadHintButton();
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gameStatus, handleGamepadUp, handleGamepadDown, handleGamepadLeft, handleGamepadRight, handleGamepadHintButton]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -679,7 +823,6 @@ const TicTacToeGame = () => {
     return isXNext ? "Lượt của bạn" : "Lượt của máy";
   };
 
-  const currentTutorialStep = TUTORIAL_STEPS[tutorialStep];
   const showNextButton =
     gameStatus === "tutorial" &&
     (currentTutorialStep?.action === "click_next" ||
@@ -824,6 +967,7 @@ const TicTacToeGame = () => {
                       : !isXNext || isAIThinking || gameStatus !== "playing"
                   }
                   boardSize={boardSize}
+                  selectedCell={gameStatus === "playing" && isXNext && !isAIThinking ? selectedCellIndex : -1}
                 />
 
                 {/* Game Over Overlay */}
@@ -973,9 +1117,15 @@ const TicTacToeGame = () => {
           </button>
         )}
 
-
-
-
+        {/* Gamepad Controller */}
+        <GamepadController
+          onLeft={handleGamepadLeft}
+          onRight={handleGamepadRight}
+          onBack={handleGamepadBack}
+          onEnter={handleGamepadEnter}
+          onHint={handleGamepadHintButton}
+          showHint={true}
+        />
       </div>
     </div>
   );

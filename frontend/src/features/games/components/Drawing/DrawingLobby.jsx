@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Palette, Image, Settings, X, ChevronLeft } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
 import GameReviews from '../GameReviews';
+import GamepadController from '../GamepadController';
+import { toast } from 'sonner';
 import {
     fetchGameSettings,
     getSettingOptions,
@@ -52,6 +54,22 @@ const DrawingLobby = () => {
     const [apiSettings, setApiSettings] = useState(null);
     const [isLoadingSettings, setIsLoadingSettings] = useState(false);
 
+    // Gamepad navigation state
+    const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+    const [selectedSettingIndex, setSelectedSettingIndex] = useState(0);
+    const [selectedQuickActionIndex, setSelectedQuickActionIndex] = useState(0);
+
+    // Menu items for gamepad navigation
+    const getMenuItems = useCallback(() => {
+        return [
+            { id: 'play', label: 'Bắt đầu vẽ', action: 'play' },
+            { id: 'play-settings', label: 'Cài đặt', action: 'play-settings' },
+            { id: 'friends', label: 'Vẽ cùng bạn bè', action: 'friends' },
+            { id: 'pictionary', label: 'Đoán hình', action: 'pictionary' },
+            { id: 'online', label: 'Thi vẽ online', action: 'online' }
+        ];
+    }, []);
+
     // Fetch game settings from API (Drawing has gameId = 7)
     useEffect(() => {
         const loadSettings = async () => {
@@ -100,6 +118,145 @@ const DrawingLobby = () => {
     const handleStartDrawing = () => {
         playClick();
         navigate('/games/drawing/play', { state: { settings: gameSettings } });
+    };
+
+    // Execute menu action helper
+    const executeMenuAction = useCallback((index) => {
+        const menuItems = getMenuItems();
+        const selected = menuItems[index];
+        if (selected) {
+            playClick();
+            switch (selected.action) {
+                case 'play':
+                    handleStartDrawing();
+                    break;
+                case 'play-settings':
+                    openSettings();
+                    break;
+                case 'friends':
+                    toast.info('🚧 Tính năng vẽ cùng bạn bè đang được phát triển!');
+                    break;
+                case 'pictionary':
+                    toast.info('🚧 Tính năng đoán hình đang được phát triển!');
+                    break;
+                case 'online':
+                    toast.info('🚧 Tính năng thi vẽ online đang được phát triển!');
+                    break;
+            }
+        }
+    }, [getMenuItems]);
+
+    // Gamepad navigation handlers
+    const handleGamepadLeft = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx > 0) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx - 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.max(0, prev - 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex > 0 ? selectedMenuIndex - 1 : menuItems.length - 1;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadRight = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx < options.length - 1) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx + 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.min(1, prev + 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex < menuItems.length - 1 ? selectedMenuIndex + 1 : 0;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadEnter = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                if (selectedSettingIndex < settingKeys.length - 1) {
+                    setSelectedSettingIndex(prev => prev + 1);
+                } else {
+                    handleSaveSettings();
+                }
+            } else {
+                if (selectedQuickActionIndex === 0) {
+                    setIsCustomMode(true);
+                    setSelectedSettingIndex(0);
+                } else {
+                    handleSaveSettings();
+                }
+            }
+        } else {
+            executeMenuAction(selectedMenuIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedMenuIndex, selectedQuickActionIndex, executeMenuAction, playClick]);
+
+    const handleGamepadBack = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                setIsCustomMode(false);
+            } else {
+                setShowSettingsModal(false);
+            }
+        } else {
+            navigate('/games');
+        }
+    }, [showSettingsModal, isCustomMode, navigate, playClick]);
+
+    const handleGamepadHint = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                const currentSetting = settingKeys[selectedSettingIndex];
+                const label = currentSetting ? getSettingLabel(apiSettings, currentSetting) : 'Cài đặt';
+                toast.info(`${label}: ← → để đổi giá trị, Enter xuống dòng tiếp, Back quay lại`);
+            } else {
+                const actions = ['Tùy chỉnh cài đặt', 'Lưu cài đặt'];
+                toast.info(`${actions[selectedQuickActionIndex]}: ← → để chọn, Enter để thực hiện`);
+            }
+        } else {
+            const menuItems = getMenuItems();
+            const selected = menuItems[selectedMenuIndex];
+            toast.info(`${selected?.label || 'Menu'} - Dùng ← → để chọn, Enter để vào`);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedQuickActionIndex, selectedMenuIndex, getMenuItems, playClick]);
+
+    // Helper to check if menu item is selected by action type
+    const isMenuSelected = (action) => {
+        const menuItems = getMenuItems();
+        const currentItem = menuItems[selectedMenuIndex];
+        return currentItem?.action === action;
     };
 
     const getRankIcon = (rank) => {
@@ -195,7 +352,7 @@ const DrawingLobby = () => {
                         {/* Start Drawing Button with Settings */}
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-teal-500 to-cyan-600 border border-teal-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-teal-600 hover:to-cyan-700"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-teal-500 to-cyan-600 border border-teal-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-teal-600 hover:to-cyan-700 ${isMenuSelected('play') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={handleStartDrawing}
                             >
                                 <Gamepad2 size={20} />
@@ -207,7 +364,7 @@ const DrawingLobby = () => {
                                 </div>
                             </button>
                             <button
-                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                className={`w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${isMenuSelected('play-settings') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={openSettings}
                             >
                                 <Settings size={18} />
@@ -215,8 +372,8 @@ const DrawingLobby = () => {
                         </div>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500"
-                            onClick={() => alert('Tính năng vẽ cùng bạn bè đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500 ${isMenuSelected('friends') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng vẽ cùng bạn bè đang được phát triển!')}
                         >
                             <Users size={20} />
                             <div className="flex-1 flex flex-col text-left">
@@ -226,8 +383,8 @@ const DrawingLobby = () => {
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500"
-                            onClick={() => alert('Tính năng đoán hình đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500 ${isMenuSelected('pictionary') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng đoán hình đang được phát triển!')}
                         >
                             <Trophy size={20} />
                             <div className="flex-1 flex flex-col text-left">
@@ -237,8 +394,8 @@ const DrawingLobby = () => {
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500"
-                            onClick={() => alert('Tính năng thi vẽ đang được phát triển!')}
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-teal-500 ${isMenuSelected('online') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
+                            onClick={() => toast.info('🚧 Tính năng thi vẽ online đang được phát triển!')}
                         >
                             <Globe size={20} />
                             <div className="flex-1 flex flex-col text-left">
@@ -467,6 +624,15 @@ const DrawingLobby = () => {
                     </div>
                 </div>
             )}
+
+            {/* Gamepad Controller */}
+            <GamepadController
+                onLeft={handleGamepadLeft}
+                onRight={handleGamepadRight}
+                onBack={handleGamepadBack}
+                onEnter={handleGamepadEnter}
+                onHint={handleGamepadHint}
+            />
         </div>
     );
 };

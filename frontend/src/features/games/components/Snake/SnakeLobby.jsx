@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Trophy, Globe, ArrowLeft, Crown, Medal, Gamepad2, Star, Settings, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
@@ -6,6 +6,8 @@ import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
 import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
+import GamepadController from '../GamepadController';
+import { toast } from 'sonner';
 import {
     fetchGameSettings,
     getSettingOptions,
@@ -46,6 +48,27 @@ const SnakeLobby = () => {
 
     // In-progress session state (controlled by GameSessionHistory callback)
     const [inProgressSession, setInProgressSession] = useState(null);
+
+    // Gamepad navigation state
+    const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+    const [selectedSettingIndex, setSelectedSettingIndex] = useState(0);
+    const [selectedQuickActionIndex, setSelectedQuickActionIndex] = useState(0);
+
+    // Menu items for gamepad navigation
+    const getMenuItems = useCallback(() => {
+        const items = [];
+        if (inProgressSession) {
+            items.push({ id: 'resume', label: 'Tiếp tục chơi', action: 'resume' });
+        }
+        items.push(
+            { id: 'play', label: 'Chơi ngay', action: 'play' },
+            { id: 'play-settings', label: 'Cài đặt game', action: 'play-settings' },
+            { id: 'friends', label: 'Chơi với bạn bè', action: 'friends' },
+            { id: 'tournament', label: 'Tạo giải đấu', action: 'tournament' },
+            { id: 'online', label: 'Chơi online', action: 'online' }
+        );
+        return items;
+    }, [inProgressSession]);
 
     // Fetch game settings from API (Snake has gameId = 4)
     useEffect(() => {
@@ -137,17 +160,159 @@ const SnakeLobby = () => {
 
     const handlePlayWithFriend = () => {
         playClick();
-        alert('Tính năng chơi với bạn bè đang được phát triển!');
+        toast.info('🚧 Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
         playClick();
-        alert('Tính năng chơi online đang được phát triển!');
+        toast.info('🚧 Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
         playClick();
-        alert('Tính năng tạo giải đấu đang được phát triển!');
+        toast.info('🚧 Tính năng tạo giải đấu đang được phát triển!');
+    };
+
+    // Execute menu action helper
+    const executeMenuAction = useCallback((index) => {
+        const menuItems = getMenuItems();
+        const selected = menuItems[index];
+        if (selected) {
+            switch (selected.action) {
+                case 'resume':
+                    handleResumeGame();
+                    break;
+                case 'play':
+                    playClick();
+                    navigate('/games/snake/play', { state: { settings: gameSettings } });
+                    break;
+                case 'play-settings':
+                    openSettings();
+                    break;
+                case 'friends':
+                    handlePlayWithFriend();
+                    break;
+                case 'tournament':
+                    handleCreateTournament();
+                    break;
+                case 'online':
+                    handlePlayOnline();
+                    break;
+            }
+        }
+    }, [getMenuItems, gameSettings, navigate, playClick]);
+
+    // Gamepad navigation handlers
+    const handleGamepadLeft = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx > 0) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx - 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.max(0, prev - 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex > 0 ? selectedMenuIndex - 1 : menuItems.length - 1;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadRight = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx < options.length - 1) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx + 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            setSelectedQuickActionIndex(prev => Math.min(1, prev + 1));
+        } else {
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex < menuItems.length - 1 ? selectedMenuIndex + 1 : 0;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadEnter = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                if (selectedSettingIndex < settingKeys.length - 1) {
+                    setSelectedSettingIndex(prev => prev + 1);
+                } else {
+                    handleSaveSettings();
+                }
+            } else {
+                if (selectedQuickActionIndex === 0) {
+                    setIsCustomMode(true);
+                    setSelectedSettingIndex(0);
+                } else {
+                    handleSaveSettings();
+                }
+            }
+        } else {
+            executeMenuAction(selectedMenuIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedMenuIndex, selectedQuickActionIndex, executeMenuAction, playClick]);
+
+    const handleGamepadBack = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                setIsCustomMode(false);
+            } else {
+                setShowSettingsModal(false);
+            }
+        } else {
+            navigate('/games');
+        }
+    }, [showSettingsModal, isCustomMode, navigate, playClick]);
+
+    const handleGamepadHint = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                const currentSetting = settingKeys[selectedSettingIndex];
+                const label = currentSetting ? getSettingLabel(apiSettings, currentSetting) : 'Cài đặt';
+                toast.info(`${label}: ← → để đổi giá trị, Enter xuống dòng tiếp, Back quay lại`);
+            } else {
+                const actions = ['Tùy chỉnh cài đặt', 'Lưu cài đặt'];
+                toast.info(`${actions[selectedQuickActionIndex]}: ← → để chọn, Enter để thực hiện`);
+            }
+        } else {
+            const menuItems = getMenuItems();
+            const selected = menuItems[selectedMenuIndex];
+            toast.info(`${selected?.label || 'Menu'} - Dùng ← → để chọn, Enter để vào`);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedQuickActionIndex, selectedMenuIndex, getMenuItems, playClick]);
+
+    // Helper to check if menu item is selected by action type
+    const isMenuSelected = (action) => {
+        const menuItems = getMenuItems();
+        const currentItem = menuItems[selectedMenuIndex];
+        return currentItem?.action === action;
     };
 
     const getRankIcon = (rank) => {
@@ -202,7 +367,7 @@ const SnakeLobby = () => {
                         {/* Resume Game Button */}
                         {inProgressSession && (
                             <button
-                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse"
+                                className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse ${isMenuSelected('resume') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={handleResumeGame}
                             >
                                 <Play size={20} />
@@ -216,7 +381,7 @@ const SnakeLobby = () => {
                         {/* Play Now Button with Settings */}
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-green-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-green-700"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-green-500 to-green-600 border border-green-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-green-600 hover:to-green-700 ${isMenuSelected('play') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={handlePlayNow}
                             >
                                 <Gamepad2 size={20} />
@@ -226,7 +391,7 @@ const SnakeLobby = () => {
                                 </div>
                             </button>
                             <button
-                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                className={`w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${isMenuSelected('play-settings') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                                 onClick={openSettings}
                             >
                                 <Settings size={18} />
@@ -234,7 +399,7 @@ const SnakeLobby = () => {
                         </div>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500"
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500 ${isMenuSelected('friends') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                             onClick={handlePlayWithFriend}
                         >
                             <Users size={20} />
@@ -243,7 +408,7 @@ const SnakeLobby = () => {
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500"
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500 ${isMenuSelected('tournament') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                             onClick={handleCreateTournament}
                         >
                             <Trophy size={20} />
@@ -251,7 +416,7 @@ const SnakeLobby = () => {
                         </button>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500"
+                            className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-green-500 ${isMenuSelected('online') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                             onClick={handlePlayOnline}
                         >
                             <Globe size={20} />
@@ -370,7 +535,7 @@ const SnakeLobby = () => {
                                     {/* Quick Actions */}
                                     {apiSettings && Object.keys(apiSettings).length > 0 && (
                                         <button
-                                            className="w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                            className={`w-full py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all ${selectedQuickActionIndex === 0 ? 'ring-2 ring-yellow-400' : ''}`}
                                             onClick={() => setIsCustomMode(true)}
                                         >
                                             Tùy chỉnh cài đặt
@@ -381,12 +546,13 @@ const SnakeLobby = () => {
                                 <>
                                     {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                        {apiSettings && Object.keys(apiSettings).map((settingKey, idx) => {
                                             const options = getSettingOptions(apiSettings, settingKey);
                                             const settingType = apiSettings[settingKey]?.type || 'select';
                                             
                                             if (options.length === 0) return null;
                                             
+                                            const isCurrentSetting = selectedSettingIndex === idx;
                                             const colorMap = {
                                                 green: { selected: 'bg-green-500 text-white' },
                                                 yellow: { selected: 'bg-yellow-500 text-white' },
@@ -395,7 +561,7 @@ const SnakeLobby = () => {
                                             };
                                             
                                             return (
-                                                <div key={settingKey} className="flex items-center justify-between">
+                                                <div key={settingKey} className={`flex items-center justify-between p-2 rounded-lg transition-all ${isCurrentSetting ? 'bg-green-500/10 ring-2 ring-yellow-400' : ''}`}>
                                                     <div className="flex items-center gap-2 flex-shrink-0">
                                                         <span className="text-sm text-muted-foreground">
                                                             {getSettingLabel(apiSettings, settingKey)}
@@ -479,6 +645,15 @@ const SnakeLobby = () => {
                     </div>
                 </div>
             )}
+
+            {/* Gamepad Controller */}
+            <GamepadController
+                onLeft={handleGamepadLeft}
+                onRight={handleGamepadRight}
+                onBack={handleGamepadBack}
+                onEnter={handleGamepadEnter}
+                onHint={handleGamepadHint}
+            />
         </div>
     );
 };

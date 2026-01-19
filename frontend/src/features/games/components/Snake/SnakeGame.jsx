@@ -549,11 +549,52 @@ const SnakeGame = () => {
     // Keyboard handler
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (gameStatus !== 'playing' && gameStatus !== 'tutorial') {
-                if (e.key === ' ' && gameStatus === 'idle') {
+            // Handle idle state keyboard shortcuts
+            if (gameStatus === 'idle') {
+                if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     startGame();
+                    return;
                 }
+                if (e.key === 'h' || e.key === 'H') {
+                    e.preventDefault();
+                    startTutorial();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    navigate('/games/snake');
+                    return;
+                }
+                return;
+            }
+
+            // Handle gameover state
+            if (gameStatus === 'gameover') {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    startGame();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    navigate('/games/snake');
+                    return;
+                }
+                return;
+            }
+
+            // Handle paused state
+            if (gameStatus === 'paused') {
+                if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') {
+                    e.preventDefault();
+                    togglePause();
+                    return;
+                }
+                return;
+            }
+
+            if (gameStatus !== 'playing' && gameStatus !== 'tutorial') {
                 return;
             }
 
@@ -595,7 +636,7 @@ const SnakeGame = () => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [gameStatus, tutorialStep, tutorialMoving]);
+    }, [gameStatus, tutorialStep, tutorialMoving, navigate]);
 
     // Tutorial food advancement - place food AFTER snake has stopped
     useEffect(() => {

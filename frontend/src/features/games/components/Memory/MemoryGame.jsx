@@ -208,9 +208,10 @@ const MemoryGame = () => {
     const difficulty = lobbySettings.difficulty || 'medium';
     const previewTime = DIFFICULTY_SETTINGS[difficulty]?.previewTime ?? 1000;
     const resumeSession = location.state?.resumeSession;
+    const gameId = location.state?.gameId || 6; // Default to 6 for Memory
 
     // Session management
-    const { startSession, saveProgress, completeGame, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(5);
+    const { startSession, saveProgress, completeGame, updateGameState, isAuthenticated, setResumeSessionId } = useGameSession(gameId);
 
     const [boardSize, setBoardSize] = useState(initialGridSize);
     const [cards, setCards] = useState(() => createBoard(initialGridSize, theme));
@@ -633,6 +634,49 @@ const MemoryGame = () => {
             }
         }
     }, [resumeSession, playSound, setResumeSessionId, boardSize, theme]);
+
+    // Keyboard handler for game state navigation
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Handle idle state keyboard shortcuts
+            if (gameStatus === 'idle') {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    startGame();
+                    return;
+                }
+                if (e.key === 'h' || e.key === 'H') {
+                    e.preventDefault();
+                    startTutorial();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    navigate('/games/memory');
+                    return;
+                }
+                return;
+            }
+
+            // Handle win state
+            if (gameStatus === 'win') {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    restartGame();
+                    return;
+                }
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    navigate('/games/memory');
+                    return;
+                }
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [gameStatus, navigate]);
 
     // Update game state for auto-save
     useEffect(() => {

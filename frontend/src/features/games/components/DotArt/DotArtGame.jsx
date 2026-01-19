@@ -107,13 +107,14 @@ const DotArtGame = () => {
   // Settings from lobby and resume session
   const settings = location.state?.settings || { gridSize: "medium" };
   const resumeSession = location.state?.resumeSession;
+  const gameId = location.state?.gameId || 13; // Default to 13 for DotArt
 
   // Use gridSize from resume session if available, otherwise from settings
   const effectiveGridSize =
     resumeSession?.game_state?.gridSize || settings.gridSize || "medium";
   const gridConfig = GRID_SIZES[effectiveGridSize] || GRID_SIZES.medium;
 
-  // Session tracking (gameId=7 for DotArt/DrawBoard)
+  // Session tracking (dynamic gameId)
   const {
     startSession,
     saveProgress,
@@ -121,7 +122,7 @@ const DotArtGame = () => {
     updateGameState,
     setResumeSessionId,
     isAuthenticated,
-  } = useGameSession(7, { autoSave: true, saveInterval: 30 });
+  } = useGameSession(gameId, { autoSave: true, saveInterval: 30 });
 
   // State
   const [grid, setGrid] = useState(() => {
@@ -156,9 +157,13 @@ const DotArtGame = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const sessionStartedRef = useRef(false);
 
   // Start or resume session
   useEffect(() => {
+    if (sessionStartedRef.current) return; // Prevent duplicate calls
+    sessionStartedRef.current = true;
+
     if (resumeSession) {
       // Resume existing session - set session ID for tracking
       console.log("Resume session data:", resumeSession);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -18,6 +18,8 @@ import useGameSession from "../../hooks/useGameSession";
 import GameReviews from "../GameReviews";
 import GameRankings from "../GameRankings";
 import GameSessionHistory from "../GameSessionHistory";
+import GamepadController from "../GamepadController";
+import { toast } from "sonner";
 
 // Grid size options
 const GRID_SIZES = {
@@ -31,12 +33,12 @@ const DotArtLobby = () => {
   const navigate = useNavigate();
   const playClick = useClickSound();
 
-  // Session management (gameId=7 for DotArt/DrawBoard)
+  // Session management (gameId=13 for DotArt/DrawBoard)
   const {
     checkInProgressSession,
     resumeSession: fetchFullSession,
     isAuthenticated,
-  } = useGameSession(7);
+  } = useGameSession(13);
 
   // Settings
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -48,6 +50,31 @@ const DotArtLobby = () => {
   const [inProgressSession, setInProgressSession] = useState(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [isLoadingResume, setIsLoadingResume] = useState(false);
+
+  // Gamepad navigation state
+  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const [selectedGridIndex, setSelectedGridIndex] = useState(
+    Object.keys(GRID_SIZES).indexOf(gameSettings.gridSize)
+  );
+
+  // Grid size keys for navigation
+  const gridSizeKeys = Object.keys(GRID_SIZES);
+
+  // Menu items for gamepad navigation
+  const getMenuItems = useCallback(() => {
+    const items = [];
+    if (inProgressSession) {
+      items.push({ id: 'resume', label: 'Tiếp tục sáng tạo', action: 'resume' });
+    }
+    items.push(
+      { id: 'play', label: 'Bắt đầu sáng tạo', action: 'play' },
+      { id: 'play-settings', label: 'Cài đặt', action: 'play-settings' },
+      { id: 'friends', label: 'Sáng tạo cùng bạn bè', action: 'friends' },
+      { id: 'contest', label: 'Cuộc thi sáng tạo', action: 'contest' },
+      { id: 'online', label: 'Triển lãm online', action: 'online' }
+    );
+    return items;
+  }, [inProgressSession]);
 
   // Check for in-progress session on mount
   useEffect(() => {
@@ -73,7 +100,7 @@ const DotArtLobby = () => {
 
   const handleStartGame = () => {
     playClick();
-    navigate("/games/dotart/play", { state: { settings: gameSettings } });
+    navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
   };
 
   const handleResumeGame = async () => {
@@ -91,15 +118,16 @@ const DotArtLobby = () => {
           state: {
             settings: { gridSize: savedGridSize },
             resumeSession: fullSession,
+            gameId: 13,
           },
         });
       } else {
         // Fallback: start new game if can't load session
-        navigate("/games/dotart/play", { state: { settings: gameSettings } });
+        navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
       }
     } catch (error) {
       console.error("Failed to load session:", error);
-      navigate("/games/dotart/play", { state: { settings: gameSettings } });
+      navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
     } finally {
       setIsLoadingResume(false);
     }
@@ -118,17 +146,113 @@ const DotArtLobby = () => {
 
   const handlePlayWithFriend = () => {
     playClick();
-    alert("Tính năng chơi với bạn bè đang được phát triển!");
+    toast.info('🚧 Tính năng sáng tạo cùng bạn bè đang được phát triển!');
   };
 
   const handlePlayOnline = () => {
     playClick();
-    alert("Tính năng chơi online đang được phát triển!");
+    toast.info('🚧 Tính năng triển lãm online đang được phát triển!');
   };
 
   const handleCreateTournament = () => {
     playClick();
-    alert("Tính năng tạo giải đấu đang được phát triển!");
+    toast.info('🚧 Tính năng cuộc thi sáng tạo đang được phát triển!');
+  };
+
+  // Execute menu action helper
+  const executeMenuAction = useCallback((index) => {
+    const menuItems = getMenuItems();
+    const selected = menuItems[index];
+    if (selected) {
+      switch (selected.action) {
+        case 'resume':
+          handleResumeGame();
+          break;
+        case 'play':
+          handleStartGame();
+          break;
+        case 'play-settings':
+          openSettings();
+          break;
+        case 'friends':
+          handlePlayWithFriend();
+          break;
+        case 'contest':
+          handleCreateTournament();
+          break;
+        case 'online':
+          handlePlayOnline();
+          break;
+      }
+    }
+  }, [getMenuItems]);
+
+  // Gamepad navigation handlers
+  const handleGamepadLeft = useCallback(() => {
+    playClick();
+    if (showSettingsModal) {
+      // In settings: navigate grid options left
+      setSelectedGridIndex(prev => Math.max(0, prev - 1));
+      const newKey = gridSizeKeys[Math.max(0, selectedGridIndex - 1)];
+      setGameSettings(prev => ({ ...prev, gridSize: newKey }));
+    } else {
+      // Main menu - navigate up
+      const menuItems = getMenuItems();
+      const newIndex = selectedMenuIndex > 0 ? selectedMenuIndex - 1 : menuItems.length - 1;
+      setSelectedMenuIndex(newIndex);
+    }
+  }, [showSettingsModal, selectedGridIndex, gridSizeKeys, selectedMenuIndex, getMenuItems, playClick]);
+
+  const handleGamepadRight = useCallback(() => {
+    playClick();
+    if (showSettingsModal) {
+      // In settings: navigate grid options right
+      const maxIdx = gridSizeKeys.length - 1;
+      setSelectedGridIndex(prev => Math.min(maxIdx, prev + 1));
+      const newKey = gridSizeKeys[Math.min(maxIdx, selectedGridIndex + 1)];
+      setGameSettings(prev => ({ ...prev, gridSize: newKey }));
+    } else {
+      // Main menu - navigate down
+      const menuItems = getMenuItems();
+      const newIndex = selectedMenuIndex < menuItems.length - 1 ? selectedMenuIndex + 1 : 0;
+      setSelectedMenuIndex(newIndex);
+    }
+  }, [showSettingsModal, selectedGridIndex, gridSizeKeys, selectedMenuIndex, getMenuItems, playClick]);
+
+  const handleGamepadEnter = useCallback(() => {
+    playClick();
+    if (showSettingsModal) {
+      handleSaveSettings();
+    } else {
+      executeMenuAction(selectedMenuIndex);
+    }
+  }, [showSettingsModal, selectedMenuIndex, executeMenuAction, playClick]);
+
+  const handleGamepadBack = useCallback(() => {
+    playClick();
+    if (showSettingsModal) {
+      setShowSettingsModal(false);
+    } else {
+      navigate('/games');
+    }
+  }, [showSettingsModal, navigate, playClick]);
+
+  const handleGamepadHint = useCallback(() => {
+    playClick();
+    if (showSettingsModal) {
+      toast.info('← → để chọn kích thước, Enter để lưu, Back để quay lại');
+    } else {
+      const menuItems = getMenuItems();
+      const selected = menuItems[selectedMenuIndex];
+      toast.info(`${selected?.label || 'Menu'} - Dùng ← → để chọn, Enter để vào`);
+    }
+  }, [showSettingsModal, selectedMenuIndex, getMenuItems, playClick]);
+
+  // Helper to check if menu item is selected
+  const isMenuSelected = (action) => {
+    const menuItems = getMenuItems();
+    const currentItem = menuItems[selectedMenuIndex];
+    return currentItem?.action === action;
   };
 
   return (
@@ -162,7 +286,7 @@ const DotArtLobby = () => {
         {/* Left Side - Leaderboard */}
         <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
           <GameRankings
-            gameId={7}
+            gameId={13}
             themeColor="pink"
             limit={8}
             showCountdown={false}
@@ -180,7 +304,7 @@ const DotArtLobby = () => {
             ) : (
               inProgressSession && (
                 <button
-                  className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse disabled:opacity-70"
+                  className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse disabled:opacity-70 ${isMenuSelected('resume') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                   onClick={handleResumeGame}
                   disabled={isLoadingResume}
                 >
@@ -202,7 +326,7 @@ const DotArtLobby = () => {
             {/* Play Now Button with Settings */}
             <div className="flex items-center gap-2">
               <button
-                className="flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-pink-500 to-purple-600 border border-pink-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-pink-600 hover:to-purple-700"
+                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-pink-500 to-purple-600 border border-pink-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-pink-600 hover:to-purple-700 ${isMenuSelected('play') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                 onClick={handleStartGame}
               >
                 <Gamepad2 size={20} />
@@ -212,7 +336,7 @@ const DotArtLobby = () => {
                 </div>
               </button>
               <button
-                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                className={`w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${isMenuSelected('play-settings') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
                 onClick={openSettings}
               >
                 <Settings size={18} />
@@ -229,7 +353,7 @@ const DotArtLobby = () => {
             </div>
 
             <button
-              className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500"
+              className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500 ${isMenuSelected('friends') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
               onClick={handlePlayWithFriend}
             >
               <Users size={20} />
@@ -238,7 +362,7 @@ const DotArtLobby = () => {
             </button>
 
             <button
-              className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500"
+              className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500 ${isMenuSelected('contest') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
               onClick={handleCreateTournament}
             >
               <Trophy size={20} />
@@ -246,7 +370,7 @@ const DotArtLobby = () => {
             </button>
 
             <button
-              className="flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500"
+              className={`flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-pink-500 ${isMenuSelected('online') ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-background' : ''}`}
               onClick={handlePlayOnline}
             >
               <Globe size={20} />
@@ -261,7 +385,7 @@ const DotArtLobby = () => {
             {/* Game Session History */}
             {isAuthenticated && (
               <GameSessionHistory
-                gameId={7}
+                gameId={13}
                 limit={5}
                 gamePath="/games/dotart"
                 onInProgressChange={handleInProgressChange}
@@ -312,7 +436,7 @@ const DotArtLobby = () => {
 
         {/* Right Side - Reviews */}
         <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3">
-          <GameReviews gameId={7} />
+          <GameReviews gameId={13} />
         </div>
       </div>
 
@@ -358,20 +482,21 @@ const DotArtLobby = () => {
               {/* Grid Size */}
               <div>
                 <label className="text-sm font-semibold text-muted-foreground mb-3 block">
-                  Kích thước lưới
+                  Kích thước lưới (← → để chọn)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(GRID_SIZES).map(([key, value]) => (
+                  {Object.entries(GRID_SIZES).map(([key, value], idx) => (
                     <button
                       key={key}
                       className={`p-3 rounded-xl border transition-all text-left ${
                         gameSettings.gridSize === key
                           ? "bg-pink-500/20 border-pink-500 text-pink-600"
                           : "bg-secondary border-border hover:bg-accent"
-                      }`}
+                      } ${selectedGridIndex === idx && showSettingsModal ? "ring-2 ring-yellow-400" : ""}`}
                       onClick={() => {
                         playClick();
                         setGameSettings((prev) => ({ ...prev, gridSize: key }));
+                        setSelectedGridIndex(idx);
                       }}
                     >
                       <span className="text-lg mr-2">{value.icon}</span>
@@ -394,6 +519,15 @@ const DotArtLobby = () => {
           </div>
         </div>
       )}
+
+      {/* Gamepad Controller */}
+      <GamepadController
+        onLeft={handleGamepadLeft}
+        onRight={handleGamepadRight}
+        onBack={handleGamepadBack}
+        onEnter={handleGamepadEnter}
+        onHint={handleGamepadHint}
+      />
     </div>
   );
 };

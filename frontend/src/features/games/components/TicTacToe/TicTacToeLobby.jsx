@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Bot, Trophy, Globe, Settings, ArrowLeft, Crown, Medal, X, ChevronLeft, Play } from 'lucide-react';
 import useClickSound from '../../hooks/useClickSound';
@@ -6,6 +6,8 @@ import { getSession } from '../../../../api/sessionsApi';
 import GameReviews from '../GameReviews';
 import GameRankings from '../GameRankings';
 import GameSessionHistory from '../GameSessionHistory';
+import GamepadController from '../GamepadController';
+import { toast } from 'sonner';
 import {
     fetchGameSettings,
     getSettingOptions,
@@ -40,6 +42,28 @@ const TicTacToeLobby = () => {
     // In-progress session state (controlled by GameSessionHistory callback)
     const [inProgressSession, setInProgressSession] = useState(null);
     const [latestInProgressId, setLatestInProgressId] = useState(null);
+
+    // Gamepad navigation state
+    const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+    const [selectedSettingIndex, setSelectedSettingIndex] = useState(0);
+    const [selectedQuickActionIndex, setSelectedQuickActionIndex] = useState(0); // 0 = "Không giới hạn", 1 = "Tùy chỉnh";
+
+    // Menu items for gamepad navigation (including settings buttons)
+    const getMenuItems = useCallback(() => {
+        const items = [];
+        if (inProgressSession) {
+            items.push({ id: 'resume', label: 'Tiếp tục chơi', action: 'resume' });
+        }
+        items.push(
+            { id: 'friends', label: 'Chơi với bạn bè', action: 'friends' },
+            { id: 'friends-settings', label: 'Cài đặt bạn bè', action: 'friends-settings' },
+            { id: 'robot', label: 'Chơi với máy', action: 'robot' },
+            { id: 'robot-settings', label: 'Cài đặt máy', action: 'robot-settings' },
+            { id: 'tournament', label: 'Tạo giải đấu', action: 'tournament' },
+            { id: 'online', label: 'Chơi online', action: 'online' }
+        );
+        return items;
+    }, [inProgressSession]);
 
     // Fetch game settings from API (TicTacToe has gameId = 3)
     useEffect(() => {
@@ -86,7 +110,7 @@ const TicTacToeLobby = () => {
     }, []);
 
     const openSettings = (mode, e) => {
-        e.stopPropagation();
+        if (e?.stopPropagation) e.stopPropagation();
         playClick();
         setSettingsMode(mode);
         setIsCustomMode(false);
@@ -144,17 +168,17 @@ const TicTacToeLobby = () => {
 
     const handlePlayWithFriend = () => {
         playClick();
-        alert('Tính năng chơi với bạn bè đang được phát triển!');
+        toast.info('🚧 Tính năng chơi với bạn bè đang được phát triển!');
     };
 
     const handlePlayOnline = () => {
         playClick();
-        alert('Tính năng chơi online đang được phát triển!');
+        toast.info('🚧 Tính năng chơi online đang được phát triển!');
     };
 
     const handleCreateTournament = () => {
         playClick();
-        alert('Tính năng tạo giải đấu đang được phát triển!');
+        toast.info('🚧 Tính năng tạo giải đấu đang được phát triển!');
     };
 
     const getRankIcon = (rank) => {
@@ -190,6 +214,166 @@ const TicTacToeLobby = () => {
             case 'online': return <Globe size={24} className="text-emerald-500" />;
             default: return <Settings size={24} className="text-emerald-500" />;
         }
+    };
+
+    // Execute menu action helper
+    const executeMenuAction = useCallback((index) => {
+        const menuItems = getMenuItems();
+        const selected = menuItems[index];
+        if (selected) {
+            switch (selected.action) {
+                case 'resume':
+                    handleResumeGame();
+                    break;
+                case 'friends':
+                    handlePlayWithFriend();
+                    break;
+                case 'friends-settings':
+                    openSettings('friend', { stopPropagation: () => {} });
+                    break;
+                case 'robot':
+                    handlePlayVsRobot();
+                    break;
+                case 'robot-settings':
+                    openSettings('robot', { stopPropagation: () => {} });
+                    break;
+                case 'tournament':
+                    handleCreateTournament();
+                    break;
+                case 'online':
+                    handlePlayOnline();
+                    break;
+            }
+        }
+    }, [getMenuItems, handleResumeGame, handlePlayWithFriend, openSettings, handlePlayVsRobot, handleCreateTournament, handlePlayOnline]);
+
+    // Gamepad navigation handlers
+    const handleGamepadLeft = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            // In custom mode: change option value to the left
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx > 0) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx - 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            // In summary mode: switch between quick action buttons
+            setSelectedQuickActionIndex(prev => Math.max(0, prev - 1));
+        } else {
+            // Main menu - navigate up (wrap around)
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex > 0 ? selectedMenuIndex - 1 : menuItems.length - 1;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadRight = useCallback(() => {
+        playClick();
+        if (showSettingsModal && isCustomMode) {
+            // In custom mode: change option value to the right
+            const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+            if (settingKeys.length > 0) {
+                const currentSettingKey = settingKeys[selectedSettingIndex];
+                const options = getSettingOptions(apiSettings, currentSettingKey);
+                const currentValue = gameSettings[currentSettingKey];
+                const currentIdx = options.findIndex(opt => opt.value === currentValue);
+                if (currentIdx < options.length - 1) {
+                    setGameSettings(prev => ({
+                        ...prev,
+                        [currentSettingKey]: options[currentIdx + 1].value
+                    }));
+                }
+            }
+        } else if (showSettingsModal) {
+            // In summary mode: switch between quick action buttons
+            setSelectedQuickActionIndex(prev => Math.min(1, prev + 1));
+        } else {
+            // Main menu - navigate down (wrap around)
+            const menuItems = getMenuItems();
+            const newIndex = selectedMenuIndex < menuItems.length - 1 ? selectedMenuIndex + 1 : 0;
+            setSelectedMenuIndex(newIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, gameSettings, selectedMenuIndex, getMenuItems, playClick]);
+
+    const handleGamepadEnter = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                // In custom mode: move to next setting or save
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                if (selectedSettingIndex < settingKeys.length - 1) {
+                    setSelectedSettingIndex(prev => prev + 1);
+                } else {
+                    handleSaveSettings();
+                }
+            } else {
+                // In summary mode: execute selected quick action
+                if (selectedQuickActionIndex === 0) {
+                    handleSetUnlimitedTime();
+                } else {
+                    setIsCustomMode(true);
+                    setSelectedSettingIndex(0);
+                }
+            }
+        } else {
+            // Execute selected menu action
+            executeMenuAction(selectedMenuIndex);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedMenuIndex, selectedQuickActionIndex, executeMenuAction, playClick, handleSetUnlimitedTime, handleSaveSettings]);
+
+    const handleGamepadBack = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                setIsCustomMode(false);
+            } else {
+                setShowSettingsModal(false);
+            }
+        } else {
+            navigate('/games');
+        }
+    }, [showSettingsModal, isCustomMode, navigate, playClick]);
+
+    const handleGamepadHint = useCallback(() => {
+        playClick();
+        if (showSettingsModal) {
+            if (isCustomMode) {
+                const settingKeys = apiSettings ? Object.keys(apiSettings) : [];
+                const currentSetting = settingKeys[selectedSettingIndex];
+                const label = currentSetting ? getSettingLabel(apiSettings, currentSetting) : 'Cài đặt';
+                toast.info(`${label}: ← → để đổi giá trị, Enter xuống dòng tiếp, Back quay lại`);
+            } else {
+                const actions = ['Không giới hạn thời gian', 'Tùy chỉnh'];
+                toast.info(`${actions[selectedQuickActionIndex]}: ← → để chọn, Enter để thực hiện`);
+            }
+        } else {
+            const menuItems = getMenuItems();
+            const selected = menuItems[selectedMenuIndex];
+            toast.info(`${selected?.label || 'Menu'} - Dùng ← → để chọn, Enter để vào`);
+        }
+    }, [showSettingsModal, isCustomMode, apiSettings, selectedSettingIndex, selectedQuickActionIndex, selectedMenuIndex, getMenuItems, playClick]);
+
+    // Helper to check if menu item is selected by action type
+    const isMenuSelected = (action) => {
+        const menuItems = getMenuItems();
+        const currentItem = menuItems[selectedMenuIndex];
+        return currentItem?.action === action;
+    };
+    
+    // Helper to check if settings button is selected
+    const isSettingsSelected = (mode) => {
+        const menuItems = getMenuItems();
+        const currentItem = menuItems[selectedMenuIndex];
+        return currentItem?.action === `${mode}-settings`;
     };
 
     // Settings adjustment handlers
@@ -251,7 +435,9 @@ const TicTacToeLobby = () => {
                         {/* Resume Game Button - shown when in-progress session exists */}
                         {inProgressSession && (
                             <button
-                                className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border border-blue-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 animate-pulse"
+                                className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-blue-500 to-blue-600 border-2 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-blue-600 hover:to-blue-700 ${
+                                    isMenuSelected('resume') ? 'ring-2 ring-white ring-offset-2 ring-offset-background scale-[1.02]' : 'border-blue-500'
+                                }`}
                                 onClick={handleResumeGame}
                             >
                                 <Play size={20} />
@@ -265,14 +451,18 @@ const TicTacToeLobby = () => {
                         )}
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-emerald-500"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-card border-2 rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-emerald-500 ${
+                                    isMenuSelected('friends') ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background scale-[1.02] border-emerald-500' : 'border-border'
+                                }`}
                                 onClick={handlePlayWithFriend}
                             >
                                 <Users size={20} />
                                 <span className="flex-1 text-left">Chơi với bạn bè</span>
                             </button>
                             <button
-                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                className={`w-12 h-12 flex items-center justify-center bg-card border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${
+                                    isSettingsSelected('friend') ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background border-emerald-500 text-emerald-500' : 'border-border'
+                                }`}
                                 onClick={(e) => openSettings('friend', e)}
                             >
                                 <Settings size={18} />
@@ -281,14 +471,18 @@ const TicTacToeLobby = () => {
 
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-500 text-base font-medium cursor-pointer transition-all hover:bg-emerald-500/20"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-emerald-500/10 border-2 rounded-xl text-emerald-500 text-base font-medium cursor-pointer transition-all hover:bg-emerald-500/20 ${
+                                    isMenuSelected('robot') ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background scale-[1.02] border-emerald-500' : 'border-emerald-500/30'
+                                }`}
                                 onClick={handlePlayVsRobot}
                             >
                                 <Bot size={20} />
                                 <span className="flex-1 text-left">Chơi với máy</span>
                             </button>
                             <button
-                                className="w-12 h-12 flex items-center justify-center bg-card border border-border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                                className={`w-12 h-12 flex items-center justify-center bg-card border rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground transition-all ${
+                                    isSettingsSelected('robot') ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background border-emerald-500 text-emerald-500' : 'border-border'
+                                }`}
                                 onClick={(e) => openSettings('robot', e)}
                             >
                                 <Settings size={18} />
@@ -297,7 +491,9 @@ const TicTacToeLobby = () => {
 
                         <div className="flex items-center gap-2">
                             <button
-                                className="flex-1 flex items-center gap-3 px-5 py-4 bg-card border border-border rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-emerald-500"
+                                className={`flex-1 flex items-center gap-3 px-5 py-4 bg-card border-2 rounded-xl text-foreground text-base font-medium cursor-pointer transition-all hover:bg-accent hover:border-emerald-500 ${
+                                    isMenuSelected('tournament') ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-background scale-[1.02] border-emerald-500' : 'border-border'
+                                }`}
                                 onClick={handleCreateTournament}
                             >
                                 <Trophy size={20} />
@@ -306,7 +502,9 @@ const TicTacToeLobby = () => {
                         </div>
 
                         <button
-                            className="flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 border border-emerald-500 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-emerald-600 hover:to-emerald-700"
+                            className={`flex items-center gap-3 px-5 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 border-2 rounded-xl text-white text-base font-medium cursor-pointer transition-all hover:from-emerald-600 hover:to-emerald-700 ${
+                                isMenuSelected('online') ? 'ring-2 ring-white ring-offset-2 ring-offset-background scale-[1.02]' : 'border-emerald-500'
+                            }`}
                             onClick={handlePlayOnline}
                         >
                             <Globe size={20} />
@@ -315,6 +513,18 @@ const TicTacToeLobby = () => {
                                 <span className="text-xs opacity-80">với người chơi ngẫu nhiên</span>
                             </div>
                         </button>
+
+                        {/* Gamepad Controller */}
+                        <div className="mt-4">
+                            <GamepadController
+                                onLeft={handleGamepadLeft}
+                                onRight={handleGamepadRight}
+                                onBack={handleGamepadBack}
+                                onEnter={handleGamepadEnter}
+                                onHint={handleGamepadHint}
+                                showHint={true}
+                            />
+                        </div>
 
                         {/* Game Session History */}
                         <GameSessionHistory gameId={3} limit={5} gamePath="/games/tic-tac-toe/play" onInProgressChange={handleInProgressChange} />
@@ -418,7 +628,11 @@ const TicTacToeLobby = () => {
                                     <div className="flex gap-2">
                                         {(apiSettings?.timePerTurn || apiSettings?.timePerPlayer) && (
                                             <button
-                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                                    selectedQuickActionIndex === 0 
+                                                        ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2 ring-offset-background' 
+                                                        : 'bg-secondary text-foreground hover:bg-accent'
+                                                }`}
                                                 onClick={handleSetUnlimitedTime}
                                             >
                                                 Không giới hạn thời gian
@@ -426,7 +640,11 @@ const TicTacToeLobby = () => {
                                         )}
                                         {apiSettings && Object.keys(apiSettings).length > 0 && (
                                             <button
-                                                className="flex-1 py-2.5 bg-secondary rounded-lg text-sm font-medium text-foreground hover:bg-accent transition-all"
+                                                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                                    selectedQuickActionIndex === 1 
+                                                        ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2 ring-offset-background' 
+                                                        : 'bg-secondary text-foreground hover:bg-accent'
+                                                }`}
                                                 onClick={() => setIsCustomMode(true)}
                                             >
                                                 Tùy chỉnh
@@ -438,9 +656,10 @@ const TicTacToeLobby = () => {
                                 <>
                                     {/* Custom Settings Editor - Dynamic from API */}
                                     <div className="space-y-4">
-                                        {apiSettings && Object.keys(apiSettings).map(settingKey => {
+                                        {apiSettings && Object.keys(apiSettings).map((settingKey, index) => {
                                             const options = getSettingOptions(apiSettings, settingKey);
                                             const settingType = apiSettings[settingKey]?.type || 'select';
+                                            const isSelectedRow = selectedSettingIndex === index;
                                             
                                             if (options.length === 0) return null;
                                             
@@ -452,9 +671,14 @@ const TicTacToeLobby = () => {
                                             };
                                             
                                             return (
-                                                <div key={settingKey} className="flex items-center justify-between">
+                                                <div 
+                                                    key={settingKey} 
+                                                    className={`flex items-center justify-between p-2 -mx-2 rounded-lg transition-all ${
+                                                        isSelectedRow ? 'bg-emerald-500/10 ring-1 ring-emerald-500/50' : ''
+                                                    }`}
+                                                >
                                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <span className="text-sm text-muted-foreground">
+                                                        <span className={`text-sm ${isSelectedRow ? 'text-emerald-500 font-medium' : 'text-muted-foreground'}`}>
                                                             {getSettingLabel(apiSettings, settingKey)}
                                                         </span>
                                                     </div>
@@ -524,8 +748,21 @@ const TicTacToeLobby = () => {
                             )}
                         </div>
 
+                        {/* Gamepad Controller in Modal */}
+                        <div className="px-6 py-3 border-t border-border bg-secondary/30">
+                            <GamepadController
+                                onLeft={handleGamepadLeft}
+                                onRight={handleGamepadRight}
+                                onBack={handleGamepadBack}
+                                onEnter={handleGamepadEnter}
+                                onHint={handleGamepadHint}
+                                showHint={true}
+                                className="!bg-transparent !border-0 !p-0"
+                            />
+                        </div>
+
                         {/* Modal Footer */}
-                        <div className="px-6 py-4 border-t border-border bg-secondary/30">
+                        <div className="px-6 py-4 border-t border-border">
                             <button
                                 className="w-full py-3 bg-emerald-500 rounded-xl text-sm font-semibold text-white hover:bg-emerald-600 transition-all"
                                 onClick={handleSaveSettings}
@@ -541,5 +778,3 @@ const TicTacToeLobby = () => {
 };
 
 export default TicTacToeLobby;
-
-
