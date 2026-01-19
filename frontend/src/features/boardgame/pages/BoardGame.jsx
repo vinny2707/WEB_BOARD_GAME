@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Home } from "lucide-react";
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 // Components
 import LEDMatrix from "../components/LEDMatrix";
@@ -13,7 +19,12 @@ import DrawToolbar from "../components/DrawToolbar";
 // Game info components are now in GameInfoSidebar
 
 // Utils
-import { MODES, createEmptyMatrix, MATRIX_ROWS, MATRIX_COLS } from "../utils/constants";
+import {
+  MODES,
+  createEmptyMatrix,
+  MATRIX_ROWS,
+  MATRIX_COLS,
+} from "../utils/constants";
 import { GAME_PATTERNS, GAME_KEYS } from "../utils/gamePatterns";
 import { drawCenteredText } from "../utils/ledUtils";
 
@@ -66,11 +77,13 @@ const generateSettingsPattern = (gameType, sizeOptions, selectedIndex) => {
       } else {
         const centerR = r + 1;
         const centerC = c + 1;
-        if (centerR < MATRIX_ROWS && centerC < MATRIX_COLS) pattern[centerR][centerC] = "yellow";
+        if (centerR < MATRIX_ROWS && centerC < MATRIX_COLS)
+          pattern[centerR][centerC] = "yellow";
         if (r < MATRIX_ROWS && c < MATRIX_COLS) pattern[r][c] = "cyan";
         if (r < MATRIX_ROWS && c + 2 < MATRIX_COLS) pattern[r][c + 2] = "cyan";
         if (r + 2 < MATRIX_ROWS && c < MATRIX_COLS) pattern[r + 2][c] = "cyan";
-        if (r + 2 < MATRIX_ROWS && c + 2 < MATRIX_COLS) pattern[r + 2][c + 2] = "cyan";
+        if (r + 2 < MATRIX_ROWS && c + 2 < MATRIX_COLS)
+          pattern[r + 2][c + 2] = "cyan";
       }
     }
   }
@@ -81,7 +94,10 @@ const generateSettingsPattern = (gameType, sizeOptions, selectedIndex) => {
     pattern[arrowRow - 1][3] = "white";
     pattern[arrowRow + 1][3] = "white";
   }
-  if (selectedIndex < sizeOptions.length - 1 && MATRIX_COLS - (oC + gridW) > 4) {
+  if (
+    selectedIndex < sizeOptions.length - 1 &&
+    MATRIX_COLS - (oC + gridW) > 4
+  ) {
     pattern[arrowRow][MATRIX_COLS - 3] = "white";
     pattern[arrowRow - 1][MATRIX_COLS - 4] = "white";
     pattern[arrowRow + 1][MATRIX_COLS - 4] = "white";
@@ -146,7 +162,7 @@ const BoardGame = () => {
   const playSound = useCallback((ref) => {
     if (ref.current) {
       ref.current.currentTime = 0;
-      ref.current.play().catch(() => { });
+      ref.current.play().catch(() => {});
     }
   }, []);
 
@@ -157,7 +173,7 @@ const BoardGame = () => {
         const response = await getGames({ limit: 50 });
         if (response.success && response.data?.games) {
           const idMap = {};
-          response.data.games.forEach(game => {
+          response.data.games.forEach((game) => {
             if (game.type) {
               idMap[game.type] = { id: game.id, enabled: game.enabled };
             }
@@ -179,15 +195,19 @@ const BoardGame = () => {
 
   // Timer effect (for turn-based games like TicTacToe)
   useEffect(() => {
-    if (mode === MODES.PLAYING && gameState?.status === 'playing' && gameState?.turnTime !== undefined) {
+    if (
+      mode === MODES.PLAYING &&
+      gameState?.status === "playing" &&
+      gameState?.turnTime !== undefined
+    ) {
       const timer = setInterval(() => {
-        setGameState(prev => {
-          if (!prev || prev.status !== 'playing') return prev;
+        setGameState((prev) => {
+          if (!prev || prev.status !== "playing") return prev;
           if (prev.turnTime <= 0) {
             // Timeout - current player loses
-            const winner = prev.currentPlayer === 'X' ? 'O' : 'X';
-            playSound(winner === 'X' ? winRef : loseRef);
-            return { ...prev, status: 'win', winner, winLine: [] };
+            const winner = prev.currentPlayer === "X" ? "O" : "X";
+            playSound(winner === "X" ? winRef : loseRef);
+            return { ...prev, status: "win", winner, winLine: [] };
           }
           return { ...prev, turnTime: prev.turnTime - 1 };
         });
@@ -199,51 +219,51 @@ const BoardGame = () => {
   // Automatic movement for Snake game
   useEffect(() => {
     // Only start timer when entering Snake game
-    if (mode !== MODES.PLAYING || activeGameKey !== 'snake') {
+    if (mode !== MODES.PLAYING || activeGameKey !== "snake") {
       return;
     }
 
-    console.log('Starting Snake movement timer');
+    console.log("Starting Snake movement timer");
 
     const moveTimer = setInterval(() => {
       // Use callback form to always get latest state
-      setGameState(currentState => {
-        if (!currentState || currentState.status !== 'playing') {
+      setGameState((currentState) => {
+        if (!currentState || currentState.status !== "playing") {
           return currentState;
         }
 
-        const module = getGame('snake');
+        const module = getGame("snake");
         if (!module) return currentState;
 
         const newState = module.makeMove(currentState, 0, null);
 
-        if (newState.status === 'gameover') {
-          console.log('🔴 Game Over! Saving session...', {
+        if (newState.status === "gameover") {
+          console.log("🔴 Game Over! Saving session...", {
             score: newState.score,
             isAuthenticated,
             apiGameId,
-            sessionCompletedRef: sessionCompletedRef.current
+            sessionCompletedRef: sessionCompletedRef.current,
           });
           playSound(loseRef);
 
           // Save game session only if not already completed
           if (!sessionCompletedRef.current) {
             sessionCompletedRef.current = true;
-            console.log('💾 Calling completeGameSession...');
+            console.log("💾 Calling completeGameSession...");
             setTimeout(() => {
               try {
                 completeGameSession({
-                  result: 'loss',
+                  result: "loss",
                   score: newState.score,
                   gameState: newState,
                 });
-                console.log('✅ completeGameSession called successfully');
+                console.log("✅ completeGameSession called successfully");
               } catch (error) {
-                console.error('❌ Error calling completeGameSession:', error);
+                console.error("❌ Error calling completeGameSession:", error);
               }
             }, 100);
           } else {
-            console.log('⚠️ Session already completed, skipping');
+            console.log("⚠️ Session already completed, skipping");
           }
 
           return newState;
@@ -259,12 +279,11 @@ const BoardGame = () => {
     }, 120); // Fixed speed, or get from initial state
 
     return () => {
-      console.log('Cleaning up Snake movement timer');
+      console.log("Cleaning up Snake movement timer");
       clearInterval(moveTimer);
     };
     // Only recreate when mode or game changes, NOT on state changes
   }, [mode, activeGameKey, completeGameSession, playSound, tickRef, loseRef]);
-
 
   // Current game pattern (for game select screen)
   const currentGamePatternKey = GAME_KEYS[currentGameIndex];
@@ -290,11 +309,17 @@ const BoardGame = () => {
     try {
       if (gameApiId) {
         const detailRes = await getGameById(gameApiId);
-        if (detailRes.success && detailRes.data?.settings?.boardSize) {
-          setSizeOptions(detailRes.data.settings.boardSize.options || fallbackOptions);
-          const defaultIdx = detailRes.data.settings.boardSize.options?.findIndex(
-            o => o.value === detailRes.data.settings.boardSize.value
-          ) ?? 0;
+        // Support both boardSize (TicTacToe, Caro) and gridSize (Memory)
+        const sizeSettings = detailRes.data?.settings?.boardSize || 
+                             detailRes.data?.settings?.gridSize;
+        if (detailRes.success && sizeSettings) {
+          setSizeOptions(
+            sizeSettings.options || fallbackOptions,
+          );
+          const defaultIdx =
+            sizeSettings.options?.findIndex(
+              (o) => o.value === sizeSettings.value,
+            ) ?? 0;
           setSelectedSizeIndex(Math.max(0, defaultIdx));
         } else {
           // Use game module's size options as fallback
@@ -331,87 +356,117 @@ const BoardGame = () => {
   }, [currentGamePatternKey, currentGamePattern, gameIdMap, loadGameSettings]);
 
   // Handle manual resume from history
-  const handleResume = useCallback((session) => {
-    if (session && session.game_state) {
-      console.log("Resuming session:", session);
+  const handleResume = useCallback(
+    (session) => {
+      if (session && session.game_state) {
+        console.log("Resuming session:", session);
 
-      // key from session or current pattern (normalize API format to game key)
-      let gameType = session.game_type || currentGamePatternKey;
-      // API returns 'caro_4' but game key is 'caro4'
-      if (gameType === 'caro_4') gameType = 'caro4';
-      if (gameType === 'caro_5') gameType = 'caro5';
-      if (gameType === 'draw_board') gameType = 'dotart';
-      setActiveGameKey(gameType);
+        // key from session or current pattern (normalize API format to game key)
+        let gameType = session.game_type || currentGamePatternKey;
+        // API returns 'caro_4' but game key is 'caro4'
+        if (gameType === "caro_4") gameType = "caro4";
+        if (gameType === "caro_5") gameType = "caro5";
+        if (gameType === "draw_board") gameType = "dotart";
+        if (gameType === "memory_cards") gameType = "memory";
+        setActiveGameKey(gameType);
 
-      // Ensure apiGameId is set for the session hook
-      if (session.game_id) {
-        setApiGameId(session.game_id);
-      }
+        // Ensure apiGameId is set for the session hook
+        if (session.game_id) {
+          setApiGameId(session.game_id);
+        }
 
-      // Load game state
-      const rawState = session.game_state || {};
-      const settings = session.settings || {};
-      
-      // Handle DotArt game specially - use fromApiState for proper conversion
-      if (gameType === 'dotart') {
-        const dotartModule = getGame('dotart');
-        if (dotartModule?.fromApiState) {
-          const convertedState = dotartModule.fromApiState(rawState, settings);
-          setGameState(convertedState);
-        } else {
-          // Fallback if module not available
-          const grid = rawState.grid || [];
-          const canvasRows = grid.length || 24;
-          const canvasCols = grid[0]?.length || canvasRows;
+        // Load game state
+        const rawState = session.game_state || {};
+        const settings = session.settings || {};
+
+        // Handle DotArt game specially - use fromApiState for proper conversion
+        if (gameType === "dotart") {
+          const dotartModule = getGame("dotart");
+          if (dotartModule?.fromApiState) {
+            const convertedState = dotartModule.fromApiState(
+              rawState,
+              settings,
+            );
+            setGameState(convertedState);
+          } else {
+            // Fallback if module not available
+            const grid = rawState.grid || [];
+            const canvasRows = grid.length || 24;
+            const canvasCols = grid[0]?.length || canvasRows;
+            setGameState({
+              grid: grid,
+              canvasRows: canvasRows,
+              canvasCols: canvasCols,
+              size: canvasRows,
+              selectedColor: rawState.selectedColor || "red",
+              selectedColorIndex: 0,
+              tool: "brush",
+              showGrid: rawState.showGrid ?? true,
+              shapeStart: null,
+              shapePreview: null,
+              isDrawingShape: false,
+              status: "playing",
+              selectedCell: 0,
+            });
+          }
+        } else if (gameType === "memory") {
+          // Handle Memory game - restore full state from API
           setGameState({
-            grid: grid,
-            canvasRows: canvasRows,
-            canvasCols: canvasCols,
-            size: canvasRows,
-            selectedColor: rawState.selectedColor || 'red',
-            selectedColorIndex: 0,
-            tool: 'brush',
-            showGrid: rawState.showGrid ?? true,
-            shapeStart: null,
-            shapePreview: null,
-            isDrawingShape: false,
-            status: 'playing',
-            selectedCell: 0,
+            gridRows: rawState.gridRows || 4,
+            gridCols: rawState.gridCols || 4,
+            totalPairs: rawState.totalPairs || 8,
+            cards: rawState.cards || [],
+            flippedCards: rawState.flippedCards || [],
+            matchedPairs: rawState.matchedPairs || 0,
+            moves: rawState.moves || 0,
+            selectedCell: rawState.selectedCell ?? 0,
+            status: rawState.status || "playing",
+            isChecking: false, // Reset checking state
+            lastFlipTime: null,
+          });
+        } else {
+          // Handle turn-based games
+          const size =
+            rawState.size || rawState.boardSize || settings.boardSize || 3;
+          const turnTime = rawState.turnTime || settings.timePerTurn || 30;
+
+          setGameState({
+            ...rawState,
+            size: size,
+            boardSize: size, // Keep both for safety
+            turnTime: turnTime,
+            currentPlayer: "X", // User's turn by default as requested
+            status: "playing", // Force status to playing to ensure controls work
+            winLine: rawState.winLine || [],
+            winner: rawState.winner || null,
+            selectedCell:
+              rawState.selectedCell !== undefined &&
+              rawState.selectedCell !== null
+                ? rawState.selectedCell
+                : Math.floor((size * size) / 2),
           });
         }
-      } else {
-        // Handle turn-based games
-        const size = rawState.size || rawState.boardSize || settings.boardSize || 3;
-        const turnTime = rawState.turnTime || settings.timePerTurn || 30;
 
-        setGameState({
-          ...rawState,
-          size: size,
-          boardSize: size, // Keep both for safety
-          turnTime: turnTime,
-          currentPlayer: 'X', // User's turn by default as requested
-          status: 'playing',   // Force status to playing to ensure controls work
-          winLine: rawState.winLine || [],
-          winner: rawState.winner || null,
-          selectedCell: (rawState.selectedCell !== undefined && rawState.selectedCell !== null)
-            ? rawState.selectedCell
-            : Math.floor((size * size) / 2)
-        });
+        // Update session ID for tracking
+        setResumeSessionId(session.id, session.started_at, session.moves_count);
+
+        // Switch to playing mode
+        setMode(MODES.PLAYING);
+
+        toast.success("Đã khôi phục ván chơi!");
       }
-
-      // Update session ID for tracking
-      setResumeSessionId(session.id, session.started_at, session.moves_count);
-
-      // Switch to playing mode
-      setMode(MODES.PLAYING);
-
-      toast.success("Đã khôi phục ván chơi!");
-    }
-  }, [setResumeSessionId, currentGamePatternKey]);
+    },
+    [setResumeSessionId, currentGamePatternKey],
+  );
 
   // Start game
   const startGame = useCallback(async () => {
-    console.log('startGame called', { gameModule, activeGameKey, sizeOptions, selectedSizeIndex });
+    console.log("startGame called", {
+      gameModule,
+      activeGameKey,
+      sizeOptions,
+      selectedSizeIndex,
+    });
 
     if (!gameModule) {
       console.error("No game module for:", activeGameKey);
@@ -422,11 +477,11 @@ const BoardGame = () => {
     // No need to complete here - just reset the ref for the new game
 
     const selectedSize = sizeOptions[selectedSizeIndex]?.value || 3;
-    console.log('Creating initial state with size:', selectedSize);
+    console.log("Creating initial state with size:", selectedSize);
 
     const initialState = gameModule.createInitialState({
       size: selectedSize,
-      difficulty: 'medium',
+      difficulty: "medium",
       turnTime: 30,
     });
 
@@ -435,19 +490,37 @@ const BoardGame = () => {
 
     // Start game session (API) - MUST await to get new session ID
     if (isAuthenticated && apiGameId) {
-      console.log('Starting game session with API...', { apiGameId, selectedSize });
-      const newSessionId = await startSession({ size: selectedSize, difficulty: 'medium' }, initialState);
-      console.log('New session started with ID:', newSessionId);
+      console.log("Starting game session with API...", {
+        apiGameId,
+        selectedSize,
+      });
+      const newSessionId = await startSession(
+        { size: selectedSize, difficulty: "medium" },
+        initialState,
+      );
+      console.log("New session started with ID:", newSessionId);
     } else {
-      console.log('Not authenticated or no apiGameId', { isAuthenticated, apiGameId });
+      console.log("Not authenticated or no apiGameId", {
+        isAuthenticated,
+        apiGameId,
+      });
     }
 
     // Set game state AFTER session is started (ensures sessionId is available)
-    console.log('Initial state created:', initialState);
+    console.log("Initial state created:", initialState);
     setGameState(initialState);
     setMode(MODES.PLAYING);
     playSound(tickRef);
-  }, [gameModule, activeGameKey, sizeOptions, selectedSizeIndex, isAuthenticated, apiGameId, startSession, playSound]);
+  }, [
+    gameModule,
+    activeGameKey,
+    sizeOptions,
+    selectedSizeIndex,
+    isAuthenticated,
+    apiGameId,
+    startSession,
+    playSound,
+  ]);
 
   // Back to selection
   const backToSelect = useCallback(() => {
@@ -458,205 +531,300 @@ const BoardGame = () => {
   }, []);
 
   // Execute move logic (shared between keyboard and mouse)
-  const executeMove = useCallback((cellIndex) => {
-    if (!gameModule || !gameState) return;
+  const executeMove = useCallback(
+    (cellIndex) => {
+      if (!gameModule || !gameState) return;
 
-    // IMPORTANT: Do NOT override selectedCell here.
-    // Match3's makeMove() manages selection internally:
-    // - If selectedCell === -1 -> selects first
-    // - If same cell -> deselects
-    // - If adjacent -> attempts swap
-    const newState = gameModule.makeMove({ ...gameState }, cellIndex, 'X');
-    playSound(tickRef);
+      // IMPORTANT: Do NOT override selectedCell here.
+      // Match3's makeMove() manages selection internally:
+      // - If selectedCell === -1 -> selects first
+      // - If same cell -> deselects
+      // - If adjacent -> attempts swap
+      const newState = gameModule.makeMove({ ...gameState }, cellIndex, "X");
+      playSound(tickRef);
 
-    // Handle terminal states
-    if (newState.status === 'win' || (activeGameKey === 'match3' && newState.status === 'gameover')) {
-      setGameState(newState);
-
-      if (activeGameKey === 'match3') {
-        const isWin = newState.status === 'win';
-        playSound(isWin ? winRef : loseRef);
-        sessionCompletedRef.current = true;
-        completeGameSession({
-          result: isWin ? 'win' : 'loss',
-          score: typeof newState.score === 'number' ? newState.score : (isWin ? 100 : 0),
-          gameState: newState,
-        });
-      } else {
-        // Default behavior for other games using 'win'
-        playSound(newState.winner === 'X' ? winRef : loseRef);
-        sessionCompletedRef.current = true;
-        completeGameSession({
-          result: newState.winner === 'X' ? 'win' : 'loss',
-          score: newState.winner === 'X' ? 100 : 0,
-          gameState: newState,
-        });
-      }
-      return;
-    }
-
-    // Generic gameover handling (non-Match3 games that return 'gameover')
-    if (newState.status === 'gameover') {
-      setGameState(newState);
-      playSound(loseRef);
-      sessionCompletedRef.current = true;
-      completeGameSession({
-        result: 'loss',
-        score: typeof newState.score === 'number' ? newState.score : 0,
-        gameState: newState,
-      });
-      return;
-    }
-
-    if (newState.status === 'draw') {
-      setGameState(newState);
-      sessionCompletedRef.current = true;
-      completeGameSession({ result: 'draw', score: 50, gameState: newState });
-      return;
-    }
-
-    incrementMoves();
-    saveProgress(newState);
-
-    setGameState({ ...newState, isAIThinking: true });
-
-    setTimeout(() => {
-      // Check if AI function exists (some games like match3 don't have AI)
-      if (!gameModule.getAIMove) {
-        setGameState({ ...newState, isAIThinking: false });
+      // Handle Memory game's isChecking state (need to flip back after delay)
+      if (
+        activeGameKey === "memory" &&
+        newState.isChecking &&
+        gameModule.flipBackCards
+      ) {
+        setGameState(newState);
+        // After 1 second, flip back the non-matching cards
+        setTimeout(() => {
+          setGameState((prevState) => {
+            if (prevState && prevState.isChecking) {
+              return gameModule.flipBackCards(prevState);
+            }
+            return prevState;
+          });
+        }, 1000);
         return;
       }
-      
-      const aiMove = gameModule.getAIMove(newState);
-      if (aiMove !== -1) {
-        const afterAI = gameModule.makeMove(newState, aiMove, 'O');
-        playSound(tickRef);
 
-        if (afterAI.status === 'win') {
-          playSound(afterAI.winner === 'X' ? winRef : loseRef);
+      // Handle terminal states
+      if (
+        newState.status === "win" ||
+        (activeGameKey === "match3" && newState.status === "gameover")
+      ) {
+        setGameState(newState);
+
+        if (activeGameKey === "match3") {
+          const isWin = newState.status === "win";
+          playSound(isWin ? winRef : loseRef);
           sessionCompletedRef.current = true;
           completeGameSession({
-            result: afterAI.winner === 'X' ? 'win' : 'loss',
-            score: afterAI.winner === 'X' ? 100 : 0,
-            gameState: afterAI,
+            result: isWin ? "win" : "loss",
+            score:
+              typeof newState.score === "number"
+                ? newState.score
+                : isWin
+                  ? 100
+                  : 0,
+            gameState: newState,
           });
-        } else if (afterAI.status === 'draw') {
+        } else if (activeGameKey === "memory") {
+          // Memory game win - score based on moves (fewer = better)
+          playSound(winRef);
           sessionCompletedRef.current = true;
+          const score = Math.max(100, 1000 - newState.moves * 10);
           completeGameSession({
-            result: 'draw',
-            score: 50,
-            gameState: afterAI,
+            result: "win",
+            score: score,
+            gameState: newState,
           });
         } else {
-          // Save progress after AI move if game continues
-          saveProgress(afterAI);
+          // Default behavior for other games using 'win'
+          playSound(newState.winner === "X" ? winRef : loseRef);
+          sessionCompletedRef.current = true;
+          completeGameSession({
+            result: newState.winner === "X" ? "win" : "loss",
+            score: newState.winner === "X" ? 100 : 0,
+            gameState: newState,
+          });
         }
-
-        setGameState({ ...afterAI, isAIThinking: false });
-      } else {
-        setGameState({ ...newState, isAIThinking: false });
-      }
-    }, 300);
-  }, [gameModule, gameState, completeGameSession, incrementMoves, saveProgress, playSound, tickRef, winRef, loseRef]);
-
-  // Handle click on matrix (mouse support) - DISABLED FOR MATCH3
-  const handleMatrixClick = useCallback((row, col) => {
-    // Disable mouse click for Match3 - only use arrow keys + Enter
-    if (activeGameKey === 'match3') return;
-    
-    if (mode === MODES.PLAYING && gameModule && gameState) {
-      let cellIndex = -1;
-      if (gameModule.getCellFromMatrix) {
-        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
-      }
-
-      if (cellIndex === -1) return;
-
-      // Drawing games (dotart) - use startDraw for drag-based drawing
-      if (gameModule.isDrawingGame && gameModule.startDraw) {
-        const newState = gameModule.startDraw(gameState, cellIndex);
-        setGameState(newState);
         return;
       }
 
-      // Turn-based games
-      if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
-        // Move selection to clicked cell
-        setGameState(prev => ({ ...prev, selectedCell: cellIndex }));
+      // Generic gameover handling (non-Match3 games that return 'gameover')
+      if (newState.status === "gameover") {
+        setGameState(newState);
+        playSound(loseRef);
+        sessionCompletedRef.current = true;
+        completeGameSession({
+          result: "loss",
+          score: typeof newState.score === "number" ? newState.score : 0,
+          gameState: newState,
+        });
+        return;
+      }
 
-        // If valid move, execute immediately
-        if (gameModule.isValidMove(gameState, cellIndex)) {
-          executeMove(cellIndex);
+      if (newState.status === "draw") {
+        setGameState(newState);
+        sessionCompletedRef.current = true;
+        completeGameSession({ result: "draw", score: 50, gameState: newState });
+        return;
+      }
+
+      // Memory game doesn't have AI, just update state
+      if (activeGameKey === "memory") {
+        setGameState(newState);
+        incrementMoves();
+        saveProgress(newState);
+        return;
+      }
+
+      incrementMoves();
+      saveProgress(newState);
+
+      setGameState({ ...newState, isAIThinking: true });
+
+      setTimeout(() => {
+        // Check if AI function exists (some games like match3 don't have AI)
+        if (!gameModule.getAIMove) {
+          setGameState({ ...newState, isAIThinking: false });
+          return;
+        }
+
+        const aiMove = gameModule.getAIMove(newState);
+        if (aiMove !== -1) {
+          const afterAI = gameModule.makeMove(newState, aiMove, "O");
+          playSound(tickRef);
+
+          if (afterAI.status === "win") {
+            playSound(afterAI.winner === "X" ? winRef : loseRef);
+            sessionCompletedRef.current = true;
+            completeGameSession({
+              result: afterAI.winner === "X" ? "win" : "loss",
+              score: afterAI.winner === "X" ? 100 : 0,
+              gameState: afterAI,
+            });
+          } else if (afterAI.status === "draw") {
+            sessionCompletedRef.current = true;
+            completeGameSession({
+              result: "draw",
+              score: 50,
+              gameState: afterAI,
+            });
+          } else {
+            // Save progress after AI move if game continues
+            saveProgress(afterAI);
+          }
+
+          setGameState({ ...afterAI, isAIThinking: false });
+        } else {
+          setGameState({ ...newState, isAIThinking: false });
+        }
+      }, 300);
+    },
+    [
+      gameModule,
+      gameState,
+      completeGameSession,
+      incrementMoves,
+      saveProgress,
+      playSound,
+      tickRef,
+      winRef,
+      loseRef,
+    ],
+  );
+
+  // Handle click on matrix (mouse support) - DISABLED FOR MATCH3
+  const handleMatrixClick = useCallback(
+    (row, col) => {
+      // Disable mouse click for Match3 - only use arrow keys + Enter
+      if (activeGameKey === "match3") return;
+
+      if (mode === MODES.PLAYING && gameModule && gameState) {
+        let cellIndex = -1;
+        if (gameModule.getCellFromMatrix) {
+          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+        }
+
+        if (cellIndex === -1) return;
+
+        // Drawing games (dotart) - use startDraw for drag-based drawing
+        if (gameModule.isDrawingGame && gameModule.startDraw) {
+          const newState = gameModule.startDraw(gameState, cellIndex);
+          setGameState(newState);
+          return;
+        }
+
+        // Memory game - click to flip card
+        if (
+          activeGameKey === "memory" &&
+          gameState.status === "playing" &&
+          !gameState.isChecking
+        ) {
+          setGameState((prev) => ({ ...prev, selectedCell: cellIndex }));
+          if (gameModule.isValidMove(gameState, cellIndex)) {
+            executeMove(cellIndex);
+          }
+          return;
+        }
+
+        // Turn-based games
+        if (
+          gameState.status === "playing" &&
+          gameState.currentPlayer === "X" &&
+          !gameState.isAIThinking
+        ) {
+          // Move selection to clicked cell
+          setGameState((prev) => ({ ...prev, selectedCell: cellIndex }));
+
+          // If valid move, execute immediately
+          if (gameModule.isValidMove(gameState, cellIndex)) {
+            executeMove(cellIndex);
+          }
         }
       }
-    }
-  }, [mode, gameModule, gameState, executeMove, activeGameKey]);
+    },
+    [mode, gameModule, gameState, executeMove, activeGameKey],
+  );
 
   // Track if mouse is being dragged for paint (drawing games)
   const isDrawingRef = useRef(false);
 
   // Handle hover on matrix (mouse hover support + drag paint for drawing games)
-  const handleMatrixHover = useCallback((row, col, isMouseDown = false) => {
-    // Disable hover for Match3
-    if (activeGameKey === 'match3') return;
+  const handleMatrixHover = useCallback(
+    (row, col, isMouseDown = false) => {
+      // Disable hover for Match3
+      if (activeGameKey === "match3") return;
 
-    if (mode === MODES.PLAYING && gameModule && gameState) {
-      let cellIndex = -1;
-
-      // Calculate cell index
-      if (gameModule.getCellFromMatrix) {
-        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
-      } else {
-        // Fallback for simple grids if needed, but not used for Match3
-      }
-
-      // 1. Handle Drag Swap
-      if (isDragging && activeGameKey === 'match3' && dragStartCell !== -1 && cellIndex !== -1) {
-        if (cellIndex !== dragStartCell) {
-          // User dragged to a DIFFERENT cell. Attempt swap/move.
-          // But first, check if it's adjacent? The game logic checks that.
-          // We can just trigger the move.
-
-          // To prevent multiple swaps while dragging, we should check if we already swapped?
-          // Actually, 'executeMove' will deselect if swap fails, or process if supports.
-          // For Match-3, 'makeMove' handles logic. 
-          // We should trigger executeMove(cellIndex).
-          // Since dragStartCell is ALREADY selected (in MouseDown), executeMove(cellIndex) will try to swap Selected <-> CellIndex.
-          executeMove(cellIndex);
-
-          // After swap attempt, stop dragging to prevent chaos
-          setIsDragging(false);
-          setDragStartCell(-1);
-        }
-      }
-
-      // 2. Standard Hover Effect
-      if (row === -1 || col === -1) {
-        setHoverCell(-1);
-        return;
-      }
-
-      // Drawing games: paint while dragging
-      if (gameModule.isDrawingGame && (isMouseDown || isDrawingRef.current)) {
+      if (mode === MODES.PLAYING && gameModule && gameState) {
         let cellIndex = -1;
+
+        // Calculate cell index
         if (gameModule.getCellFromMatrix) {
           cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+        } else {
+          // Fallback for simple grids if needed, but not used for Match3
         }
-        if (cellIndex !== -1 && gameModule.continueDraw) {
-          const newState = gameModule.continueDraw(gameState, cellIndex);
-          setGameState(newState);
-        }
-        return;
-      }
 
-      // Turn-based games: show hover effect
-      if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
-        setHoverCell(cellIndex !== -1 && (gameState.board ? !gameState.board[cellIndex] : false) ? cellIndex : -1);
+        // 1. Handle Drag Swap
+        if (
+          isDragging &&
+          activeGameKey === "match3" &&
+          dragStartCell !== -1 &&
+          cellIndex !== -1
+        ) {
+          if (cellIndex !== dragStartCell) {
+            // User dragged to a DIFFERENT cell. Attempt swap/move.
+            // But first, check if it's adjacent? The game logic checks that.
+            // We can just trigger the move.
+
+            // To prevent multiple swaps while dragging, we should check if we already swapped?
+            // Actually, 'executeMove' will deselect if swap fails, or process if supports.
+            // For Match-3, 'makeMove' handles logic.
+            // We should trigger executeMove(cellIndex).
+            // Since dragStartCell is ALREADY selected (in MouseDown), executeMove(cellIndex) will try to swap Selected <-> CellIndex.
+            executeMove(cellIndex);
+
+            // After swap attempt, stop dragging to prevent chaos
+            setIsDragging(false);
+            setDragStartCell(-1);
+          }
+        }
+
+        // 2. Standard Hover Effect
+        if (row === -1 || col === -1) {
+          setHoverCell(-1);
+          return;
+        }
+
+        // Drawing games: paint while dragging
+        if (gameModule.isDrawingGame && (isMouseDown || isDrawingRef.current)) {
+          let cellIndex = -1;
+          if (gameModule.getCellFromMatrix) {
+            cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+          }
+          if (cellIndex !== -1 && gameModule.continueDraw) {
+            const newState = gameModule.continueDraw(gameState, cellIndex);
+            setGameState(newState);
+          }
+          return;
+        }
+
+        // Turn-based games: show hover effect
+        if (
+          gameState.status === "playing" &&
+          gameState.currentPlayer === "X" &&
+          !gameState.isAIThinking
+        ) {
+          setHoverCell(
+            cellIndex !== -1 &&
+              (gameState.board ? !gameState.board[cellIndex] : false)
+              ? cellIndex
+              : -1,
+          );
+        }
+      } else {
+        setHoverCell(-1);
       }
-    } else {
-      setHoverCell(-1);
-    }
-  }, [mode, gameModule, gameState, activeGameKey, executeMove]);
+    },
+    [mode, gameModule, gameState, activeGameKey, executeMove],
+  );
 
   // Handlers for mouse down/up to track drag painting
   const handleMouseDown = useCallback(() => {
@@ -665,30 +833,51 @@ const BoardGame = () => {
     }
   }, [gameModule]);
 
-  const handleMouseUp = useCallback((row, col) => {
-    isDrawingRef.current = false;
-    
-    // For dotart: call endDraw to complete shape
-    if (gameModule?.isDrawingGame && gameModule.endDraw && gameState) {
-      let cellIndex = -1;
-      if (gameModule.getCellFromMatrix && row !== undefined && col !== undefined) {
-        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+  const handleMouseUp = useCallback(
+    (row, col) => {
+      isDrawingRef.current = false;
+
+      // For dotart: call endDraw to complete shape
+      if (gameModule?.isDrawingGame && gameModule.endDraw && gameState) {
+        let cellIndex = -1;
+        if (
+          gameModule.getCellFromMatrix &&
+          row !== undefined &&
+          col !== undefined
+        ) {
+          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+        }
+        if (cellIndex !== -1) {
+          const newState = gameModule.endDraw(gameState, cellIndex);
+          setGameState(newState);
+        }
       }
-      if (cellIndex !== -1) {
-        const newState = gameModule.endDraw(gameState, cellIndex);
-        setGameState(newState);
-      }
-    }
-  }, [gameModule, gameState]);
+    },
+    [gameModule, gameState],
+  );
 
   // Player move (Enter key)
   const handlePlayerMove = useCallback(() => {
     if (!gameModule || !gameState) return;
-    if (gameState.status !== 'playing' || gameState.currentPlayer !== 'X') return;
+    if (gameState.status !== "playing") return;
+
+    // Memory game doesn't have currentPlayer
+    if (activeGameKey === "memory") {
+      if (
+        !gameState.isChecking &&
+        gameModule.isValidMove(gameState, gameState.selectedCell)
+      ) {
+        executeMove(gameState.selectedCell);
+      }
+      return;
+    }
+
+    // Other turn-based games
+    if (gameState.currentPlayer !== "X") return;
     if (gameModule.isValidMove(gameState, gameState.selectedCell)) {
       executeMove(gameState.selectedCell);
     }
-  }, [gameModule, gameState, executeMove]);
+  }, [gameModule, gameState, executeMove, activeGameKey]);
 
   // Reset game (delegates to startGame for proper session handling)
   const resetGame = useCallback(() => {
@@ -706,7 +895,10 @@ const BoardGame = () => {
 
   // Sync cursor with selection when selection changes externally (optional)
   useEffect(() => {
-    if (gameState?.selectedCell !== undefined && gameState.selectedCell !== -1) {
+    if (
+      gameState?.selectedCell !== undefined &&
+      gameState.selectedCell !== -1
+    ) {
       // Logic decision: Should cursor jump to selection?
       // Usually yes, if the user clicked something, cursor should go there.
       setCursorPos(gameState.selectedCell);
@@ -715,26 +907,44 @@ const BoardGame = () => {
 
   const handleLeft = useCallback(() => {
     if (mode === MODES.GAME_SELECT) {
-      setCurrentGameIndex(prev => (prev - 1 + GAME_KEYS.length) % GAME_KEYS.length);
+      setCurrentGameIndex(
+        (prev) => (prev - 1 + GAME_KEYS.length) % GAME_KEYS.length,
+      );
     } else if (mode === MODES.SETTINGS) {
-      setSelectedSizeIndex(prev => Math.max(0, prev - 1));
+      setSelectedSizeIndex((prev) => Math.max(0, prev - 1));
     } else if (mode === MODES.PLAYING && gameModule) {
       const currentState = gameStateRef.current;
       if (!currentState) return;
 
-      if (activeGameKey === 'snake' && currentState.status === 'playing') {
+      if (activeGameKey === "snake" && currentState.status === "playing") {
         // Snake uses direction
-        const newDirection = gameModule.getCellFromNav(currentState, 'left');
-        setGameState(prev => ({ ...prev, direction: newDirection }));
-      } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
+        const newDirection = gameModule.getCellFromNav(currentState, "left");
+        setGameState((prev) => ({ ...prev, direction: newDirection }));
+      } else if (
+        activeGameKey === "memory" &&
+        currentState.status === "playing" &&
+        !currentState.isChecking
+      ) {
+        // Memory game navigation
+        const newCell = gameModule.getCellFromNav(currentState, "left");
+        setGameState((prev) => ({ ...prev, selectedCell: newCell }));
+      } else if (
+        currentState.status === "playing" &&
+        currentState.currentPlayer === "X" &&
+        !currentState.isAIThinking
+      ) {
         // MATCH-3 SPECIFIC: Move Cursor, NOT Selection
-        if (activeGameKey === 'match3') {
-          const newCursor = gameModule.getCellFromNav(currentState, 'left', cursorPos);
+        if (activeGameKey === "match3") {
+          const newCursor = gameModule.getCellFromNav(
+            currentState,
+            "left",
+            cursorPos,
+          );
           setCursorPos(newCursor);
         } else {
           // ORIGINAL LOGIC for TicTacToe/Caro
-          const newCell = gameModule.getCellFromNav(currentState, 'left');
-          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+          const newCell = gameModule.getCellFromNav(currentState, "left");
+          setGameState((prev) => ({ ...prev, selectedCell: newCell }));
         }
       }
     }
@@ -742,23 +952,41 @@ const BoardGame = () => {
 
   const handleRight = useCallback(() => {
     if (mode === MODES.GAME_SELECT) {
-      setCurrentGameIndex(prev => (prev + 1) % GAME_KEYS.length);
+      setCurrentGameIndex((prev) => (prev + 1) % GAME_KEYS.length);
     } else if (mode === MODES.SETTINGS) {
-      setSelectedSizeIndex(prev => Math.min(sizeOptions.length - 1, prev + 1));
+      setSelectedSizeIndex((prev) =>
+        Math.min(sizeOptions.length - 1, prev + 1),
+      );
     } else if (mode === MODES.PLAYING && gameModule) {
       const currentState = gameStateRef.current;
       if (!currentState) return;
 
-      if (activeGameKey === 'snake' && currentState.status === 'playing') {
-        const newDirection = gameModule.getCellFromNav(currentState, 'right');
-        setGameState(prev => ({ ...prev, direction: newDirection }));
-      } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        if (activeGameKey === 'match3') {
-          const newCursor = gameModule.getCellFromNav(currentState, 'right', cursorPos);
+      if (activeGameKey === "snake" && currentState.status === "playing") {
+        const newDirection = gameModule.getCellFromNav(currentState, "right");
+        setGameState((prev) => ({ ...prev, direction: newDirection }));
+      } else if (
+        activeGameKey === "memory" &&
+        currentState.status === "playing" &&
+        !currentState.isChecking
+      ) {
+        // Memory game navigation
+        const newCell = gameModule.getCellFromNav(currentState, "right");
+        setGameState((prev) => ({ ...prev, selectedCell: newCell }));
+      } else if (
+        currentState.status === "playing" &&
+        currentState.currentPlayer === "X" &&
+        !currentState.isAIThinking
+      ) {
+        if (activeGameKey === "match3") {
+          const newCursor = gameModule.getCellFromNav(
+            currentState,
+            "right",
+            cursorPos,
+          );
           setCursorPos(newCursor);
         } else {
-          const newCell = gameModule.getCellFromNav(currentState, 'right');
-          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+          const newCell = gameModule.getCellFromNav(currentState, "right");
+          setGameState((prev) => ({ ...prev, selectedCell: newCell }));
         }
       }
     }
@@ -769,16 +997,32 @@ const BoardGame = () => {
       const currentState = gameStateRef.current;
       if (!currentState) return;
 
-      if (activeGameKey === 'snake' && currentState.status === 'playing') {
-        const newDirection = gameModule.getCellFromNav(currentState, 'up');
-        setGameState(prev => ({ ...prev, direction: newDirection }));
-      } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        if (activeGameKey === 'match3') {
-          const newCursor = gameModule.getCellFromNav(currentState, 'up', cursorPos);
+      if (activeGameKey === "snake" && currentState.status === "playing") {
+        const newDirection = gameModule.getCellFromNav(currentState, "up");
+        setGameState((prev) => ({ ...prev, direction: newDirection }));
+      } else if (
+        activeGameKey === "memory" &&
+        currentState.status === "playing" &&
+        !currentState.isChecking
+      ) {
+        // Memory game navigation
+        const newCell = gameModule.getCellFromNav(currentState, "up");
+        setGameState((prev) => ({ ...prev, selectedCell: newCell }));
+      } else if (
+        currentState.status === "playing" &&
+        currentState.currentPlayer === "X" &&
+        !currentState.isAIThinking
+      ) {
+        if (activeGameKey === "match3") {
+          const newCursor = gameModule.getCellFromNav(
+            currentState,
+            "up",
+            cursorPos,
+          );
           setCursorPos(newCursor);
         } else {
-          const newCell = gameModule.getCellFromNav(currentState, 'up');
-          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+          const newCell = gameModule.getCellFromNav(currentState, "up");
+          setGameState((prev) => ({ ...prev, selectedCell: newCell }));
         }
       }
     }
@@ -789,49 +1033,79 @@ const BoardGame = () => {
       const currentState = gameStateRef.current;
       if (!currentState) return;
 
-      if (activeGameKey === 'snake' && currentState.status === 'playing') {
-        const newDirection = gameModule.getCellFromNav(currentState, 'down');
-        setGameState(prev => ({ ...prev, direction: newDirection }));
-      } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        if (activeGameKey === 'match3') {
-          const newCursor = gameModule.getCellFromNav(currentState, 'down', cursorPos);
+      if (activeGameKey === "snake" && currentState.status === "playing") {
+        const newDirection = gameModule.getCellFromNav(currentState, "down");
+        setGameState((prev) => ({ ...prev, direction: newDirection }));
+      } else if (
+        activeGameKey === "memory" &&
+        currentState.status === "playing" &&
+        !currentState.isChecking
+      ) {
+        // Memory game navigation
+        const newCell = gameModule.getCellFromNav(currentState, "down");
+        setGameState((prev) => ({ ...prev, selectedCell: newCell }));
+      } else if (
+        currentState.status === "playing" &&
+        currentState.currentPlayer === "X" &&
+        !currentState.isAIThinking
+      ) {
+        if (activeGameKey === "match3") {
+          const newCursor = gameModule.getCellFromNav(
+            currentState,
+            "down",
+            cursorPos,
+          );
           setCursorPos(newCursor);
         } else {
-          const newCell = gameModule.getCellFromNav(currentState, 'down');
-          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+          const newCell = gameModule.getCellFromNav(currentState, "down");
+          setGameState((prev) => ({ ...prev, selectedCell: newCell }));
         }
       }
     }
   }, [mode, activeGameKey, gameModule, cursorPos]);
 
   const handleEnter = useCallback(() => {
-    console.log('handleEnter called', { mode, activeGameKey, gameState, cursorPos });
+    console.log("handleEnter called", {
+      mode,
+      activeGameKey,
+      gameState,
+      cursorPos,
+    });
 
     if (mode === MODES.GAME_SELECT) {
-      console.log('Entering settings...');
+      console.log("Entering settings...");
       enterSettings();
     } else if (mode === MODES.SETTINGS) {
-      console.log('Starting game from settings...');
+      console.log("Starting game from settings...");
       startGame();
     } else if (mode === MODES.PLAYING) {
       // For Snake, Enter restarts on game over
-      if (activeGameKey === 'snake' && gameState?.status === 'gameover') {
-        console.log('Restarting Snake game...');
+      if (activeGameKey === "snake" && gameState?.status === "gameover") {
+        console.log("Restarting Snake game...");
         resetGame();
-      } else if (gameState?.status === 'playing') {
+      } else if (gameState?.status === "playing") {
         // MATCH-3 SPECIFIC: "Select with Cursor" or "Swap with Cursor"
-        if (activeGameKey === 'match3') {
+        if (activeGameKey === "match3") {
           // Execute move on the CURSOR position
           executeMove(cursorPos);
+        } else if (activeGameKey === "memory") {
+          // Memory game: flip selected card
+          console.log("Memory: flipping card...");
+          handlePlayerMove();
         } else {
           // For other turn-based games
-          console.log('Making player move...');
+          console.log("Making player move...");
           handlePlayerMove();
         }
+      } else if (gameState?.status === "win" && activeGameKey === "memory") {
+        // Memory game win - restart
+        console.log("Restarting Memory game...");
+        toast.info("Bắt đầu ván mới!");
+        startGame();
       } else {
         // For other games, Enter restarts
-        console.log('Restarting game...');
-        if (activeGameKey === 'snake') {
+        console.log("Restarting game...");
+        if (activeGameKey === "snake") {
           resetGame();
         } else {
           toast.info("Bắt đầu ván mới!");
@@ -839,13 +1113,23 @@ const BoardGame = () => {
         }
       }
     }
-  }, [mode, activeGameKey, gameState, enterSettings, startGame, handlePlayerMove, resetGame, cursorPos, executeMove]);
+  }, [
+    mode,
+    activeGameKey,
+    gameState,
+    enterSettings,
+    startGame,
+    handlePlayerMove,
+    resetGame,
+    cursorPos,
+    executeMove,
+  ]);
 
   const handleBack = useCallback(() => {
     // Save game state for Snake before going back
-    if (mode === MODES.PLAYING && activeGameKey === 'snake' && gameState) {
-      if (gameState.status === 'playing') {
-        console.log('Saving Snake game state (in progress) before back...');
+    if (mode === MODES.PLAYING && activeGameKey === "snake" && gameState) {
+      if (gameState.status === "playing") {
+        console.log("Saving Snake game state (in progress) before back...");
         const gameStateToSave = {
           snake: gameState.snake,
           food: gameState.food,
@@ -854,29 +1138,34 @@ const BoardGame = () => {
           size: gameState.size,
         };
         saveProgress(gameStateToSave);
-      } else if (gameState.status === 'gameover') {
-        console.log('🔴 Game already over, completing session before back...', {
+      } else if (gameState.status === "gameover") {
+        console.log("🔴 Game already over, completing session before back...", {
           score: gameState.score,
           isAuthenticated,
           apiGameId,
-          sessionCompletedRef: sessionCompletedRef.current
+          sessionCompletedRef: sessionCompletedRef.current,
         });
         // If game is over but session not completed yet, complete it now
         if (!sessionCompletedRef.current) {
           sessionCompletedRef.current = true;
-          console.log('💾 Calling completeGameSession from handleBack...');
+          console.log("💾 Calling completeGameSession from handleBack...");
           try {
             completeGameSession({
-              result: 'loss',
+              result: "loss",
               score: gameState.score,
               gameState: gameState,
             });
-            console.log('✅ completeGameSession called successfully from handleBack');
+            console.log(
+              "✅ completeGameSession called successfully from handleBack",
+            );
           } catch (error) {
-            console.error('❌ Error calling completeGameSession from handleBack:', error);
+            console.error(
+              "❌ Error calling completeGameSession from handleBack:",
+              error,
+            );
           }
         } else {
-          console.log('⚠️ Session already completed, skipping');
+          console.log("⚠️ Session already completed, skipping");
         }
       }
     }
@@ -892,20 +1181,30 @@ const BoardGame = () => {
     } else {
       navigate("/games");
     }
-  }, [mode, activeGameKey, gameState, saveProgress, completeGameSession, backToSelect, navigate, isAuthenticated, apiGameId]);
+  }, [
+    mode,
+    activeGameKey,
+    gameState,
+    saveProgress,
+    completeGameSession,
+    backToSelect,
+    navigate,
+    isAuthenticated,
+    apiGameId,
+  ]);
 
   const handleHint = useCallback(() => {
-    console.log('🔍 handleHint called', { mode, activeGameKey, showHint });
-    if (mode === MODES.PLAYING && activeGameKey === 'snake') {
+    console.log("🔍 handleHint called", { mode, activeGameKey, showHint });
+    if (mode === MODES.PLAYING && activeGameKey === "snake") {
       // For Snake, toggle hint display
-      console.log('🎯 Toggling hint for Snake');
-      setShowHint(prev => {
-        console.log('📝 showHint changing from', prev, 'to', !prev);
+      console.log("🎯 Toggling hint for Snake");
+      setShowHint((prev) => {
+        console.log("📝 showHint changing from", prev, "to", !prev);
         return !prev;
       });
     } else if (mode === MODES.PLAYING && gameModule && gameState) {
       // For other games, show AI hint move
-      if (gameState.status === 'playing' && gameState.currentPlayer === 'X') {
+      if (gameState.status === "playing" && gameState.currentPlayer === "X") {
         // Check hints remaining
         const hintsRemaining = gameState.hintsRemaining ?? 3;
         if (hintsRemaining <= 0) {
@@ -915,19 +1214,19 @@ const BoardGame = () => {
 
         // Use getHintMove (hard AI) if available, fallback to getAIMove
         const hintFn = gameModule.getHintMove || gameModule.getAIMove;
-        
+
         if (!hintFn) {
-          console.log('⚠️ No hint function available for this game');
+          console.log("⚠️ No hint function available for this game");
           return;
         }
-        
+
         const hintMove = hintFn(gameState);
 
         if (hintMove !== -1) {
-          setGameState(prev => ({
+          setGameState((prev) => ({
             ...prev,
             selectedCell: hintMove,
-            hintsRemaining: (prev.hintsRemaining ?? 3) - 1
+            hintsRemaining: (prev.hintsRemaining ?? 3) - 1,
           }));
           toast.info(`Gợi ý! Còn ${hintsRemaining - 1} lượt`);
         }
@@ -973,7 +1272,15 @@ const BoardGame = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleLeft, handleRight, handleUp, handleDown, handleEnter, handleBack, handleHint]);
+  }, [
+    handleLeft,
+    handleRight,
+    handleUp,
+    handleDown,
+    handleEnter,
+    handleBack,
+    handleHint,
+  ]);
 
   // ============== DISPLAY ==============
 
@@ -1008,24 +1315,35 @@ const BoardGame = () => {
         return pattern;
       }
       // For DotArt, use its custom settings renderer with navigation
-      if (activeGameKey === 'dotart' && gameModule?.renderSettingsToMatrix) {
+      if (activeGameKey === "dotart" && gameModule?.renderSettingsToMatrix) {
         const selectedSize = sizeOptions[selectedSizeIndex]?.value || 24;
-        return gameModule.renderSettingsToMatrix(selectedSize, sizeOptions, selectedSizeIndex);
+        return gameModule.renderSettingsToMatrix(
+          selectedSize,
+          sizeOptions,
+          selectedSizeIndex,
+        );
       }
       // For other games, use default settings pattern
-      return generateSettingsPattern(currentGamePattern?.type, sizeOptions, selectedSizeIndex);
+      return generateSettingsPattern(
+        currentGamePattern?.type,
+        sizeOptions,
+        selectedSizeIndex,
+      );
     }
-
 
     if (mode === MODES.PLAYING && gameModule && gameState) {
       // Show hint overlay for Snake if showHint is true
-      if (activeGameKey === 'snake' && showHint && gameModule?.renderHint) {
+      if (activeGameKey === "snake" && showHint && gameModule?.renderHint) {
         return gameModule.renderHint();
       }
 
       // For Match-3, pass cursorPos
-      if (activeGameKey === 'match3') {
-        return gameModule.renderToMatrix({ ...gameState, cursorPos, hoverCell });
+      if (activeGameKey === "match3") {
+        return gameModule.renderToMatrix({
+          ...gameState,
+          cursorPos,
+          hoverCell,
+        });
       }
 
       // For other games, pass hover state if needed (standard render)
@@ -1033,7 +1351,18 @@ const BoardGame = () => {
     }
 
     return createEmptyMatrix();
-  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint, hoverCell, cursorPos]);
+  }, [
+    mode,
+    currentGamePattern,
+    sizeOptions,
+    selectedSizeIndex,
+    gameModule,
+    gameState,
+    activeGameKey,
+    showHint,
+    hoverCell,
+    cursorPos,
+  ]);
 
   // ============== RENDER ==============
 
@@ -1054,13 +1383,12 @@ const BoardGame = () => {
           <h1 className="text-2xl font-bold text-cyan-400 tracking-wider">
             {mode === MODES.GAME_SELECT
               ? currentGamePattern?.name || "SELECT GAME"
-              : gameModule?.name || currentGamePattern?.name || "GAME"
-            }
+              : gameModule?.name || currentGamePattern?.name || "GAME"}
           </h1>
         </div>
 
         {/* Match-3 HUD: Score + Moves (and Target) */}
-        {mode === MODES.PLAYING && activeGameKey === 'match3' && gameState && (
+        {mode === MODES.PLAYING && activeGameKey === "match3" && gameState && (
           <div className="mb-3 flex items-center gap-3">
             <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-cyan-300">
               Score: {gameState.score}
@@ -1070,14 +1398,21 @@ const BoardGame = () => {
             </div>
             {(() => {
               const val = gameState.targetScore;
-              const num = typeof val === 'number' ? val : Number(String(val ?? '').replace(/[^0-9]/g, ''));
+              const num =
+                typeof val === "number"
+                  ? val
+                  : Number(String(val ?? "").replace(/[^0-9]/g, ""));
               return Number.isFinite(num) && num > 0;
             })() && (
               <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-emerald-300">
-                Target: {(() => {
+                Target:{" "}
+                {(() => {
                   const val = gameState.targetScore;
-                  const num = typeof val === 'number' ? val : Number(String(val ?? '').replace(/[^0-9]/g, ''));
-                  return Number.isFinite(num) && num > 0 ? num : '';
+                  const num =
+                    typeof val === "number"
+                      ? val
+                      : Number(String(val ?? "").replace(/[^0-9]/g, ""));
+                  return Number.isFinite(num) && num > 0 ? num : "";
                 })()}
               </div>
             )}
@@ -1090,8 +1425,14 @@ const BoardGame = () => {
           <div className="relative bg-slate-900/80 p-4 rounded-2xl border border-slate-700/50">
             <LEDMatrix
               pattern={displayPattern}
-              onCellClick={mode === MODES.PLAYING && activeGameKey !== 'match3' ? handleMatrixClick : null}
-              onCellHover={activeGameKey !== 'match3' ? handleMatrixHover : null}
+              onCellClick={
+                mode === MODES.PLAYING && activeGameKey !== "match3"
+                  ? handleMatrixClick
+                  : null
+              }
+              onCellHover={
+                activeGameKey !== "match3" ? handleMatrixHover : null
+              }
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
             />
@@ -1099,18 +1440,30 @@ const BoardGame = () => {
         </div>
 
         {/* End-of-game banner for Match-3 */}
-        {mode === MODES.PLAYING && activeGameKey === 'match3' && gameState && gameState.status !== 'playing' && (
-          <div className="mt-4 px-4 py-3 rounded-xl border text-center select-none
-                          border-slate-700 bg-slate-900/70 text-slate-200">
-            <div className="text-lg font-semibold mb-1">
-              {gameState.status === 'win' ? '🎉 Bạn đã THẮNG!' : '💀 Bạn đã THUA!'}
+        {mode === MODES.PLAYING &&
+          activeGameKey === "match3" &&
+          gameState &&
+          gameState.status !== "playing" && (
+            <div
+              className="mt-4 px-4 py-3 rounded-xl border text-center select-none
+                          border-slate-700 bg-slate-900/70 text-slate-200"
+            >
+              <div className="text-lg font-semibold mb-1">
+                {gameState.status === "win"
+                  ? "🎉 Bạn đã THẮNG!"
+                  : "💀 Bạn đã THUA!"}
+              </div>
+              <div className="text-sm text-slate-300">
+                Điểm: {gameState.score}
+                {typeof gameState.targetScore === "number"
+                  ? ` / Mục tiêu: ${gameState.targetScore}`
+                  : ""}
+              </div>
+              <div className="text-xs mt-2 text-cyan-300">
+                Nhấn Enter để chơi ván mới
+              </div>
             </div>
-            <div className="text-sm text-slate-300">
-              Điểm: {gameState.score}{typeof gameState.targetScore === 'number' ? ` / Mục tiêu: ${gameState.targetScore}` : ''}
-            </div>
-            <div className="text-xs mt-2 text-cyan-300">Nhấn Enter để chơi ván mới</div>
-          </div>
-        )}
+          )}
 
         {/* Control Panel */}
         <div className="mt-4">
@@ -1126,28 +1479,33 @@ const BoardGame = () => {
         </div>
 
         {/* DrawBoard Toolbar (for dotart game only) */}
-        {mode === MODES.PLAYING && activeGameKey === 'dotart' && gameState && gameModule && (
-          <DrawToolbar
-            selectedColor={gameState.selectedColor}
-            selectedColorIndex={gameState.selectedColorIndex}
-            tool={gameState.tool}
-            onColorChange={(color, index) => {
-              setGameState(gameModule.setColor(gameState, color, index));
-            }}
-            onToolChange={(tool) => {
-              setGameState(gameModule.setTool(gameState, tool));
-            }}
-            onClear={() => {
-              setGameState(gameModule.clearCanvas(gameState));
-            }}
-            onSave={() => {
-              // Use toApiState to convert to API format before saving
-              const apiState = gameModule.toApiState ? gameModule.toApiState(gameState) : gameState;
-              saveProgress(apiState);
-              toast.success('Artwork saved!');
-            }}
-          />
-        )}
+        {mode === MODES.PLAYING &&
+          activeGameKey === "dotart" &&
+          gameState &&
+          gameModule && (
+            <DrawToolbar
+              selectedColor={gameState.selectedColor}
+              selectedColorIndex={gameState.selectedColorIndex}
+              tool={gameState.tool}
+              onColorChange={(color, index) => {
+                setGameState(gameModule.setColor(gameState, color, index));
+              }}
+              onToolChange={(tool) => {
+                setGameState(gameModule.setTool(gameState, tool));
+              }}
+              onClear={() => {
+                setGameState(gameModule.clearCanvas(gameState));
+              }}
+              onSave={() => {
+                // Use toApiState to convert to API format before saving
+                const apiState = gameModule.toApiState
+                  ? gameModule.toApiState(gameState)
+                  : gameState;
+                saveProgress(apiState);
+                toast.success("Artwork saved!");
+              }}
+            />
+          )}
 
         {/* Bottom panel: Rankings | History | Reviews */}
         {apiGameId && mode === MODES.SETTINGS && (
@@ -1156,7 +1514,7 @@ const BoardGame = () => {
       </div>
 
       {/* Hint Dialog for Snake */}
-      {showHint && activeGameKey === 'snake' && (
+      {showHint && activeGameKey === "snake" && (
         <SnakeHintDialog onClose={() => setShowHint(false)} />
       )}
     </div>
