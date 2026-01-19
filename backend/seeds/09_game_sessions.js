@@ -14,7 +14,7 @@ const GAME_TYPES = {
     4: 'snake',
     5: 'match3',
     6: 'memory_cards',
-    7: 'drawing_board'
+    7: 'draw_board'
 };
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];

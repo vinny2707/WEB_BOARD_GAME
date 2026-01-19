@@ -57,18 +57,9 @@ function generateElo(userIndex, gameIndex) {
     } else if (rand < 0.80) {
         // Gold: 1300-1599
         elo = 1300 + Math.floor(((rand - 0.50) / 0.30) * 300);
-    } else if (rand < 0.92) {
-        // Platinum: 1600-1899
-        elo = 1600 + Math.floor(((rand - 0.80) / 0.12) * 300);
-    } else if (rand < 0.97) {
-        // Diamond: 1900-2199
-        elo = 1900 + Math.floor(((rand - 0.92) / 0.05) * 300);
-    } else if (rand < 0.99) {
-        // Master: 2200-2499
-        elo = 2200 + Math.floor(((rand - 0.97) / 0.02) * 300);
     } else {
-        // Grandmaster: 2500-2800
-        elo = 2500 + Math.floor(((rand - 0.99) / 0.01) * 300);
+        // Grandmaster: 1600-1899
+        elo = 1600 + Math.floor(((rand - 0.80) / 0.12) * 300);
     }
 
     return elo;

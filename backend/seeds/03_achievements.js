@@ -388,53 +388,53 @@ exports.seed = async function(knex) {
         {
             id: 28,
             name: 'Rắn Nhỏ',
-            description: 'Đạt 50 điểm trong Rắn Săn Mồi',
+            description: 'Đạt 500 điểm trong Rắn Săn Mồi',
             icon: '🐍',
             category: 'beginner',
             points: 20,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'snake',
-                required_count: 50
+                required_count: 500
             })
         },
         {
             id: 29,
             name: 'Rắn Trung',
-            description: 'Đạt 150 điểm trong Rắn Săn Mồi',
+            description: 'Đạt 1000 điểm trong Rắn Săn Mồi',
             icon: '🐍🐍',
             category: 'expert',
             points: 60,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'snake',
-                required_count: 150
+                required_count: 1000
             })
         },
         {
             id: 30,
             name: 'Rắn Khổng Lồ',
-            description: 'Đạt 300 điểm trong Rắn Săn Mồi',
+            description: 'Đạt 1500 điểm trong Rắn Săn Mồi',
             icon: '🐍🐍🐍',
             category: 'expert',
             points: 120,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'snake',
-                required_count: 300
+                required_count: 1500
             })
         },
         {
             id: 31,
             name: 'Vua Rắn',
-            description: 'Đạt 500 điểm trong Rắn Săn Mồi',
+            description: 'Đạt 2000 điểm trong Rắn Săn Mồi',
             icon: '🐍👑',
             category: 'special',
             points: 250,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'snake',
-                required_count: 500
+                required_count: 2000
             })
         },
         {
@@ -457,10 +457,23 @@ exports.seed = async function(knex) {
         {
             id: 33,
             name: 'Nghiền Kẹo Nhỏ',
-            description: 'Đạt 3000 điểm trong Candy Crush',
+            description: 'Đạt 1500 điểm trong Candy Crush',
             icon: '🍬',
             category: 'beginner',
             points: 20,
+            unlock_criteria: JSON.stringify({
+                type: 'high_score',
+                game_type: 'match3',
+                required_count: 1500
+            })
+        },
+        {
+            id: 34,
+            name: 'Nghiền Kẹo Pro',
+            description: 'Đạt 3000 điểm trong Candy Crush',
+            icon: '🍬🍬',
+            category: 'expert',
+            points: 80,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'match3',
@@ -468,29 +481,16 @@ exports.seed = async function(knex) {
             })
         },
         {
-            id: 34,
-            name: 'Nghiền Kẹo Pro',
-            description: 'Đạt 8000 điểm trong Candy Crush',
-            icon: '🍬🍬',
-            category: 'expert',
-            points: 80,
-            unlock_criteria: JSON.stringify({
-                type: 'high_score',
-                game_type: 'match3',
-                required_count: 8000
-            })
-        },
-        {
             id: 35,
             name: 'Vua Kẹo',
-            description: 'Đạt 15000 điểm trong Candy Crush',
+            description: 'Đạt 5000 điểm trong Candy Crush',
             icon: '🍬👑',
             category: 'special',
             points: 200,
             unlock_criteria: JSON.stringify({
                 type: 'high_score',
                 game_type: 'match3',
-                required_count: 15000
+                required_count: 5000
             })
         },
         {
@@ -833,7 +833,59 @@ exports.seed = async function(knex) {
                 game_type: null,
                 required_count: 0
             })
-        }
+        },
+        {
+            id: 61,
+            name: 'Thắng 1000 Trận',
+            description: 'Giành 1000 chiến thắng',
+            icon: '👑👑',
+            category: 'expert',
+            points: 500,
+            unlock_criteria: JSON.stringify({
+                type: 'total_wins',
+                game_type: null,
+                required_count: 1000   
+            })
+        },
+        {
+            id: 62,
+            name: 'Bậc Thầy Trí Nhớ',
+            description: 'Thắng 100 ván Cờ Trí Nhớ',
+            icon: '🧠👑',
+            category: 'special',
+            points: 280,
+            unlock_criteria: JSON.stringify({
+                type: 'game_wins',
+                game_type: 'memory_cards',
+                required_count: 100
+            })
+        },
+        {
+            id: 63,
+            name: 'Thợ Kẹo',
+            description: 'Thắng 50 ván Candy Crush',
+            icon: '🍬🏆',
+            category: 'expert',
+            points: 150,
+            unlock_criteria: JSON.stringify({
+                type: 'game_wins',
+                game_type: 'match3',
+                required_count: 50
+            })
+        },
+        {
+            id: 64,
+            name: 'Thợ Kẹo',
+            description: 'Thắng 100 ván Candy Crush',
+            icon: '🍬🏆',
+            category: 'expert',
+            points: 300,
+            unlock_criteria: JSON.stringify({
+                type: 'game_wins',
+                game_type: 'match3',
+                required_count: 100
+            })
+        },
     ];
 
     // Add created_at to all

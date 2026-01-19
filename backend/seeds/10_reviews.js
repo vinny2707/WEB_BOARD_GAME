@@ -56,7 +56,7 @@ exports.seed = async function (knex) {
     const usedPairs = new Set(); // Đảm bảo mỗi user chỉ review mỗi game 1 lần
 
     // Tạo khoảng 20-40 reviews cho mỗi game (giảm cho 100 users)
-    for (let gameId = 1; gameId <= 7; gameId++) {
+    for (let gameId = 1; gameId <= 11; gameId++) {
         const reviewCount = 20 + Math.floor(Math.random() * 25); // 20-45 reviews per game
 
         for (let i = 0; i < reviewCount; i++) {

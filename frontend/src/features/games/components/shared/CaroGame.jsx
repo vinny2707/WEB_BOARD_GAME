@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { RotateCcw, Lightbulb, Home, BookOpen, X, ChevronRight, ArrowLeft, Save } from 'lucide-react';
+import { toast } from 'sonner';
 import CaroBoard from './CaroBoard';
 import { createCaroAI } from './CaroAI';
 import { PlayerCard, ScoreDisplay } from './CaroPlayerCard';
@@ -58,6 +59,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     const [aiTime, setAiTime] = useState(timePerPlayer);
     const [turnTime, setTurnTime] = useState(timePerTurn);
     const [hintCell, setHintCell] = useState(null);
+    const [hintsRemaining, setHintsRemaining] = useState(3);
     const [isAIThinking, setIsAIThinking] = useState(false);
 
     // Tutorial state (tutorialStep already declared above for boardSize calculation)
@@ -390,11 +392,17 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
     };
 
     const handleHint = () => {
+        if (hintsRemaining <= 0) {
+            toast.error('❌ Bạn đã hết lượt gợi ý! (Giới hạn 3 hint mỗi trận)');
+            return;
+        }
         if (gameStatus !== 'playing' || !isXNext || isAIThinking) return;
 
         const hint = getHint(board);
         if (hint !== null && hint !== undefined) {
             setHintCell(hint);
+            setHintsRemaining(prev => prev - 1);
+            toast.success(`💡 Đây là nước đi gợi ý cho bạn! (Còn ${hintsRemaining - 1} hint)`);
             setTimeout(() => setHintCell(null), 3000);
         }
     };
@@ -416,6 +424,7 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
         setAiTime(timePerPlayer);
         setTurnTime(timePerTurn);
         setHintCell(null);
+        setHintsRemaining(3);
     };
 
     const startGame = async () => {
@@ -513,6 +522,19 @@ const CaroGame = ({ gameId, gameName, lobbyPath, winCount = 5, defaultBoardSize 
             });
         }
     }, [board, isXNext, playerTime, aiTime, moveHistory, gameStatus, updateGameState]);
+
+    // Keyboard handler for hint (H key)
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            if (gameStatus !== 'playing' || !isXNext || isAIThinking) return;
+            if (e.key === 'h' || e.key === 'H') {
+                handleHint();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [gameStatus, isXNext, isAIThinking, hintsRemaining, board, getHint]);
 
     const startTutorial = () => {
         setBoard(Array(boardSize * boardSize).fill(null));

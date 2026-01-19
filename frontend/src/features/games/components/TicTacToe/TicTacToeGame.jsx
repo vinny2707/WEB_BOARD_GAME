@@ -174,6 +174,7 @@ const TicTacToeGame = () => {
   const [aiTime, setAiTime] = useState(timePerPlayer);
   const [turnTime, setTurnTime] = useState(timePerTurn);
   const [hintCell, setHintCell] = useState(null);
+  const [hintsRemaining, setHintsRemaining] = useState(3);
   const [isAIThinking, setIsAIThinking] = useState(false);
 
   // Tutorial state
@@ -640,12 +641,17 @@ const TicTacToeGame = () => {
     setMoveHistory(newHistory);
     setIsXNext(true);
     setHintCell(null);
+    setHintsRemaining(3);
   }, [board, moveHistory, gameStatus, isAIThinking]);
 
   const handleHint = useCallback(() => {
     if (gameStatus === "tutorial") {
       // In tutorial mode, show tutorial tips
       toast.info("📖 Nhấn vào ô được đánh dấu sáng để tiếp tục hướng dẫn!");
+      return;
+    }
+    if (hintsRemaining <= 0) {
+      toast.error("❌ Bạn đã hết lượt gợi ý! (Giới hạn 3 hint mỗi trận)");
       return;
     }
     if (gameStatus !== "playing" || isAIThinking) {
@@ -655,12 +661,13 @@ const TicTacToeGame = () => {
     const hint = getHint(board, boardSize);
     if (hint !== -1) {
       setHintCell(hint);
-      toast.success("💡 Đây là nước đi gợi ý cho bạn!");
+      setHintsRemaining(prev => prev - 1);
+      toast.success(`💡 Đây là nước đi gợi ý cho bạn! (Còn ${hintsRemaining - 1} hint)`);
       setTimeout(() => setHintCell(null), 3000);
     } else {
       toast.info("Không có gợi ý nào khả dụng!");
     }
-  }, [board, boardSize, gameStatus, isAIThinking]);
+  }, [board, boardSize, gameStatus, isAIThinking, hintsRemaining]);
 
   // Gamepad navigation state for board cells
   const [selectedCellIndex, setSelectedCellIndex] = useState(Math.floor((boardSize * boardSize) / 2)); // Start at center

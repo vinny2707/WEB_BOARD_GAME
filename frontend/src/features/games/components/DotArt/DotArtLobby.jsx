@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import useClickSound from "../../hooks/useClickSound";
 import useGameSession from "../../hooks/useGameSession";
+import { getGames } from "../../../../api/gamesApi";
 import GameReviews from "../GameReviews";
 import GameRankings from "../GameRankings";
 import GameSessionHistory from "../GameSessionHistory";
@@ -33,12 +34,15 @@ const DotArtLobby = () => {
   const navigate = useNavigate();
   const playClick = useClickSound();
 
-  // Session management (gameId=13 for DotArt/DrawBoard)
+  // Dynamic gameId state
+  const [gameId, setGameId] = useState(null);
+
+  // Session management (gameId will be fetched dynamically)
   const {
     checkInProgressSession,
     resumeSession: fetchFullSession,
     isAuthenticated,
-  } = useGameSession(13);
+  } = useGameSession(gameId);
 
   // Settings
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -76,10 +80,28 @@ const DotArtLobby = () => {
     return items;
   }, [inProgressSession]);
 
+  // Fetch gameId for draw_board on mount
+  useEffect(() => {
+    const fetchGameId = async () => {
+      try {
+        const response = await getGames({ limit: 100 });
+        const drawBoardGame = response.data?.find(game => game.type === 'draw_board');
+        if (drawBoardGame) {
+          setGameId(drawBoardGame.id);
+        } else {
+          console.error('draw_board game not found');
+        }
+      } catch (error) {
+        console.error('Failed to fetch gameId:', error);
+      }
+    };
+    fetchGameId();
+  }, []);
+
   // Check for in-progress session on mount
   useEffect(() => {
     const checkSession = async () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && gameId) {
         setIsCheckingSession(true);
         const session = await checkInProgressSession();
         setInProgressSession(session);
@@ -87,7 +109,7 @@ const DotArtLobby = () => {
       setIsCheckingSession(false);
     };
     checkSession();
-  }, [checkInProgressSession, isAuthenticated]);
+  }, [checkInProgressSession, isAuthenticated, gameId]);
 
   // Handle in-progress change from GameSessionHistory
   const handleInProgressChange = (hasInProgress, firstInProgressSession) => {
@@ -100,7 +122,7 @@ const DotArtLobby = () => {
 
   const handleStartGame = () => {
     playClick();
-    navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
+    navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 7 } });
   };
 
   const handleResumeGame = async () => {
@@ -118,16 +140,16 @@ const DotArtLobby = () => {
           state: {
             settings: { gridSize: savedGridSize },
             resumeSession: fullSession,
-            gameId: 13,
+            gameId: 7,
           },
         });
       } else {
         // Fallback: start new game if can't load session
-        navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
+        navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 7 } });
       }
     } catch (error) {
       console.error("Failed to load session:", error);
-      navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 13 } });
+      navigate("/games/dotart/play", { state: { settings: gameSettings, gameId: 7 } });
     } finally {
       setIsLoadingResume(false);
     }
@@ -286,7 +308,7 @@ const DotArtLobby = () => {
         {/* Left Side - Leaderboard */}
         <div className="w-72 flex-shrink-0 max-lg:w-full max-lg:order-2">
           <GameRankings
-            gameId={13}
+            gameId={7}
             themeColor="pink"
             limit={8}
             showCountdown={false}
@@ -385,7 +407,7 @@ const DotArtLobby = () => {
             {/* Game Session History */}
             {isAuthenticated && (
               <GameSessionHistory
-                gameId={13}
+                gameId={7}
                 limit={5}
                 gamePath="/games/dotart"
                 onInProgressChange={handleInProgressChange}
@@ -436,7 +458,7 @@ const DotArtLobby = () => {
 
         {/* Right Side - Reviews */}
         <div className="w-96 flex-shrink-0 max-lg:w-full max-lg:order-3">
-          <GameReviews gameId={13} />
+          <GameReviews gameId={7} />
         </div>
       </div>
 

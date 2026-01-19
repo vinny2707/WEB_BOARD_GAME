@@ -37,7 +37,10 @@ export const useGameSession = (gameId, options = {}) => {
      * @param {Object} initialState - Initial game state
      */
     const startGameSession = useCallback(async (settings = {}, initialState = null) => {
-        if (!isAuthenticated() || !gameId) return null;
+        if (!isAuthenticated() || !gameId) {
+            console.warn('Cannot start session: no auth or gameId', { gameId, isAuth: isAuthenticated() });
+            return null;
+        }
 
         setIsLoading(true);
         setError(null);
@@ -52,9 +55,14 @@ export const useGameSession = (gameId, options = {}) => {
             });
 
             if (response.success && response.data?.id) {
+                // Update BOTH ref and state immediately
                 sessionIdRef.current = response.data.id;
                 setSessionId(response.data.id);
+                console.log('✅ Session started successfully:', response.data.id);
                 return response.data.id;
+            } else {
+                console.error('Failed to start session: invalid response', response);
+                return null;
             }
         } catch (err) {
             console.error('Failed to start session:', err);
@@ -102,8 +110,19 @@ export const useGameSession = (gameId, options = {}) => {
     const completeGameSession = useCallback((result) => {
         // Use sessionIdRef to ensure we have the latest value (state might not be updated yet due to batching)
         const currentSessionId = sessionIdRef.current || sessionId;
-        if (!isAuthenticated() || !gameId || !currentSessionId) {
-            console.warn('❌ Cannot complete game: missing auth, gameId, or sessionId', { gameId, currentSessionId, isAuth: isAuthenticated() });
+        if (!isAuthenticated() || !gameId) {
+            console.warn('❌ Cannot complete game: missing auth or gameId', { gameId, isAuth: isAuthenticated() });
+            return;
+        }
+
+        if (!currentSessionId) {
+            console.warn('❌ Cannot complete game: missing sessionId', { 
+                gameId, 
+                currentSessionId, 
+                sessionIdState: sessionId,
+                sessionIdRef: sessionIdRef.current,
+                isAuth: isAuthenticated() 
+            });
             return;
         }
 

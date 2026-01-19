@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, RotateCcw, Trophy, Zap, BookOpen, X, ChevronRight, Save, Lightbulb } from "lucide-react";
+import { toast } from 'sonner';
 import useGameSession from '../../hooks/useGameSession';
 
 /**
@@ -88,6 +89,7 @@ const Match3Game = () => {
 
   // Hint state
   const [hintCells, setHintCells] = useState(null);
+  const [hintsRemaining, setHintsRemaining] = useState(3);
   const hintTimeoutRef = useRef(null);
 
   // Tutorial
@@ -673,11 +675,16 @@ const Match3Game = () => {
     floatingTextsRef.current = [];
     swapAnimRef.current = null;
     fallingRef.current = false;
+    setHintsRemaining(3);
     setGameStatus("playing");
 
+    // Start session and save sessionId
     if (isAuthenticated) {
       const simplifiedBoard = newBoard.map(cell => cell.type);
-      await startSession(lobbySettings, { board: simplifiedBoard, score: 0, moves: initialMoves });
+      const newSessionId = await startSession(lobbySettings, { board: simplifiedBoard, score: 0, moves: initialMoves });
+      if (newSessionId) {
+        console.log('✅ Started new session:', newSessionId);
+      }
     }
   };
 
@@ -783,19 +790,27 @@ const Match3Game = () => {
     const handleKeyPress = (e) => {
       if (gameStatus !== 'playing') return;
       if (e.key === 'h' || e.key === 'H') {
+        if (hintsRemaining <= 0) {
+          toast.error('❌ Bạn đã hết lượt gợi ý! (Giới hạn 3 hint mỗi trận)');
+          return;
+        }
         const hint = findHint(boardRef.current, boardSize);
         if (hint) {
           playSound('swap');
           setHintCells(hint);
+          setHintsRemaining(prev => prev - 1);
+          toast.success(`💡 Đây là nước đi gợi ý cho bạn! (Còn ${hintsRemaining - 1} hint)`);
           if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
           hintTimeoutRef.current = setTimeout(() => setHintCells(null), 3000);
+        } else {
+          toast.info('Không có gợi ý nào khả dụng!');
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameStatus, boardSize, playSound]);
+  }, [gameStatus, boardSize, playSound, hintsRemaining]);
 
   const exitTutorial = () => { setGameStatus("idle"); setTutorialStep(0); };
   const nextTutorialStep = () => {
@@ -850,14 +865,22 @@ const Match3Game = () => {
         </div>
         {gameStatus === 'playing' ? (
           <div className="flex items-center gap-2">
-            <button className="w-10 h-10 flex items-center justify-center bg-yellow-500/20 rounded-lg text-yellow-500 hover:bg-yellow-500/30 transition-all" onClick={() => {
+            <button className="w-10 h-10 flex items-center justify-center bg-yellow-500/20 rounded-lg text-yellow-500 hover:bg-yellow-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed" onClick={() => {
+              if (hintsRemaining <= 0) {
+                toast.error('❌ Bạn đã hết lượt gợi ý! (Giới hạn 3 hint mỗi trận)');
+                return;
+              }
               const hint = findHint(boardRef.current, boardSize);
               if (hint) {
                 setHintCells(hint);
+                setHintsRemaining(prev => prev - 1);
+                toast.success(`💡 Đây là nước đi gợi ý cho bạn! (Còn ${hintsRemaining - 1} hint)`);
                 if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
                 hintTimeoutRef.current = setTimeout(() => setHintCells(null), 3000);
+              } else {
+                toast.info('Không có gợi ý nào khả dụng!');
               }
-            }} title="Gợi ý (Nhấn H)">
+            }} disabled={hintsRemaining <= 0} title={`Gợi ý (Nhấn H) - Còn ${hintsRemaining} hint`}>
               <Lightbulb size={20} />
             </button>
             <button className="w-10 h-10 flex items-center justify-center bg-pink-500/20 rounded-lg text-pink-500 hover:bg-pink-500/30 transition-all" onClick={handleSaveGame} title="Lưu game">

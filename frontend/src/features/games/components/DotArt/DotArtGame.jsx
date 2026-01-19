@@ -107,7 +107,7 @@ const DotArtGame = () => {
   // Settings from lobby and resume session
   const settings = location.state?.settings || { gridSize: "medium" };
   const resumeSession = location.state?.resumeSession;
-  const gameId = location.state?.gameId || 13; // Default to 13 for DotArt
+  const gameId = location.state?.gameId || 7; // Default to 7 for DotArt
 
   // Use gridSize from resume session if available, otherwise from settings
   const effectiveGridSize =

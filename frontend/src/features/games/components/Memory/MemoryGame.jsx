@@ -488,7 +488,10 @@ const MemoryGame = () => {
         // Start session for API tracking
         if (isAuthenticated) {
             const symbols = newCards.map(c => c.symbol);
-            await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+            const newSessionId = await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+            if (newSessionId) {
+                console.log('✅ Started new session:', newSessionId);
+            }
         }
     };
 
@@ -524,14 +527,18 @@ const MemoryGame = () => {
     };
 
     const restartGame = async () => {
+        // Create new board first
+        const newCards = createBoard(boardSize, theme);
+
         // Start a new session for the new game
         if (isAuthenticated) {
-            const newCards = createBoard(boardSize, theme);
             const symbols = newCards.map(c => c.symbol);
-            await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+            const newSessionId = await startSession(lobbySettings, { symbols, matchedIds: [], moves: 0, matchedPairs: 0, timer: 0 });
+            if (newSessionId) {
+                console.log('✅ Started new session on restart:', newSessionId);
+            }
         }
 
-        const newCards = createBoard(boardSize, theme);
         setCards(newCards);
         setFlippedCards([]);
         setMoves(0);
