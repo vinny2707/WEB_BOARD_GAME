@@ -104,7 +104,7 @@ const BoardGame = () => {
   const [sizeOptions, setSizeOptions] = useState([]);
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
   const [apiGameId, setApiGameId] = useState(null);
-  
+
   // Game ID map from backend (backendType -> { id, enabled })
   const [gameIdMap, setGameIdMap] = useState({});
 
@@ -274,12 +274,12 @@ const BoardGame = () => {
   // Load game settings from API
   const loadGameSettings = useCallback(async () => {
     setLoading(true);
-    
+
     // Get dynamic ID from gameIdMap, fallback to hardcoded apiId
     const backendType = currentGamePattern?.backendType;
     const dynamicId = gameIdMap[backendType]?.id;
     const gameApiId = dynamicId || currentGamePattern?.apiId;
-    
+
     if (gameApiId) setApiGameId(gameApiId);
 
     // Get game module to use as fallback
@@ -318,12 +318,12 @@ const BoardGame = () => {
     // Check if game is enabled
     const backendType = currentGamePattern?.backendType;
     const gameInfo = gameIdMap[backendType];
-    
+
     if (gameInfo && gameInfo.enabled === false) {
       toast.error(`Game "${currentGamePattern?.name}" đang tạm khóa!`);
       return;
     }
-    
+
     setActiveGameKey(currentGamePatternKey);
     await loadGameSettings();
     setMode(MODES.SETTINGS);
@@ -333,7 +333,7 @@ const BoardGame = () => {
   const handleResume = useCallback((session) => {
     if (session && session.game_state) {
       console.log("Resuming session:", session);
-      
+
       // key from session or current pattern (normalize API format to game key)
       let gameType = session.game_type || currentGamePatternKey;
       // API returns 'caro_4' but game key is 'caro4'
@@ -384,10 +384,10 @@ const BoardGame = () => {
       console.error("No game module for:", activeGameKey);
       return;
     }
-    
+
     // Session completion is already handled by executeMove when game ends
     // No need to complete here - just reset the ref for the new game
-    
+
     const selectedSize = sizeOptions[selectedSizeIndex]?.value || 3;
     console.log('Creating initial state with size:', selectedSize);
 
@@ -428,16 +428,48 @@ const BoardGame = () => {
   const executeMove = useCallback((cellIndex) => {
     if (!gameModule || !gameState) return;
 
-    const newState = gameModule.makeMove({ ...gameState, selectedCell: cellIndex }, cellIndex, 'X');
+    // IMPORTANT: Do NOT override selectedCell here.
+    // Match3's makeMove() manages selection internally:
+    // - If selectedCell === -1 -> selects first
+    // - If same cell -> deselects
+    // - If adjacent -> attempts swap
+    const newState = gameModule.makeMove({ ...gameState }, cellIndex, 'X');
     playSound(tickRef);
 
-    if (newState.status === 'win') {
+    // Handle terminal states
+    if (newState.status === 'win' || (activeGameKey === 'match3' && newState.status === 'gameover')) {
       setGameState(newState);
-      playSound(newState.winner === 'X' ? winRef : loseRef);
+
+      if (activeGameKey === 'match3') {
+        const isWin = newState.status === 'win';
+        playSound(isWin ? winRef : loseRef);
+        sessionCompletedRef.current = true;
+        completeGameSession({
+          result: isWin ? 'win' : 'loss',
+          score: typeof newState.score === 'number' ? newState.score : (isWin ? 100 : 0),
+          gameState: newState,
+        });
+      } else {
+        // Default behavior for other games using 'win'
+        playSound(newState.winner === 'X' ? winRef : loseRef);
+        sessionCompletedRef.current = true;
+        completeGameSession({
+          result: newState.winner === 'X' ? 'win' : 'loss',
+          score: newState.winner === 'X' ? 100 : 0,
+          gameState: newState,
+        });
+      }
+      return;
+    }
+
+    // Generic gameover handling (non-Match3 games that return 'gameover')
+    if (newState.status === 'gameover') {
+      setGameState(newState);
+      playSound(loseRef);
       sessionCompletedRef.current = true;
       completeGameSession({
-        result: newState.winner === 'X' ? 'win' : 'loss',
-        score: newState.winner === 'X' ? 100 : 0,
+        result: 'loss',
+        score: typeof newState.score === 'number' ? newState.score : 0,
         gameState: newState,
       });
       return;
@@ -456,6 +488,12 @@ const BoardGame = () => {
     setGameState({ ...newState, isAIThinking: true });
 
     setTimeout(() => {
+      // Check if AI function exists (some games like match3 don't have AI)
+      if (!gameModule.getAIMove) {
+        setGameState({ ...newState, isAIThinking: false });
+        return;
+      }
+      
       const aiMove = gameModule.getAIMove(newState);
       if (aiMove !== -1) {
         const afterAI = gameModule.makeMove(newState, aiMove, 'O');
@@ -488,8 +526,11 @@ const BoardGame = () => {
     }, 300);
   }, [gameModule, gameState, completeGameSession, incrementMoves, saveProgress, playSound, tickRef, winRef, loseRef]);
 
-  // Handle click on matrix (mouse support)
+  // Handle click on matrix (mouse support) - DISABLED FOR MATCH3
   const handleMatrixClick = useCallback((row, col) => {
+    // Disable mouse click for Match3 - only use arrow keys + Enter
+    if (activeGameKey === 'match3') return;
+    
     if (mode === MODES.PLAYING && gameModule && gameState) {
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
 
@@ -509,26 +550,85 @@ const BoardGame = () => {
         }
       }
     }
-  }, [mode, gameModule, gameState, executeMove]);
+  }, [mode, gameModule, gameState, executeMove, activeGameKey]);
 
-  // Handle hover on matrix (mouse hover support)
+  // ============== DRAG & DROP SUPPORT (MATCH-3) - DISABLED ==============
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStartCell, setDragStartCell] = useState(-1);
+
+  const handleMatrixMouseDown = useCallback((row, col) => {
+    // DISABLED: Match3 only uses arrow keys + Enter
+    return;
+    
+    if (mode !== MODES.PLAYING || activeGameKey !== 'match3') return;
+
+    if (gameModule?.getCellFromMatrix) {
+      const cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+      if (cellIndex !== -1) {
+        setIsDragging(true);
+        setDragStartCell(cellIndex);
+        // Also set cursor/selection for visual feedback
+        setCursorPos(cellIndex);
+        setGameState(prev => ({ ...prev, selectedCell: cellIndex }));
+      }
+    }
+  }, [mode, activeGameKey, gameModule, gameState]);
+
+  const handleMatrixMouseUp = useCallback(() => {
+    // DISABLED: Match3 only uses arrow keys + Enter
+    return;
+    
+    setIsDragging(false);
+    setDragStartCell(-1);
+  }, []);
+
+  // Update hover to handle drag-swap - DISABLED FOR MATCH3
   const handleMatrixHover = useCallback((row, col) => {
+    // Disable hover/drag for Match3 - only use arrow keys + Enter
+    if (activeGameKey === 'match3') return;
+    
     if (mode === MODES.PLAYING && gameModule && gameState) {
+      let cellIndex = -1;
+
+      // Calculate cell index
+      if (gameModule.getCellFromMatrix) {
+        cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
+      } else {
+        // Fallback for simple grids if needed, but not used for Match3
+      }
+
+      // 1. Handle Drag Swap
+      if (isDragging && activeGameKey === 'match3' && dragStartCell !== -1 && cellIndex !== -1) {
+        if (cellIndex !== dragStartCell) {
+          // User dragged to a DIFFERENT cell. Attempt swap/move.
+          // But first, check if it's adjacent? The game logic checks that.
+          // We can just trigger the move.
+
+          // To prevent multiple swaps while dragging, we should check if we already swapped?
+          // Actually, 'executeMove' will deselect if swap fails, or process if supports.
+          // For Match-3, 'makeMove' handles logic. 
+          // We should trigger executeMove(cellIndex).
+          // Since dragStartCell is ALREADY selected (in MouseDown), executeMove(cellIndex) will try to swap Selected <-> CellIndex.
+          executeMove(cellIndex);
+
+          // After swap attempt, stop dragging to prevent chaos
+          setIsDragging(false);
+          setDragStartCell(-1);
+        }
+      }
+
+      // 2. Standard Hover Effect
       if (row === -1 || col === -1) {
         setHoverCell(-1);
         return;
       }
       if (gameState.status === 'playing' && gameState.currentPlayer === 'X' && !gameState.isAIThinking) {
-        let cellIndex = -1;
-        if (gameModule.getCellFromMatrix) {
-          cellIndex = gameModule.getCellFromMatrix(gameState, row, col);
-        }
-        setHoverCell(cellIndex !== -1 && !gameState.board[cellIndex] ? cellIndex : -1);
+        setHoverCell(cellIndex !== -1 && (gameState.board ? !gameState.board[cellIndex] : false) ? cellIndex : -1);
       }
     } else {
       setHoverCell(-1);
     }
-  }, [mode, gameModule, gameState]);
+  }, [mode, gameModule, gameState, isDragging, activeGameKey, dragStartCell, executeMove]);
 
   // Player move (Enter key)
   const handlePlayerMove = useCallback(() => {
@@ -548,27 +648,46 @@ const BoardGame = () => {
 
   // ============== CONTROLS ==============
 
+  // ============== CONTROLS ==============
+
+  // Cursor state for navigation (separate from game selection)
+  const [cursorPos, setCursorPos] = useState(0);
+
+  // Sync cursor with selection when selection changes externally (optional)
+  useEffect(() => {
+    if (gameState?.selectedCell !== undefined && gameState.selectedCell !== -1) {
+      // Logic decision: Should cursor jump to selection?
+      // Usually yes, if the user clicked something, cursor should go there.
+      setCursorPos(gameState.selectedCell);
+    }
+  }, [gameState?.selectedCell]);
+
   const handleLeft = useCallback(() => {
     if (mode === MODES.GAME_SELECT) {
       setCurrentGameIndex(prev => (prev - 1 + GAME_KEYS.length) % GAME_KEYS.length);
     } else if (mode === MODES.SETTINGS) {
       setSelectedSizeIndex(prev => Math.max(0, prev - 1));
     } else if (mode === MODES.PLAYING && gameModule) {
-      // Use ref to get current state without dependency
       const currentState = gameStateRef.current;
       if (!currentState) return;
 
       if (activeGameKey === 'snake' && currentState.status === 'playing') {
-        // For Snake, get new direction and update state
+        // Snake uses direction
         const newDirection = gameModule.getCellFromNav(currentState, 'left');
         setGameState(prev => ({ ...prev, direction: newDirection }));
       } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        // For other games, move selection
-        const newCell = gameModule.getCellFromNav(currentState, 'left');
-        setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        // MATCH-3 SPECIFIC: Move Cursor, NOT Selection
+        if (activeGameKey === 'match3') {
+          const newCursor = gameModule.getCellFromNav(currentState, 'left', cursorPos);
+          setCursorPos(newCursor);
+        } else {
+          // ORIGINAL LOGIC for TicTacToe/Caro
+          const newCell = gameModule.getCellFromNav(currentState, 'left');
+          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        }
       }
     }
-  }, [mode, activeGameKey, gameModule]);
+  }, [mode, activeGameKey, gameModule, cursorPos]);
 
   const handleRight = useCallback(() => {
     if (mode === MODES.GAME_SELECT) {
@@ -583,11 +702,16 @@ const BoardGame = () => {
         const newDirection = gameModule.getCellFromNav(currentState, 'right');
         setGameState(prev => ({ ...prev, direction: newDirection }));
       } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        const newCell = gameModule.getCellFromNav(currentState, 'right');
-        setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        if (activeGameKey === 'match3') {
+          const newCursor = gameModule.getCellFromNav(currentState, 'right', cursorPos);
+          setCursorPos(newCursor);
+        } else {
+          const newCell = gameModule.getCellFromNav(currentState, 'right');
+          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        }
       }
     }
-  }, [mode, activeGameKey, sizeOptions.length, gameModule]);
+  }, [mode, activeGameKey, sizeOptions.length, gameModule, cursorPos]);
 
   const handleUp = useCallback(() => {
     if (mode === MODES.PLAYING && gameModule) {
@@ -598,11 +722,16 @@ const BoardGame = () => {
         const newDirection = gameModule.getCellFromNav(currentState, 'up');
         setGameState(prev => ({ ...prev, direction: newDirection }));
       } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        const newCell = gameModule.getCellFromNav(currentState, 'up');
-        setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        if (activeGameKey === 'match3') {
+          const newCursor = gameModule.getCellFromNav(currentState, 'up', cursorPos);
+          setCursorPos(newCursor);
+        } else {
+          const newCell = gameModule.getCellFromNav(currentState, 'up');
+          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        }
       }
     }
-  }, [mode, activeGameKey, gameModule]);
+  }, [mode, activeGameKey, gameModule, cursorPos]);
 
   const handleDown = useCallback(() => {
     if (mode === MODES.PLAYING && gameModule) {
@@ -613,14 +742,19 @@ const BoardGame = () => {
         const newDirection = gameModule.getCellFromNav(currentState, 'down');
         setGameState(prev => ({ ...prev, direction: newDirection }));
       } else if (currentState.status === 'playing' && currentState.currentPlayer === 'X' && !currentState.isAIThinking) {
-        const newCell = gameModule.getCellFromNav(currentState, 'down');
-        setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        if (activeGameKey === 'match3') {
+          const newCursor = gameModule.getCellFromNav(currentState, 'down', cursorPos);
+          setCursorPos(newCursor);
+        } else {
+          const newCell = gameModule.getCellFromNav(currentState, 'down');
+          setGameState(prev => ({ ...prev, selectedCell: newCell }));
+        }
       }
     }
-  }, [mode, activeGameKey, gameModule]);
+  }, [mode, activeGameKey, gameModule, cursorPos]);
 
   const handleEnter = useCallback(() => {
-    console.log('handleEnter called', { mode, activeGameKey, gameState });
+    console.log('handleEnter called', { mode, activeGameKey, gameState, cursorPos });
 
     if (mode === MODES.GAME_SELECT) {
       console.log('Entering settings...');
@@ -634,9 +768,15 @@ const BoardGame = () => {
         console.log('Restarting Snake game...');
         resetGame();
       } else if (gameState?.status === 'playing') {
-        // For turn-based games, Enter makes a move
-        console.log('Making player move...');
-        handlePlayerMove();
+        // MATCH-3 SPECIFIC: "Select with Cursor" or "Swap with Cursor"
+        if (activeGameKey === 'match3') {
+          // Execute move on the CURSOR position
+          executeMove(cursorPos);
+        } else {
+          // For other turn-based games
+          console.log('Making player move...');
+          handlePlayerMove();
+        }
       } else {
         // For other games, Enter restarts
         console.log('Restarting game...');
@@ -648,7 +788,7 @@ const BoardGame = () => {
         }
       }
     }
-  }, [mode, activeGameKey, gameState, enterSettings, startGame, handlePlayerMove, resetGame]);
+  }, [mode, activeGameKey, gameState, enterSettings, startGame, handlePlayerMove, resetGame, cursorPos, executeMove]);
 
   const handleBack = useCallback(() => {
     // Save game state for Snake before going back
@@ -721,11 +861,17 @@ const BoardGame = () => {
           toast.error("Đã hết lượt gợi ý!");
           return;
         }
-        
+
         // Use getHintMove (hard AI) if available, fallback to getAIMove
         const hintFn = gameModule.getHintMove || gameModule.getAIMove;
-        const hintMove = hintFn(gameState);
         
+        if (!hintFn) {
+          console.log('⚠️ No hint function available for this game');
+          return;
+        }
+        
+        const hintMove = hintFn(gameState);
+
         if (hintMove !== -1) {
           setGameState(prev => ({
             ...prev,
@@ -786,28 +932,44 @@ const BoardGame = () => {
     }
 
     if (mode === MODES.SETTINGS) {
-      // For Snake, use its custom settings renderer
-      if (activeGameKey === 'snake' && gameModule?.renderSettingsToMatrix) {
-        const selectedSize = sizeOptions[selectedSizeIndex]?.value || 15;
-        return gameModule.renderSettingsToMatrix(selectedSize);
+      // Use custom settings renderer if available
+      if (gameModule?.renderSettingsToMatrix) {
+        const selectedSize = sizeOptions[selectedSizeIndex]?.value || 8;
+        const pattern = gameModule.renderSettingsToMatrix(selectedSize);
+
+        // Add arrows for navigation
+        const arrowRow = Math.floor(MATRIX_ROWS / 2);
+
+        // Left arrow
+        if (selectedSizeIndex > 0) {
+          pattern[arrowRow][2] = "white";
+          pattern[arrowRow - 1][3] = "white";
+          pattern[arrowRow + 1][3] = "white";
+        }
+
+        // Right arrow
+        if (selectedSizeIndex < sizeOptions.length - 1) {
+          pattern[arrowRow][MATRIX_COLS - 3] = "white";
+          pattern[arrowRow - 1][MATRIX_COLS - 4] = "white";
+          pattern[arrowRow + 1][MATRIX_COLS - 4] = "white";
+        }
+
+        return pattern;
       }
       // For other games, use default settings pattern
       return generateSettingsPattern(currentGamePattern?.type, sizeOptions, selectedSizeIndex);
     }
 
+
     if (mode === MODES.PLAYING && gameModule && gameState) {
       // Show hint overlay for Snake if showHint is true
       if (activeGameKey === 'snake' && showHint && gameModule?.renderHint) {
         return gameModule.renderHint();
       }
 
-      return gameModule.renderToMatrix(gameState);
-    }
-
-    if (mode === MODES.PLAYING && gameModule && gameState) {
-      // Show hint overlay for Snake if showHint is true
-      if (activeGameKey === 'snake' && showHint && gameModule?.renderHint) {
-        return gameModule.renderHint();
+      // For Match-3, pass cursorPos
+      if (activeGameKey === 'match3') {
+        return gameModule.renderToMatrix({ ...gameState, cursorPos, hoverCell });
       }
 
       // For other games, pass hover state if needed (standard render)
@@ -815,7 +977,7 @@ const BoardGame = () => {
     }
 
     return createEmptyMatrix();
-  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint, hoverCell]);
+  }, [mode, currentGamePattern, sizeOptions, selectedSizeIndex, gameModule, gameState, activeGameKey, showHint, hoverCell, cursorPos]);
 
   // ============== RENDER ==============
 
@@ -839,22 +1001,60 @@ const BoardGame = () => {
               : gameModule?.name || currentGamePattern?.name || "GAME"
             }
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Arrows: Move • Enter: Select • ESC: Back
-          </p>
         </div>
 
-        {/* LED Matrix */}
+        {/* Match-3 HUD: Score + Moves (and Target) */}
+        {mode === MODES.PLAYING && activeGameKey === 'match3' && gameState && (
+          <div className="mb-3 flex items-center gap-3">
+            <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-cyan-300">
+              Score: {gameState.score}
+            </div>
+            <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-amber-300">
+              Moves: {gameState.movesLeft}
+            </div>
+            {(() => {
+              const val = gameState.targetScore;
+              const num = typeof val === 'number' ? val : Number(String(val ?? '').replace(/[^0-9]/g, ''));
+              return Number.isFinite(num) && num > 0;
+            })() && (
+              <div className="px-3 py-1 rounded-lg bg-slate-800/60 border border-slate-700 text-emerald-300">
+                Target: {(() => {
+                  const val = gameState.targetScore;
+                  const num = typeof val === 'number' ? val : Number(String(val ?? '').replace(/[^0-9]/g, ''));
+                  return Number.isFinite(num) && num > 0 ? num : '';
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* LED Matrix Container */}
         <div className="relative">
           <div className="absolute inset-0 bg-slate-800/30 rounded-2xl blur-xl" />
           <div className="relative bg-slate-900/80 p-4 rounded-2xl border border-slate-700/50">
             <LEDMatrix
               pattern={displayPattern}
-              onCellClick={handleMatrixClick}
-              onCellHover={handleMatrixHover}
+              onCellClick={mode === MODES.PLAYING && activeGameKey !== 'match3' ? handleMatrixClick : null}
+              onCellHover={activeGameKey !== 'match3' ? handleMatrixHover : null}
+              onMouseDown={null}
+              onMouseUp={null}
             />
           </div>
         </div>
+
+        {/* End-of-game banner for Match-3 */}
+        {mode === MODES.PLAYING && activeGameKey === 'match3' && gameState && gameState.status !== 'playing' && (
+          <div className="mt-4 px-4 py-3 rounded-xl border text-center select-none
+                          border-slate-700 bg-slate-900/70 text-slate-200">
+            <div className="text-lg font-semibold mb-1">
+              {gameState.status === 'win' ? '🎉 Bạn đã THẮNG!' : '💀 Bạn đã THUA!'}
+            </div>
+            <div className="text-sm text-slate-300">
+              Điểm: {gameState.score}{typeof gameState.targetScore === 'number' ? ` / Mục tiêu: ${gameState.targetScore}` : ''}
+            </div>
+            <div className="text-xs mt-2 text-cyan-300">Nhấn Enter để chơi ván mới</div>
+          </div>
+        )}
 
         {/* Control Panel */}
         <div className="mt-4">
