@@ -24,8 +24,21 @@ export const UserProvider = ({ children }) => {
   };
 
   // Logout function to clear user and remove token
-  const logout = () => {
+  const logout = async () => {
     try {
+      // Call backend to invalidate token in DB
+      const token = localStorage.getItem("token");
+      if (token) {
+        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        try {
+          await api.post("/api/auth/logout");
+        } catch (error) {
+          // Even if backend call fails, still clear local state
+          console.error("Error calling logout API:", error);
+        }
+      }
+
+      // Clear local state
       delete api.defaults.headers.common["Authorization"];
       localStorage.removeItem("token");
       setUser(null);

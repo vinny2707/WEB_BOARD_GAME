@@ -101,8 +101,9 @@ class AuthService {
         // Clean up OTP session
         otpService.delete(otpSessionId);
 
-        // Generate token and return
+        // Generate token and save to DB
         const token = this.generateToken(user);
+        await User.saveRefreshToken(user.id, token);
 
         return {
             token,
@@ -182,7 +183,8 @@ class AuthService {
         // Generate JWT token for active user
         const token = this.generateToken(user);
 
-        // Update last_login
+        // Save token to DB and update last_login
+        await User.saveRefreshToken(user.id, token);
         await User.updateLastLogin(user.id);
 
         // Return token and user info (without password)
@@ -220,8 +222,9 @@ class AuthService {
         // Clean up OTP session
         otpService.delete(otpSessionId);
 
-        // Generate token
+        // Generate token and save to DB
         const token = this.generateToken(user);
+        await User.saveRefreshToken(user.id, token);
 
         return {
             token,

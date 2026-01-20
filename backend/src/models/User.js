@@ -115,6 +115,40 @@ class User {
     }
 
     /**
+     * Save refresh token for user
+     * @param {number} id - User ID
+     * @param {string} token - JWT token
+     * @returns {Promise<void>}
+     */
+    static async saveRefreshToken(id, token) {
+        await db('users')
+            .where({ id })
+            .update({ refresh_token: token });
+    }
+
+    /**
+     * Find user by refresh token
+     * @param {string} token - JWT token
+     * @returns {Promise<Object|null>}
+     */
+    static async findByRefreshToken(token) {
+        return db('users')
+            .where({ refresh_token: token })
+            .first();
+    }
+
+    /**
+     * Clear refresh token (logout)
+     * @param {number} id - User ID
+     * @returns {Promise<void>}
+     */
+    static async clearRefreshToken(id) {
+        await db('users')
+            .where({ id })
+            .update({ refresh_token: null });
+    }
+
+    /**
      * Get all users with avatar (admin only)
      * @param {Object} filters 
      * @returns {Promise<Array>}

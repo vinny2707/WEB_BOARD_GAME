@@ -29,6 +29,12 @@ const authenticateJWT = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        // SECURITY: Check if token exists in DB (enables logout/revocation)
+        const tokenUser = await User.findByRefreshToken(token);
+        if (!tokenUser || tokenUser.id !== decoded.userId) {
+            return error(res, 'Token has been revoked', 401);
+        }
+
         // SECURITY: Check user status from database (realtime check)
         // This prevents banned/inactive users from using old valid tokens
         const user = await User.findById(decoded.userId);

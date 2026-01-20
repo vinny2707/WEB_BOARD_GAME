@@ -306,6 +306,7 @@ router.post('/verify-reactivation-otp', authController.verifyReactivationOtp);
  *     tags: [Authentication]
  *     security:
  *       - apiKeyAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
@@ -321,7 +322,7 @@ router.post('/verify-reactivation-otp', authController.verifyReactivationOtp);
  *                   type: string
  *                   example: Logout successful
  */
-router.post('/logout', authController.logout);
+router.post('/logout', authenticateJWT, authController.logout);
 
 
 /**

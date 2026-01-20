@@ -109,9 +109,18 @@ const verifyReactivationOtp = async (req, res, next) => {
     }
 };
 
-// Logout user (client-side token removal)
-const logout = async (req, res) => {
-    return success(res, null, 'Logout successful');
+// Logout user (clear token from DB)
+const logout = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+
+        // Clear refresh token from DB
+        await User.clearRefreshToken(userId);
+
+        return success(res, null, 'Logout successful');
+    } catch (err) {
+        next(err);
+    }
 };
 
 // Get current user profile
