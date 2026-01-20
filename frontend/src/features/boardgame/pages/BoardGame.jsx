@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import LEDMatrix from "../components/LEDMatrix";
 import ControlPanel from "../components/ControlPanel";
 import GameInfoSidebar from "../components/GameInfoSidebar";
-import SnakeHintDialog from "../components/SnakeHintDialog";
+import GameHintDialog from "../components/GameHintDialog";
 import DrawToolbar from "../components/DrawToolbar";
 
 // Game info components are now in GameInfoSidebar
@@ -1194,44 +1194,58 @@ const BoardGame = () => {
 
   const handleHint = useCallback(() => {
     console.log("🔍 handleHint called", { mode, activeGameKey, showHint });
-    if (mode === MODES.PLAYING && activeGameKey === "snake") {
-      // For Snake, toggle hint display
-      console.log("🎯 Toggling hint for Snake");
-      setShowHint((prev) => {
-        console.log("📝 showHint changing from", prev, "to", !prev);
-        return !prev;
-      });
-    } else if (mode === MODES.PLAYING && gameModule && gameState) {
-      // For other games, show AI hint move
-      if (gameState.status === "playing" && gameState.currentPlayer === "X") {
-        // Check hints remaining
-        const hintsRemaining = gameState.hintsRemaining ?? 3;
-        if (hintsRemaining <= 0) {
-          toast.error("Đã hết lượt gợi ý!");
-          return;
-        }
+    if (mode === MODES.PLAYING) {
+      // Snake: giữ nguyên - đã xử lý trong handleHKey
+      if (activeGameKey === "snake") {
+        setShowHint((prev) => !prev);
+        return;
+      }
 
-        // Use getHintMove (hard AI) if available, fallback to getAIMove
-        const hintFn = gameModule.getHintMove || gameModule.getAIMove;
+      // Memory, Match3, DotArt: nút Hint hiện dialog
+      if (["memory", "match3", "dotart"].includes(activeGameKey)) {
+        setShowHint((prev) => !prev);
+        return;
+      }
 
-        if (!hintFn) {
-          console.log("⚠️ No hint function available for this game");
-          return;
-        }
+      // TicTacToe, Caro4, Caro5: nút Hint gợi ý bước đi AI (giữ nguyên)
+      if (gameModule && gameState) {
+        if (gameState.status === "playing" && gameState.currentPlayer === "X") {
+          // Check hints remaining
+          const hintsRemaining = gameState.hintsRemaining ?? 3;
+          if (hintsRemaining <= 0) {
+            toast.error("Đã hết lượt gợi ý!");
+            return;
+          }
 
-        const hintMove = hintFn(gameState);
+          // Use getHintMove (hard AI) if available, fallback to getAIMove
+          const hintFn = gameModule.getHintMove || gameModule.getAIMove;
 
-        if (hintMove !== -1) {
-          setGameState((prev) => ({
-            ...prev,
-            selectedCell: hintMove,
-            hintsRemaining: (prev.hintsRemaining ?? 3) - 1,
-          }));
-          toast.info(`Gợi ý! Còn ${hintsRemaining - 1} lượt`);
+          if (!hintFn) {
+            console.log("⚠️ No hint function available for this game");
+            return;
+          }
+
+          const hintMove = hintFn(gameState);
+
+          if (hintMove !== -1) {
+            setGameState((prev) => ({
+              ...prev,
+              selectedCell: hintMove,
+              hintsRemaining: (prev.hintsRemaining ?? 3) - 1,
+            }));
+            toast.info(`Gợi ý! Còn ${hintsRemaining - 1} lượt`);
+          }
         }
       }
     }
   }, [mode, activeGameKey, gameModule, gameState, showHint]);
+
+  // Handler riêng cho phím H - hiện dialog cho tất cả games
+  const handleHKey = useCallback(() => {
+    if (mode === MODES.PLAYING) {
+      setShowHint((prev) => !prev);
+    }
+  }, [mode]);
 
   // Keyboard handler
   useEffect(() => {
@@ -1263,7 +1277,7 @@ const BoardGame = () => {
         case "h":
         case "H":
           e.preventDefault();
-          handleHint();
+          handleHKey();
           break;
         default:
           break;
@@ -1278,7 +1292,7 @@ const BoardGame = () => {
     handleDown,
     handleEnter,
     handleBack,
-    handleHint,
+    handleHKey,
   ]);
 
   // ============== DISPLAY ==============
@@ -1512,9 +1526,12 @@ const BoardGame = () => {
         )}
       </div>
 
-      {/* Hint Dialog for Snake */}
-      {showHint && activeGameKey === "snake" && (
-        <SnakeHintDialog onClose={() => setShowHint(false)} />
+      {/* Game Hint Dialog - cho tất cả games */}
+      {showHint && mode === MODES.PLAYING && (
+        <GameHintDialog
+          gameKey={activeGameKey}
+          onClose={() => setShowHint(false)}
+        />
       )}
     </div>
   );
