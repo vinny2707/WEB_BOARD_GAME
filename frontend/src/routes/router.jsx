@@ -1,0 +1,228 @@
+import React from "react";
+import { createBrowserRouter } from "react-router-dom";
+import AuthLayout from "../layouts/AuthLayout.jsx";
+import ProtectedLayout from "@/layouts/ProtectedLayout.jsx";
+import AdminProtectedLayout from "@/layouts/AdminProtectedLayout.jsx";
+import UserLayout from "../layouts/UserLayout.jsx";
+import AdminLayout from "../layouts/AdminLayout.jsx";
+
+import Auth from "../features/auth/pages/Auth.jsx";
+import LandingPage from "../features/landingPage/pages/LandingPage.jsx";
+import Games from "../features/games/pages/Games.jsx";
+import Ranking from "../features/ranking/pages/Ranking.jsx";
+import AchievementRanking from "../features/ranking/pages/AchievementRanking.jsx";
+import Friends from "../features/social/pages/Friends.jsx";
+import Messages from "../features/social/pages/Messages.jsx";
+import Profile from "../features/profile/pages/Profile.jsx";
+import UserManagement from "../features/userManagement/pages/UserManagement.jsx";
+import AchievementManagement from "../features/achievementManagement/pages/AchievementManagement.jsx";
+import NotFound from "@/features/errors/pages/NotFound.jsx";
+import Statistics from "@/features/statistics/pages/Statistics.jsx";
+import GameConfig from "@/features/gameConfig/pages/GameConfig.jsx";
+import { BoardGame } from "../features/boardgame";
+import { Navigate } from "react-router-dom";
+import {
+  TicTacToeGame,
+  TicTacToeLobby,
+  GomokuGame,
+  GomokuLobby,
+  Caro4Game,
+  Caro4Lobby,
+  SnakeGame,
+  SnakeLobby,
+  Match3Game,
+  Match3Lobby,
+  MemoryGame,
+  MemoryLobby,
+  DrawingGame,
+  DrawingLobby,
+  DotArtGame,
+  DotArtLobby,
+  GameHistory,
+} from "../features/games/components";
+
+const router = createBrowserRouter([
+  {
+    // Default route is landing page
+    path: "/",
+    element: <LandingPage />,
+  },
+  {
+    path: "/landing",
+    element: <LandingPage />,
+  },
+  {
+    path: "/auth",
+    element: <AuthLayout />,
+    children: [
+      {
+        element: <Auth />,
+        index: true,
+      },
+    ],
+  },
+  {
+    // User pages with sidebar - accessible without login
+    path: "/",
+    element: <ProtectedLayout />,
+    children: [
+      {
+        element: <UserLayout />,
+        children: [
+          {
+            // Games selection page
+            element: <Games />,
+            path: "games",
+          },
+          {
+            // Games history page
+            element: <GameHistory />,
+            path: "games/history",
+          },
+          {
+            // LED Board Game
+            element: <BoardGame />,
+            path: "boardgame",
+          },
+          {
+            element: <Ranking />,
+            path: "ranking",
+          },
+          {
+            element: <Friends />,
+            path: "social",
+          },
+          {
+            element: <Messages />,
+            path: "messages",
+          },
+          {
+            element: <Profile />,
+            path: "profile",
+          },
+          {
+            element: <AchievementRanking />,
+            path: "achievement-ranking",
+          },
+          {
+            // TicTacToe Lobby
+            element: <TicTacToeLobby />,
+            path: "games/tic-tac-toe",
+          },
+          {
+            // TicTacToe Game
+            element: <TicTacToeGame />,
+            path: "games/tic-tac-toe/play",
+          },
+          {
+            // Gomoku Lobby
+            element: <GomokuLobby />,
+            path: "games/gomoku",
+          },
+          {
+            // Gomoku Game
+            element: <GomokuGame />,
+            path: "games/gomoku/play",
+          },
+          {
+            // Caro4 Lobby
+            element: <Caro4Lobby />,
+            path: "games/caro4",
+          },
+          {
+            // Caro4 Game
+            element: <Caro4Game />,
+            path: "games/caro4/play",
+          },
+          {
+            // Snake Lobby
+            element: <SnakeLobby />,
+            path: "games/snake",
+          },
+          {
+            // Snake Game
+            element: <SnakeGame />,
+            path: "games/snake/play",
+          },
+          {
+            // Match3 Lobby
+            element: <Match3Lobby />,
+            path: "games/match3",
+          },
+          {
+            // Match3 Game
+            element: <Match3Game />,
+            path: "games/match3/play",
+          },
+          {
+            // Memory Lobby
+            element: <MemoryLobby />,
+            path: "games/memory",
+          },
+          {
+            // Memory Game
+            element: <MemoryGame />,
+            path: "games/memory/play",
+          },
+          {
+            // Drawing Lobby
+            element: <DrawingLobby />,
+            path: "games/drawing",
+          },
+          {
+            // Drawing Game
+            element: <DrawingGame />,
+            path: "games/drawing/play",
+          },
+          {
+            // DotArt Lobby
+            element: <DotArtLobby />,
+            path: "games/dotart",
+          },
+          {
+            // DotArt Game
+            element: <DotArtGame />,
+            path: "games/dotart/play",
+          },
+        ],
+      },
+      {
+        path: "/admin",
+        element: <AdminProtectedLayout />,
+        children: [
+          {
+            element: <AdminLayout />,
+            children: [
+              {
+                element: <UserManagement />,
+                index: true,
+              },
+              {
+                element: <Statistics />,
+                path: "statistics",
+              },
+              {
+                element: <GameConfig />,
+                path: "game-config",
+              },
+              {
+                element: <AchievementManagement />,
+                path: "achievements",
+              },
+              {
+                element: <Profile />,
+                path: "profile",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: "*",
+    element: <NotFound />,
+  },
+]);
+
+export default router;

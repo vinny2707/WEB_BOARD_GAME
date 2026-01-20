@@ -3,7 +3,6 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
 
 # Environment variables
 .env
@@ -67,6 +66,16 @@ temp/
 *.sqlite
 *.sqlite3
 *.db
+
+# SSL Certificates & Security (NEVER commit these!)
+ssl/
+certs/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
 
 # Optional npm cache directory
 .npm

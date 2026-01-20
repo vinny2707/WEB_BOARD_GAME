@@ -2,26 +2,18 @@ const knex = require('knex');
 const knexConfig = require('../../knexfile');
 
 const environment = process.env.NODE_ENV || 'development';
-const db = knex(knexConfig[environment]);
+const config = knexConfig[environment];
 
-const testConnection = async () => {
-    try {
-        await db.raw('SELECT NOW() as time');
-        console.log('Database connection established successfully');
-        console.log('Connected to Supabase PostgreSQL');
-    } catch (error) {
-        console.error('Unable to connect to database:', error.message);
-        throw error;
-    }
-};
+const db = knex(config);
 
-const closeConnection = async () => {
-    try {
-        await db.destroy();
-        console.log('Database connection closed');
-    } catch (error) {
-        console.error('Error closing database connection:', error);
-    }
-};
+// Test connection
+db.raw('SELECT 1')
+    .then(() => {
+        console.log('Database connected successfully');
+    })
+    .catch((err) => {
+        console.error('Database connection failed:', err.message);
+        process.exit(1);
+    });
 
-module.exports = { db, testConnection, closeConnection };
+module.exports = db;
