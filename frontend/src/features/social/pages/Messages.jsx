@@ -604,7 +604,9 @@ export default function Messages() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
-                        handleSendMessage(e);
+                        if (!sending && newMessage.trim()) {
+                          handleSendMessage(e);
+                        }
                       }
                     }}
                     className="flex-1 resize-none dark:bg-slate-800 dark:border-slate-700 dark:text-white min-h-[40px] max-h-[120px]"
